@@ -126,6 +126,12 @@ struct CameraView: View {
                 }
             }
         }
+        .onDisappear {
+            // Reset camera state when navigating away
+            if !showResults {
+                capturedImage = nil
+            }
+        }
         .alert("Camera Permission Denied", isPresented: $showPermissionAlert) {
             Button("Cancel", role: .cancel) { }
             Button("Open Settings") {
