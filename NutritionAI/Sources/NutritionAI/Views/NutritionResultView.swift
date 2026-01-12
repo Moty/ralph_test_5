@@ -156,7 +156,11 @@ struct NutritionSummaryCard: View {
         }
         .frame(maxWidth: .infinity)
         .padding()
+        #if canImport(UIKit)
+        .background(Color(.systemBackground))
+        #else
         .background(Color.white)
+        #endif
         .cornerRadius(8)
         .shadow(radius: 2)
     }
@@ -192,7 +196,11 @@ struct FoodItemCard: View {
             }
         }
         .padding()
+        #if canImport(UIKit)
+        .background(Color(.secondarySystemBackground))
+        #else
         .background(Color.gray.opacity(0.1))
+        #endif
         .cornerRadius(8)
     }
 }
