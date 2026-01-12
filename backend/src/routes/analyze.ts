@@ -29,6 +29,7 @@ interface AnalyzeResponse {
     carbs: number;
     fat: number;
   };
+  timestamp: string;
 }
 
 export async function analyzeRoutes(server: FastifyInstance) {
