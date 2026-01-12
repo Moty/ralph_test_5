@@ -33,7 +33,12 @@ swift build
   - Real-time camera preview
   - Capture button with retake/confirm workflow
   - Automatic image compression to under 2MB
-  - Camera permission handling
+  - **Camera permission handling** with clear user guidance
+    - Alert shown when camera access is denied
+    - Direct link to Settings app for permission management
+    - Permission status display in camera view
+    - Graceful handling of permission requests on first launch
+    - No app crashes when permission denied
 - **Nutrition Results View** displaying analysis results
   - Total nutrition summary with calories, protein, carbs, and fat
   - Individual food items with portion sizes

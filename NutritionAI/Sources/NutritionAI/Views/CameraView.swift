@@ -10,6 +10,7 @@ struct CameraView: View {
     @State private var isAnalyzing = false
     @State private var analysisResult: MealAnalysis?
     @State private var analysisError: String?
+    @State private var showPermissionAlert = false
     
     private let apiService = APIService()
     private var storageService: StorageService?
@@ -63,34 +64,77 @@ struct CameraView: View {
                 }
             } else {
                 // Camera preview
-                CameraPreview(session: camera.session)
-                    .ignoresSafeArea()
-                
-                VStack {
-                    Spacer()
-                    
-                    Button(action: {
-                        camera.capturePhoto { image in
-                            if let compressed = compressImage(image) {
-                                capturedImage = compressed
+                if camera.permissionDenied {
+                    VStack(spacing: 20) {
+                        Image(systemName: "camera.fill")
+                            .font(.system(size: 60))
+                            .foregroundColor(.gray)
+                        
+                        Text("Camera Access Required")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                        
+                        Text("Please enable camera access in Settings to use this feature.")
+                            .multilineTextAlignment(.center)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 40)
+                        
+                        Button("Open Settings") {
+                            if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+                                UIApplication.shared.open(settingsURL)
                             }
                         }
-                    }) {
-                        Circle()
-                            .fill(Color.white)
-                            .frame(width: 70, height: 70)
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.white, lineWidth: 3)
-                                    .frame(width: 80, height: 80)
-                            )
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
                     }
-                    .padding(.bottom, 40)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(UIColor.systemBackground))
+                } else {
+                    CameraPreview(session: camera.session)
+                        .ignoresSafeArea()
+                    
+                    VStack {
+                        Spacer()
+                        
+                        Button(action: {
+                            camera.capturePhoto { image in
+                                if let compressed = compressImage(image) {
+                                    capturedImage = compressed
+                                }
+                            }
+                        }) {
+                            Circle()
+                                .fill(Color.white)
+                                .frame(width: 70, height: 70)
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color.white, lineWidth: 3)
+                                        .frame(width: 80, height: 80)
+                                )
+                        }
+                        .padding(.bottom, 40)
+                    }
                 }
             }
         }
         .onAppear {
-            camera.requestPermission()
+            camera.requestPermission { granted in
+                if !granted {
+                    showPermissionAlert = true
+                }
+            }
+        }
+        .alert("Camera Permission Denied", isPresented: $showPermissionAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Open Settings") {
+                if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(settingsURL)
+                }
+            }
+        } message: {
+            Text("Camera access is required to take photos of your food. Please enable camera access in Settings.")
         }
     }
     
@@ -193,19 +237,35 @@ class CameraController: NSObject, ObservableObject, AVCapturePhotoCaptureDelegat
     let session = AVCaptureSession()
     private let output = AVCapturePhotoOutput()
     private var photoCompletion: ((UIImage) -> Void)?
+    @Published var permissionDenied = false
     
-    func requestPermission() {
+    func requestPermission(completion: ((Bool) -> Void)? = nil) {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .video) { granted in
-                if granted {
-                    self.setupCamera()
+                DispatchQueue.main.async {
+                    if granted {
+                        self.setupCamera()
+                        completion?(true)
+                    } else {
+                        self.permissionDenied = true
+                        completion?(false)
+                    }
                 }
             }
         case .authorized:
             setupCamera()
-        default:
-            break
+            completion?(true)
+        case .denied, .restricted:
+            DispatchQueue.main.async {
+                self.permissionDenied = true
+                completion?(false)
+            }
+        @unknown default:
+            DispatchQueue.main.async {
+                self.permissionDenied = true
+                completion?(false)
+            }
         }
     }
     
