@@ -5,7 +5,7 @@ AI-Powered Nutrition Analyzer Mobile App - iOS app with photo-based food nutriti
 ## Project Structure
 
 - **NutritionAI/** - iOS SwiftUI application with camera-based food analysis
-- **backend/** - Node.js/Fastify API server with Gemini AI integration (coming soon)
+- **backend/** - Node.js/Fastify API server for nutrition analysis
 
 ## iOS App
 
@@ -27,6 +27,43 @@ swift build
 
 ### Configuration
 Camera permissions are configured in `Info.plist` with `NSCameraUsageDescription`.
+
+## Backend API
+
+### Requirements
+- Node.js 18+ 
+- npm or yarn
+
+### Setup
+```bash
+cd backend
+npm install
+```
+
+### Environment Variables
+Create a `.env` file in the backend directory:
+```
+PORT=3000
+```
+
+### Development
+```bash
+npm run dev     # Start with hot reload
+npm start       # Start server
+npm run typecheck  # Run TypeScript checks
+```
+
+### API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | /health | Health check endpoint |
+
+### Features
+- TypeScript with ES modules
+- Fastify web framework
+- CORS enabled for mobile app requests
+- Environment-based configuration
 
 ## Development
 

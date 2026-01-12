@@ -4,3 +4,12 @@ progress.txt
 ralph.log
 .ralph-models-cache.json
 archive/
+
+# Node.js
+node_modules/
+.env
+dist/
+
+# Swift
+.build/
+.DS_Store
