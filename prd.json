@@ -1,15 +1,18 @@
 {
-  "project": "MyApp",
-  "branchName": "ralph/task-priority",
-  "description": "Task Priority System - Add priority levels to tasks",
+  "project": "NutritionAI",
+  "branchName": "ralph/nutrition-analyzer-app",
+  "description": "AI-Powered Nutrition Analyzer Mobile App - iOS app with photo-based food nutrition analysis",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Add priority field to database",
-      "description": "As a developer, I need to store task priority so it persists across sessions.",
+      "title": "Initialize iOS project with SwiftUI",
+      "description": "As a developer, I need the iOS project scaffolded with SwiftUI and camera capabilities.",
       "acceptanceCriteria": [
-        "Add priority column to tasks table: 'high' | 'medium' | 'low' (default 'medium')",
-        "Generate and run migration successfully",
+        "Create new iOS project with SwiftUI app template",
+        "Set minimum iOS deployment target to 16.0",
+        "Add Info.plist entry: NSCameraUsageDescription",
+        "Configure basic navigation structure with ContentView",
+        "Project builds successfully without errors",
         "Typecheck passes"
       ],
       "priority": 1,
@@ -18,13 +21,15 @@
     },
     {
       "id": "US-002",
-      "title": "Display priority indicator on task cards",
-      "description": "As a user, I want to see task priority at a glance.",
+      "title": "Initialize Node.js backend with Fastify",
+      "description": "As a developer, I need the backend API initialized with TypeScript and Fastify.",
       "acceptanceCriteria": [
-        "Each task card shows colored priority badge (red=high, yellow=medium, gray=low)",
-        "Priority visible without hovering or clicking",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Initialize Node.js project with TypeScript configuration",
+        "Install dependencies: fastify, @fastify/cors, dotenv",
+        "Create basic server with GET /health endpoint",
+        "Configure CORS to allow mobile app requests",
+        "Server starts successfully on port from environment variable",
+        "Typecheck passes"
       ],
       "priority": 2,
       "passes": false,
@@ -32,14 +37,15 @@
     },
     {
       "id": "US-003",
-      "title": "Add priority selector to task edit",
-      "description": "As a user, I want to change a task's priority when editing it.",
+      "title": "Set up Prisma database schema",
+      "description": "As a developer, I need the database schema for storing meal analysis records.",
       "acceptanceCriteria": [
-        "Priority dropdown in task edit modal",
-        "Shows current priority as selected",
-        "Saves immediately on selection change",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Install and initialize Prisma with PostgreSQL",
+        "Create MealAnalysis model with fields: id, userId, imageUrl, nutritionData (JSON), createdAt",
+        "Define NutritionData type with calories, protein, carbs, fat fields",
+        "Generate Prisma client",
+        "Run initial migration successfully",
+        "Typecheck passes"
       ],
       "priority": 3,
       "passes": false,
@@ -47,16 +53,250 @@
     },
     {
       "id": "US-004",
-      "title": "Filter tasks by priority",
-      "description": "As a user, I want to filter the task list to see only high-priority items.",
+      "title": "Create nutrition data models in Swift",
+      "description": "As a developer, I need structured Swift models for nutrition data.",
       "acceptanceCriteria": [
-        "Filter dropdown with options: All | High | Medium | Low",
-        "Filter persists in URL params",
-        "Empty state message when no tasks match filter",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Create NutritionData struct with: calories, protein, carbs, fat (all Double)",
+        "Create FoodItem struct with: name, portion, confidence (0-1)",
+        "Create MealAnalysis struct combining foods array, totals, timestamp",
+        "All structs conform to Codable protocol",
+        "Add computed property for macro percentages on NutritionData",
+        "Typecheck passes"
       ],
       "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Implement camera capture view",
+      "description": "As a user, I want to take a picture of my food using the device camera.",
+      "acceptanceCriteria": [
+        "Create CameraView with AVFoundation camera preview",
+        "Show capture button that takes photo on tap",
+        "Request camera permission on first use",
+        "Display captured photo in preview",
+        "Add retake and confirm buttons after capture",
+        "Compress image to under 2MB",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Install and configure Gemini SDK",
+      "description": "As a developer, I need Gemini AI SDK integrated in the backend.",
+      "acceptanceCriteria": [
+        "Install @google/generative-ai package",
+        "Configure Gemini API key from environment variable",
+        "Create gemini.ts service with initializeModel() function",
+        "Add basic error handling for API initialization",
+        "Environment variable validation on server start",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Create Gemini nutrition analysis prompt",
+      "description": "As a developer, I need an optimized prompt for extracting nutrition data from food images.",
+      "acceptanceCriteria": [
+        "Create prompt template that requests food identification",
+        "Prompt asks for portion size estimation in common units",
+        "Prompt requests macro breakdown: calories, protein, carbs, fat per item and total",
+        "Specify JSON output format matching NutritionData schema",
+        "Include confidence scoring for each food item",
+        "Document prompt in code comments",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Implement POST /api/analyze endpoint",
+      "description": "As a backend developer, I need an endpoint that accepts images and returns nutrition analysis.",
+      "acceptanceCriteria": [
+        "Create POST /api/analyze route accepting multipart/form-data",
+        "Validate image format (JPG/PNG) and size (max 5MB)",
+        "Send image to Gemini with nutrition prompt",
+        "Parse Gemini response into structured JSON",
+        "Return 200 with nutrition data or 400/500 with error message",
+        "Add timeout handling (30 seconds max)",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Create API service in iOS app",
+      "description": "As a developer, I need a service to communicate with the backend API.",
+      "acceptanceCriteria": [
+        "Create APIService class with async/await methods",
+        "Implement analyzeImage() method that sends image to POST /api/analyze",
+        "Use URLSession with multipart/form-data encoding",
+        "Decode response into MealAnalysis model",
+        "Handle network errors and timeouts gracefully",
+        "Add unit tests for success and error cases",
+        "Typecheck passes"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Build nutrition results view",
+      "description": "As a user, I want to see the nutritional breakdown of my food after capture.",
+      "acceptanceCriteria": [
+        "Create NutritionResultView displaying total calories, protein, carbs, fat",
+        "Show list of identified food items with individual nutrition",
+        "Display portion sizes in readable format",
+        "Add loading indicator during API call",
+        "Show error message if analysis fails",
+        "Add dismiss/back button to return to camera",
+        "Typecheck passes"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Add local storage for meal history",
+      "description": "As a user, I want my analyzed meals saved locally so I can review them.",
+      "acceptanceCriteria": [
+        "Create StorageService using SwiftData or Core Data",
+        "Save successful analyses with timestamp and thumbnail",
+        "Implement fetch methods for retrieving history",
+        "Auto-prune history to keep maximum 100 entries",
+        "Data persists across app restarts",
+        "Add unit tests for save and retrieve operations",
+        "Typecheck passes"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Save analyses to backend database",
+      "description": "As a developer, I need meal analyses stored in PostgreSQL for history sync.",
+      "acceptanceCriteria": [
+        "Extend POST /api/analyze to save analysis to database via Prisma",
+        "Store userId (placeholder for now), imageUrl, nutritionData JSON, timestamp",
+        "Return analysis ID in API response",
+        "Add database error handling",
+        "Verify data persists in PostgreSQL",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-013",
+      "title": "Create history list view",
+      "description": "As a user, I want to view a list of my previously analyzed meals.",
+      "acceptanceCriteria": [
+        "Create HistoryView showing meals in reverse chronological order",
+        "Each list item displays: thumbnail, total calories, date",
+        "Tapping item navigates to full nutrition details",
+        "Show empty state when no history exists",
+        "Implement smooth scrolling with lazy loading",
+        "Typecheck passes"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-014",
+      "title": "Add error handling for camera permissions",
+      "description": "As a user, I want clear guidance when camera access is denied.",
+      "acceptanceCriteria": [
+        "Show alert when camera permission is denied",
+        "Alert includes button to open Settings app",
+        "Display permission status in camera view",
+        "Handle permission request on first app launch",
+        "No app crash when permission denied",
+        "Typecheck passes"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-015",
+      "title": "Add network error handling",
+      "description": "As a user, I want clear feedback when network requests fail.",
+      "acceptanceCriteria": [
+        "Show offline message when no internet connection",
+        "Display retry button on API timeout",
+        "Show user-friendly error for server errors (don't expose internals)",
+        "Handle invalid image response from Gemini gracefully",
+        "Log all errors for debugging without crashing app",
+        "Typecheck passes"
+      ],
+      "priority": 15,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-016",
+      "title": "Add Dark Mode support",
+      "description": "As a user, I want the app to respect my iOS Dark Mode preference.",
+      "acceptanceCriteria": [
+        "All views use SwiftUI adaptive colors",
+        "Camera view works in both light and dark modes",
+        "Text remains readable in both modes",
+        "Images and cards have appropriate backgrounds",
+        "Test manually in both modes",
+        "Typecheck passes"
+      ],
+      "priority": 16,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-017",
+      "title": "Add navigation between camera and history",
+      "description": "As a user, I want to easily switch between camera and history views.",
+      "acceptanceCriteria": [
+        "Create TabView with Camera and History tabs",
+        "Tabs persist selection when switching",
+        "Tab icons clearly represent function",
+        "Smooth transitions between tabs",
+        "Camera resets when navigating away and back",
+        "Typecheck passes"
+      ],
+      "priority": 17,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-018",
+      "title": "Add backend rate limiting",
+      "description": "As a developer, I need to prevent API abuse with rate limiting.",
+      "acceptanceCriteria": [
+        "Install @fastify/rate-limit package",
+        "Configure rate limit: 100 requests per hour per IP",
+        "Return 429 status when limit exceeded",
+        "Include Retry-After header in response",
+        "Log rate limit violations",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 18,
       "passes": false,
       "notes": ""
     }
