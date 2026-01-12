@@ -27,6 +27,12 @@ swift build
   - Capture button with retake/confirm workflow
   - Automatic image compression to under 2MB
   - Camera permission handling
+- **API Service** for backend communication
+  - Async/await URLSession-based networking
+  - Multipart/form-data image upload
+  - Automatic JSON decoding to MealAnalysis models
+  - Comprehensive error handling (network, timeout, server errors)
+  - 30-second request timeout
 - Basic navigation structure
 - Structured data models for nutrition information:
   - **NutritionData**: Calories, protein, carbs, fat with macro percentages
@@ -150,9 +156,11 @@ swift build
 - `Sources/NutritionAI/NutritionAIApp.swift` - Main app entry point
 - `Sources/NutritionAI/ContentView.swift` - Root view
 - `Sources/NutritionAI/Views/CameraView.swift` - Camera capture interface with photo preview
+- `Sources/NutritionAI/Services/APIService.swift` - Backend API communication service
 - `Sources/NutritionAI/Models/NutritionData.swift` - Nutrition data model with macro calculations
 - `Sources/NutritionAI/Models/FoodItem.swift` - Food item model
 - `Sources/NutritionAI/Models/MealAnalysis.swift` - Meal analysis model
+- `Tests/NutritionAITests/APIServiceTests.swift` - Unit tests for API service
 - `Info.plist` - Camera permissions and app configuration
 - `Package.swift` - Swift package definition
 
