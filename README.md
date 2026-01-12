@@ -22,7 +22,11 @@ swift build
 
 ### Features
 - SwiftUI-based iOS application
-- Camera integration for food photo capture
+- **Camera capture** with AVFoundation for taking food photos
+  - Real-time camera preview
+  - Capture button with retake/confirm workflow
+  - Automatic image compression to under 2MB
+  - Camera permission handling
 - Basic navigation structure
 - Structured data models for nutrition information:
   - **NutritionData**: Calories, protein, carbs, fat with macro percentages
@@ -94,6 +98,7 @@ swift build
 ### Project Files
 - `Sources/NutritionAI/NutritionAIApp.swift` - Main app entry point
 - `Sources/NutritionAI/ContentView.swift` - Root view
+- `Sources/NutritionAI/Views/CameraView.swift` - Camera capture interface with photo preview
 - `Sources/NutritionAI/Models/NutritionData.swift` - Nutrition data model with macro calculations
 - `Sources/NutritionAI/Models/FoodItem.swift` - Food item model
 - `Sources/NutritionAI/Models/MealAnalysis.swift` - Meal analysis model
