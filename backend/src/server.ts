@@ -4,6 +4,12 @@ import { config } from 'dotenv';
 
 config();
 
+// Validate required environment variables
+if (!process.env.GEMINI_API_KEY) {
+  console.error('Error: GEMINI_API_KEY environment variable is required');
+  process.exit(1);
+}
+
 const PORT = process.env.PORT || 3000;
 
 const server = Fastify({

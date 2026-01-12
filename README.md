@@ -53,6 +53,7 @@ Create a `.env` file in the backend directory:
 ```
 PORT=3000
 DATABASE_URL=postgresql://user:password@localhost:5432/nutritionai
+GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
 ### Database Setup
@@ -84,6 +85,10 @@ npm run typecheck  # Run TypeScript checks
 - Environment-based configuration
 - Prisma ORM with PostgreSQL database
 - MealAnalysis model for storing nutrition data
+- **Gemini AI integration** for nutrition analysis
+  - Google Generative AI SDK (@google/generative-ai)
+  - Environment variable validation on startup
+  - Error handling for API initialization
 
 ## Development
 
