@@ -1,6 +1,8 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import multipart from '@fastify/multipart';
 import { config } from 'dotenv';
+import { analyzeRoutes } from './routes/analyze.js';
 
 config();
 
@@ -20,9 +22,17 @@ await server.register(cors, {
   origin: true
 });
 
+await server.register(multipart, {
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB
+  }
+});
+
 server.get('/health', async (request, reply) => {
   return { status: 'ok' };
 });
+
+await server.register(analyzeRoutes);
 
 const start = async () => {
   try {
