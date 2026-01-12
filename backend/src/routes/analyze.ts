@@ -4,6 +4,7 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import pg from 'pg';
 import { Buffer } from 'buffer';
+import { validateImage, ImageValidationError } from '../utils/imageValidation.js';
 
 // Initialize PrismaClient with PostgreSQL adapter for Prisma 7
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
@@ -70,22 +71,15 @@ export async function analyzeRoutes(server: FastifyInstance) {
         return reply.code(400).send({ error: 'No image file provided' });
       }
 
-      // Validate file type
-      const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-      if (!allowedMimeTypes.includes(mimetype)) {
+      // Validate image
+      try {
+        validateImage(mimetype, buffer.length);
+      } catch (error) {
         clearTimeout(timeout);
-        return reply.code(400).send({ 
-          error: 'Invalid file format. Only JPG and PNG images are allowed' 
-        });
-      }
-
-      // Validate file size (max 5MB)
-      const maxSize = 5 * 1024 * 1024; // 5MB in bytes
-      if (buffer.length > maxSize) {
-        clearTimeout(timeout);
-        return reply.code(400).send({ 
-          error: 'File too large. Maximum size is 5MB' 
-        });
+        if (error instanceof ImageValidationError) {
+          return reply.code(400).send({ error: error.message });
+        }
+        throw error;
       }
 
       // Initialize Gemini model (use client-provided model if available)
