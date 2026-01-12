@@ -56,7 +56,11 @@ swift build
   - Async/await URLSession-based networking
   - Multipart/form-data image upload
   - Automatic JSON decoding to MealAnalysis models
-  - Comprehensive error handling (network, timeout, server errors)
+  - **Network error handling** with user-friendly messages
+    - Offline detection (no internet connection)
+    - Timeout handling with retry option
+    - User-friendly error messages that don't expose internal details
+    - Server error sanitization (hides Gemini/API internal errors)
   - 30-second request timeout
 - Basic navigation structure
 - Structured data models for nutrition information:
