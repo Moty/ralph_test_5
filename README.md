@@ -22,6 +22,13 @@ swift build
 
 ### Features
 - SwiftUI-based iOS application
+- **History View** for viewing previously analyzed meals
+  - Displays meals in reverse chronological order (most recent first)
+  - Each item shows thumbnail placeholder, total calories, date/time, item count
+  - Tapping item opens full nutrition details in sheet
+  - Empty state message when no history exists
+  - Smooth scrolling with LazyVStack for performance
+  - Error handling for storage failures
 - **Camera capture** with AVFoundation for taking food photos
   - Real-time camera preview
   - Capture button with retake/confirm workflow
@@ -176,7 +183,9 @@ swift build
 - `Sources/NutritionAI/ContentView.swift` - Root view
 - `Sources/NutritionAI/Views/CameraView.swift` - Camera capture interface with photo preview and API integration
 - `Sources/NutritionAI/Views/NutritionResultView.swift` - Nutrition results display with loading and error states
+- `Sources/NutritionAI/Views/HistoryView.swift` - Meal history list with navigation to details
 - `Sources/NutritionAI/Services/APIService.swift` - Backend API communication service
+- `Sources/NutritionAI/Services/StorageService.swift` - Core Data storage for meal history
 - `Sources/NutritionAI/Models/NutritionData.swift` - Nutrition data model with macro calculations
 - `Sources/NutritionAI/Models/FoodItem.swift` - Food item model with nutrition data
 - `Sources/NutritionAI/Models/MealAnalysis.swift` - Meal analysis model

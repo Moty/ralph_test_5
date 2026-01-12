@@ -6,19 +6,37 @@ struct NutritionResultView: View {
     let analysis: MealAnalysis?
     let error: String?
     let isLoading: Bool
-    let onDismiss: () -> Void
+    let onDismiss: (() -> Void)?
+    
+    // Initializer for standalone use (from history)
+    init(analysis: MealAnalysis) {
+        self.analysis = analysis
+        self.error = nil
+        self.isLoading = false
+        self.onDismiss = nil
+    }
+    
+    // Initializer for camera flow
+    init(analysis: MealAnalysis?, error: String?, isLoading: Bool, onDismiss: @escaping () -> Void) {
+        self.analysis = analysis
+        self.error = error
+        self.isLoading = isLoading
+        self.onDismiss = onDismiss
+    }
     
     var body: some View {
         VStack {
-            // Header with dismiss button
-            HStack {
-                Spacer()
-                Button(action: onDismiss) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.title2)
-                        .foregroundColor(.gray)
+            // Header with dismiss button (only show if onDismiss provided)
+            if let dismissAction = onDismiss {
+                HStack {
+                    Spacer()
+                    Button(action: dismissAction) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.title2)
+                            .foregroundColor(.gray)
+                    }
+                    .padding()
                 }
-                .padding()
             }
             
             ScrollView {
@@ -221,7 +239,23 @@ struct NutritionResultView: View {
     let analysis: MealAnalysis?
     let error: String?
     let isLoading: Bool
-    let onDismiss: () -> Void
+    let onDismiss: (() -> Void)?
+    
+    // Initializer for standalone use (from history)
+    init(analysis: MealAnalysis) {
+        self.analysis = analysis
+        self.error = nil
+        self.isLoading = false
+        self.onDismiss = nil
+    }
+    
+    // Initializer for camera flow
+    init(analysis: MealAnalysis?, error: String?, isLoading: Bool, onDismiss: @escaping () -> Void) {
+        self.analysis = analysis
+        self.error = error
+        self.isLoading = isLoading
+        self.onDismiss = onDismiss
+    }
     
     var body: some View {
         Text("Results view is only available on iOS")
