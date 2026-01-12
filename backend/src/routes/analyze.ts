@@ -1,8 +1,17 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { initializeModel, createNutritionPrompt } from '../services/gemini.js';
+import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import pg from 'pg';
 import { Buffer } from 'buffer';
 
+// Initialize PrismaClient with PostgreSQL adapter for Prisma 7
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
+
 interface AnalyzeResponse {
+  id?: string;
   foods: Array<{
     name: string;
     portion: string;
@@ -104,8 +113,29 @@ export async function analyzeRoutes(server: FastifyInstance) {
         });
       }
 
+      // Save to database
+      let savedAnalysis;
+      try {
+        savedAnalysis = await prisma.mealAnalysis.create({
+          data: {
+            userId: 'placeholder-user-id',
+            imageUrl: '',
+            nutritionData: nutritionData as any,
+          },
+        });
+      } catch (dbError) {
+        server.log.error({ dbError }, 'Failed to save analysis to database');
+        // Continue and return the analysis even if database save fails
+      }
+
+      // Add analysis ID to response if saved
+      const responseData: AnalyzeResponse = {
+        ...nutritionData,
+        ...(savedAnalysis && { id: savedAnalysis.id }),
+      };
+
       clearTimeout(timeout);
-      return reply.code(200).send(nutritionData);
+      return reply.code(200).send(responseData);
 
     } catch (error) {
       clearTimeout(timeout);

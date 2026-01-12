@@ -100,7 +100,7 @@ npm test        # Run tests
 | POST | /api/analyze | Analyze food image and return nutrition data |
 
 #### POST /api/analyze
-Accepts a food image and returns detailed nutritional analysis.
+Accepts a food image and returns detailed nutritional analysis. Analysis is saved to the database for history tracking.
 
 **Request:**
 - Content-Type: `multipart/form-data`
@@ -109,6 +109,7 @@ Accepts a food image and returns detailed nutritional analysis.
 **Response (200 OK):**
 ```json
 {
+  "id": "cm5abc123xyz",
   "foods": [
     {
       "name": "Grilled Chicken Breast",
@@ -144,6 +145,11 @@ Accepts a food image and returns detailed nutritional analysis.
 - Environment-based configuration
 - Prisma ORM with PostgreSQL database
 - MealAnalysis model for storing nutrition data
+- **Database persistence** for meal analyses
+  - Saves analysis results to PostgreSQL via Prisma
+  - Stores userId (placeholder), imageUrl, nutritionData JSON, timestamp
+  - Returns analysis ID in API response
+  - Graceful error handling (analysis returned even if save fails)
 - **Gemini AI integration** for nutrition analysis
   - Google Generative AI SDK (@google/generative-ai)
   - Environment variable validation on startup

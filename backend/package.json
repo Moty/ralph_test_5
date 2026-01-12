@@ -8,7 +8,7 @@
     "start": "tsx src/server.ts",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "test": "node --test --import tsx src/__tests__/*.test.ts"
+    "test": "DATABASE_URL='postgresql://test:test@localhost:5432/test' node --test --import tsx src/__tests__/*.test.ts"
   },
   "keywords": [],
   "author": "",
@@ -18,13 +18,16 @@
     "@fastify/cors": "^11.2.0",
     "@fastify/multipart": "^9.3.0",
     "@google/generative-ai": "^0.24.1",
+    "@prisma/adapter-pg": "^7.2.0",
     "@prisma/client": "^7.2.0",
     "dotenv": "^17.2.3",
     "fastify": "^5.6.2",
+    "pg": "^8.16.3",
     "prisma": "^7.2.0"
   },
   "devDependencies": {
     "@types/node": "^25.0.6",
+    "@types/pg": "^8.16.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
