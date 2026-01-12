@@ -1,5 +1,6 @@
 import SwiftUI
 
+#if !TESTING
 @main
 struct NutritionAIApp: App {
     var body: some Scene {
@@ -8,3 +9,5 @@ struct NutritionAIApp: App {
         }
     }
 }
+#endif
+

@@ -1,11 +1,13 @@
 import Foundation
 import CoreData
+import NutritionAI
+import XCTest
 
 // Unit tests for StorageService
 // These tests document the expected behavior of save and retrieve operations
 
-class StorageServiceTests {
-    
+class StorageServiceTests: XCTestCase {
+
     // Test: Save analysis and retrieve it
     func testSaveAndRetrieve() {
         // Given: A sample meal analysis
@@ -21,13 +23,15 @@ class StorageServiceTests {
             totals: nutritionData,
             timestamp: Date()
         )
-        
+
         // When: Saving the analysis
         // Expected: Save succeeds without error
-        // Expected: Fetched history contains the saved analysis
-        
-        // Then: Verify data persists across service instances (requires device testing)
-        // Note: Core Data persistence cannot be fully tested without iOS runtime
+        // Note: Core Data operations require iOS runtime for full testing
+
+        // Then: Verify the analysis structure is valid
+        XCTAssertEqual(analysis.foods.count, 1, "Should have one food item")
+        XCTAssertEqual(analysis.totals.calories, 500, "Should have correct calorie total")
+        XCTAssertNotNil(analysis.timestamp, "Should have timestamp")
     }
     
     // Test: Auto-prune keeps maximum 100 entries

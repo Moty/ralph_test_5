@@ -153,5 +153,5 @@ struct HistoryItemCard: View {
 
 // Make MealAnalysis Identifiable for sheet presentation
 extension MealAnalysis: Identifiable {
-    var id: Date { timestamp }
+    public var id: Date { timestamp }
 }

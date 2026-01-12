@@ -15,6 +15,21 @@ let package = Package(
     targets: [
         .target(
             name: "NutritionAI",
-            path: "Sources")
+            dependencies: [],
+            path: "Sources/NutritionAI",
+            swiftSettings: [
+                // Remove the @main app entry when building on macOS (e.g., `swift test`) to avoid duplicate `_main`.
+                .define("TESTING", .when(platforms: [.macOS]))
+            ]
+        ),
+        .testTarget(
+            name: "NutritionAITests",
+            dependencies: ["NutritionAI"],
+            path: "Tests",
+            swiftSettings: [
+                // Disable the @main app entry when running tests to avoid duplicate _main symbol
+                .define("TESTING")
+            ]
+        )
     ]
 )
