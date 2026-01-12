@@ -44,6 +44,16 @@ npm install
 Create a `.env` file in the backend directory:
 ```
 PORT=3000
+DATABASE_URL=postgresql://user:password@localhost:5432/nutritionai
+```
+
+### Database Setup
+```bash
+# Generate Prisma client
+npx prisma generate
+
+# Run migrations (requires PostgreSQL running)
+npx prisma migrate dev
 ```
 
 ### Development
@@ -64,6 +74,8 @@ npm run typecheck  # Run TypeScript checks
 - Fastify web framework
 - CORS enabled for mobile app requests
 - Environment-based configuration
+- Prisma ORM with PostgreSQL database
+- MealAnalysis model for storing nutrition data
 
 ## Development
 
