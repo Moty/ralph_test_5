@@ -34,6 +34,12 @@ swift build
   - Loading indicator during API calls
   - Error handling with user-friendly messages
   - Dismiss button to return to camera
+- **Local Storage** with Core Data for meal history
+  - Automatic saving of successful analyses
+  - Stores nutrition data with optional thumbnail images
+  - Auto-prune to maintain maximum 100 entries (keeps most recent)
+  - Data persists across app restarts
+  - Fetch methods for retrieving complete or recent history
 - **API Service** for backend communication
   - Async/await URLSession-based networking
   - Multipart/form-data image upload
