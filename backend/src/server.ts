@@ -1,6 +1,7 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
+import rateLimit from '@fastify/rate-limit';
 import { config } from 'dotenv';
 import { analyzeRoutes } from './routes/analyze.js';
 
@@ -25,6 +26,24 @@ await server.register(cors, {
 await server.register(multipart, {
   limits: {
     fileSize: 5 * 1024 * 1024 // 5MB
+  }
+});
+
+await server.register(rateLimit, {
+  max: 100, // 100 requests
+  timeWindow: 60 * 60 * 1000, // per hour (in milliseconds)
+  errorResponseBuilder: (request, context) => {
+    return {
+      statusCode: 429,
+      error: 'Too Many Requests',
+      message: `Rate limit exceeded, retry in ${Math.ceil(context.ttl / 1000)} seconds`
+    };
+  },
+  addHeaders: {
+    'x-ratelimit-limit': true,
+    'x-ratelimit-remaining': true,
+    'x-ratelimit-reset': true,
+    'retry-after': true
   }
 });
 
