@@ -183,6 +183,11 @@ Accepts a food image and returns detailed nutritional analysis. Analysis is save
   - 30-second timeout handling
   - Structured JSON response with nutrition data
   - Confidence scoring for food identification
+- **Rate limiting** to prevent API abuse
+  - 100 requests per hour per IP address
+  - 429 status code when limit exceeded
+  - Retry-After header in rate limit responses
+  - Rate limit headers (x-ratelimit-limit, x-ratelimit-remaining, x-ratelimit-reset)
 
 ## Development
 
