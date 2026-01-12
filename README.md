@@ -27,6 +27,13 @@ swift build
   - Capture button with retake/confirm workflow
   - Automatic image compression to under 2MB
   - Camera permission handling
+- **Nutrition Results View** displaying analysis results
+  - Total nutrition summary with calories, protein, carbs, and fat
+  - Individual food items with portion sizes
+  - Confidence scoring with color-coded badges
+  - Loading indicator during API calls
+  - Error handling with user-friendly messages
+  - Dismiss button to return to camera
 - **API Service** for backend communication
   - Async/await URLSession-based networking
   - Multipart/form-data image upload
@@ -36,7 +43,7 @@ swift build
 - Basic navigation structure
 - Structured data models for nutrition information:
   - **NutritionData**: Calories, protein, carbs, fat with macro percentages
-  - **FoodItem**: Food name, portion size, confidence score
+  - **FoodItem**: Food name, portion size, nutrition data, confidence score
   - **MealAnalysis**: Complete meal analysis with multiple foods and totals
 
 ### Configuration
@@ -155,10 +162,11 @@ swift build
 ### Project Files
 - `Sources/NutritionAI/NutritionAIApp.swift` - Main app entry point
 - `Sources/NutritionAI/ContentView.swift` - Root view
-- `Sources/NutritionAI/Views/CameraView.swift` - Camera capture interface with photo preview
+- `Sources/NutritionAI/Views/CameraView.swift` - Camera capture interface with photo preview and API integration
+- `Sources/NutritionAI/Views/NutritionResultView.swift` - Nutrition results display with loading and error states
 - `Sources/NutritionAI/Services/APIService.swift` - Backend API communication service
 - `Sources/NutritionAI/Models/NutritionData.swift` - Nutrition data model with macro calculations
-- `Sources/NutritionAI/Models/FoodItem.swift` - Food item model
+- `Sources/NutritionAI/Models/FoodItem.swift` - Food item model with nutrition data
 - `Sources/NutritionAI/Models/MealAnalysis.swift` - Meal analysis model
 - `Tests/NutritionAITests/APIServiceTests.swift` - Unit tests for API service
 - `Info.plist` - Camera permissions and app configuration

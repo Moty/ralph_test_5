@@ -6,10 +6,30 @@ import UIKit
 struct CameraView: View {
     @StateObject private var camera = CameraController()
     @State private var capturedImage: UIImage?
+    @State private var showResults = false
+    @State private var isAnalyzing = false
+    @State private var analysisResult: MealAnalysis?
+    @State private var analysisError: String?
+    
+    private let apiService = APIService()
     
     var body: some View {
         ZStack {
-            if let image = capturedImage {
+            if showResults {
+                // Show nutrition results
+                NutritionResultView(
+                    analysis: analysisResult,
+                    error: analysisError,
+                    isLoading: isAnalyzing,
+                    onDismiss: {
+                        showResults = false
+                        capturedImage = nil
+                        analysisResult = nil
+                        analysisError = nil
+                        camera.retake()
+                    }
+                )
+            } else if let image = capturedImage {
                 // Preview captured photo
                 VStack {
                     Image(uiImage: image)
@@ -27,8 +47,7 @@ struct CameraView: View {
                         .cornerRadius(10)
                         
                         Button("Confirm") {
-                            // TODO: Send to API in future story
-                            print("Image confirmed")
+                            analyzeImage(image)
                         }
                         .padding()
                         .background(Color.blue)
@@ -82,6 +101,52 @@ struct CameraView: View {
         
         guard let data = imageData else { return nil }
         return UIImage(data: data)
+    }
+    
+    private func analyzeImage(_ image: UIImage) {
+        isAnalyzing = true
+        showResults = true
+        analysisError = nil
+        analysisResult = nil
+        
+        Task {
+            do {
+                let result = try await apiService.analyzeImage(image)
+                await MainActor.run {
+                    isAnalyzing = false
+                    analysisResult = result
+                }
+            } catch let error as APIError {
+                await MainActor.run {
+                    isAnalyzing = false
+                    analysisError = errorMessage(for: error)
+                }
+            } catch {
+                await MainActor.run {
+                    isAnalyzing = false
+                    analysisError = "An unexpected error occurred. Please try again."
+                }
+            }
+        }
+    }
+    
+    private func errorMessage(for error: APIError) -> String {
+        switch error {
+        case .invalidURL:
+            return "Invalid server URL configuration."
+        case .invalidResponse:
+            return "Received invalid response from server."
+        case .networkError:
+            return "Network error. Please check your connection."
+        case .decodingError:
+            return "Failed to parse server response."
+        case .serverError(let message):
+            return message
+        case .timeout:
+            return "Request timed out. Please try again."
+        case .noImageData:
+            return "Failed to process image data."
+        }
     }
 }
 
