@@ -24,6 +24,10 @@ swift build
 - SwiftUI-based iOS application
 - Camera integration for food photo capture
 - Basic navigation structure
+- Structured data models for nutrition information:
+  - **NutritionData**: Calories, protein, carbs, fat with macro percentages
+  - **FoodItem**: Food name, portion size, confidence score
+  - **MealAnalysis**: Complete meal analysis with multiple foods and totals
 
 ### Configuration
 Camera permissions are configured in `Info.plist` with `NSCameraUsageDescription`.
@@ -90,6 +94,9 @@ swift build
 ### Project Files
 - `Sources/NutritionAI/NutritionAIApp.swift` - Main app entry point
 - `Sources/NutritionAI/ContentView.swift` - Root view
+- `Sources/NutritionAI/Models/NutritionData.swift` - Nutrition data model with macro calculations
+- `Sources/NutritionAI/Models/FoodItem.swift` - Food item model
+- `Sources/NutritionAI/Models/MealAnalysis.swift` - Meal analysis model
 - `Info.plist` - Camera permissions and app configuration
 - `Package.swift` - Swift package definition
 
