@@ -22,6 +22,11 @@ swift build
 
 ### Features
 - SwiftUI-based iOS application
+- **Tab Navigation** between Camera and History views
+  - Clear tab icons (camera and clock) representing each function
+  - Smooth transitions between tabs
+  - Tab selection persists when switching
+  - Camera resets when navigating away and back
 - **History View** for viewing previously analyzed meals
   - Displays meals in reverse chronological order (most recent first)
   - Each item shows thumbnail placeholder, total calories, date/time, item count
