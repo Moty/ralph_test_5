@@ -191,19 +191,25 @@ struct CameraView: View {
     private func errorMessage(for error: APIError) -> String {
         switch error {
         case .invalidURL:
-            return "Invalid server URL configuration."
+            return "Configuration error. Please check settings."
         case .invalidResponse:
-            return "Received invalid response from server."
+            return "Unable to process server response."
         case .networkError:
-            return "Network error. Please check your connection."
+            return "Network error occurred. Please try again."
         case .decodingError:
-            return "Failed to parse server response."
+            return "Unable to read analysis results."
         case .serverError(let message):
-            return message
+            // Don't expose internal error details
+            if message.lowercased().contains("gemini") || message.lowercased().contains("api") {
+                return "Analysis service temporarily unavailable."
+            }
+            return "Unable to analyze image. Please try again."
         case .timeout:
             return "Request timed out. Please try again."
         case .noImageData:
-            return "Failed to process image data."
+            return "Image processing failed. Please try again."
+        case .noInternetConnection:
+            return "No internet connection. Please check your network."
         }
     }
 }

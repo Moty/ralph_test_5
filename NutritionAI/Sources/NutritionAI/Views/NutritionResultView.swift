@@ -66,13 +66,15 @@ struct NutritionResultView: View {
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal)
                             
-                            Button("Back to Camera") {
-                                onDismiss()
+                            if let dismissAction = onDismiss {
+                                Button("Retry") {
+                                    dismissAction()
+                                }
+                                .padding()
+                                .background(Color.blue)
+                                .foregroundColor(.white)
+                                .cornerRadius(10)
                             }
-                            .padding()
-                            .background(Color.blue)
-                            .foregroundColor(.white)
-                            .cornerRadius(10)
                         }
                         .padding(.top, 100)
                     } else if let mealAnalysis = analysis {

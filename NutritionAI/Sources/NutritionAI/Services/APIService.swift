@@ -10,6 +10,7 @@ enum APIError: Error {
     case serverError(String)
     case timeout
     case noImageData
+    case noInternetConnection
 }
 
 class APIService {
@@ -86,8 +87,14 @@ class APIService {
             }
         } catch let error as APIError {
             throw error
-        } catch let error as URLError where error.code == .timedOut {
-            throw APIError.timeout
+        } catch let error as URLError {
+            if error.code == .timedOut {
+                throw APIError.timeout
+            } else if error.code == .notConnectedToInternet || error.code == .networkConnectionLost {
+                throw APIError.noInternetConnection
+            } else {
+                throw APIError.networkError(error)
+            }
         } catch {
             throw APIError.networkError(error)
         }
