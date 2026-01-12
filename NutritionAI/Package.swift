@@ -17,6 +17,7 @@ let package = Package(
             name: "NutritionAI",
             dependencies: [],
             path: "Sources/NutritionAI",
+            exclude: ["NutritionAIApp.swift"],
             swiftSettings: [
                 // Remove the @main app entry when building on macOS (e.g., `swift test`) to avoid duplicate `_main`.
                 .define("TESTING", .when(platforms: [.macOS]))

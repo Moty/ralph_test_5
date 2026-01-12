@@ -40,30 +40,43 @@ export async function analyzeRoutes(server: FastifyInstance) {
     }, 30000);
 
     try {
-      let data;
-      try {
-        data = await request.file();
-      } catch (err) {
-        clearTimeout(timeout);
-        return reply.code(400).send({ error: 'No image file provided' });
+      console.log('Starting multipart parsing...');
+      
+      // Parse multipart form data - collect all parts
+      const parts = request.parts();
+      let buffer: Buffer | null = null;
+      let mimetype: string = '';
+      let modelName: string | undefined;
+      
+      for await (const part of parts) {
+        console.log('Processing part:', part.fieldname, part.type);
+        
+        if (part.type === 'file' && part.fieldname === 'image') {
+          // Read buffer immediately while stream is open
+          mimetype = part.mimetype;
+          buffer = await part.toBuffer();
+          console.log('Image buffer size:', buffer.length);
+        } else if (part.type === 'field' && part.fieldname === 'model') {
+          modelName = part.value as string;
+          console.log('Model from request:', modelName);
+        }
       }
       
-      if (!data) {
+      console.log('Parsing complete. Has buffer:', !!buffer, 'Model:', modelName);
+      
+      if (!buffer) {
         clearTimeout(timeout);
         return reply.code(400).send({ error: 'No image file provided' });
       }
 
       // Validate file type
       const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-      if (!allowedMimeTypes.includes(data.mimetype)) {
+      if (!allowedMimeTypes.includes(mimetype)) {
         clearTimeout(timeout);
         return reply.code(400).send({ 
           error: 'Invalid file format. Only JPG and PNG images are allowed' 
         });
       }
-
-      // Read file buffer
-      const buffer = await data.toBuffer();
 
       // Validate file size (max 5MB)
       const maxSize = 5 * 1024 * 1024; // 5MB in bytes
@@ -74,18 +87,19 @@ export async function analyzeRoutes(server: FastifyInstance) {
         });
       }
 
-      // Initialize Gemini model
-      const model = initializeModel();
+      // Initialize Gemini model (use client-provided model if available)
+      const model = initializeModel(modelName);
 
       // Prepare image for Gemini
       const imagePart = {
         inlineData: {
           data: buffer.toString('base64'),
-          mimeType: data.mimetype
+          mimeType: mimetype
         }
       };
 
       // Generate content with Gemini
+      console.log('Calling Gemini with model:', modelName || 'default');
       const prompt = createNutritionPrompt();
       const result = await model.generateContent([prompt, imagePart]);
       const response = result.response;
@@ -131,9 +145,11 @@ export async function analyzeRoutes(server: FastifyInstance) {
       // Add analysis ID to response if saved
       const responseData: AnalyzeResponse = {
         ...nutritionData,
+        timestamp: new Date().toISOString(),
         ...(savedAnalysis && { id: savedAnalysis.id }),
       };
 
+      console.log('Analysis complete, returning response');
       clearTimeout(timeout);
       return reply.code(200).send(responseData);
 

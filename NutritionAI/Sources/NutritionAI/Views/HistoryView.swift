@@ -7,15 +7,7 @@ struct HistoryView: View {
     @State private var meals: [MealAnalysis] = []
     @State private var error: String?
     @State private var selectedMeal: MealAnalysis?
-    private let storageService: StorageService
-    
-    init() {
-        do {
-            storageService = try StorageService()
-        } catch {
-            fatalError("Failed to initialize StorageService: \(error)")
-        }
-    }
+    private let storageService = StorageService.shared
     
     var body: some View {
         NavigationView {

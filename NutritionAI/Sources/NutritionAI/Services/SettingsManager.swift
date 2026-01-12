@@ -1,0 +1,40 @@
+import Foundation
+
+class SettingsManager: ObservableObject {
+    static let shared = SettingsManager()
+    
+    @Published var backendURL: String {
+        didSet {
+            UserDefaults.standard.set(backendURL, forKey: "backendURL")
+        }
+    }
+    
+    @Published var geminiModel: String {
+        didSet {
+            UserDefaults.standard.set(geminiModel, forKey: "geminiModel")
+        }
+    }
+    
+    // Available Gemini models that support vision
+    let availableModels = [
+        "gemini-2.5-flash",
+        "gemini-2.5-pro",
+        "gemini-2.0-flash",
+        "gemini-2.0-flash-exp"
+    ]
+    
+    private init() {
+        // Default to the current Mac's LAN IP
+        self.backendURL = UserDefaults.standard.string(forKey: "backendURL") ?? "http://192.168.50.48:3000"
+        self.geminiModel = UserDefaults.standard.string(forKey: "geminiModel") ?? "gemini-2.5-flash"
+    }
+    
+    func resetToDefault() {
+        backendURL = "http://192.168.50.48:3000"
+        geminiModel = "gemini-2.5-flash"
+    }
+    
+    func setLocalhost() {
+        backendURL = "http://localhost:3000"
+    }
+}

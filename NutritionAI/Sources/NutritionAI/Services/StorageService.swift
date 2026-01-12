@@ -5,15 +5,31 @@ import UIKit
 #endif
 
 class StorageService {
+    static let shared: StorageService = {
+        do {
+            return try StorageService()
+        } catch {
+            fatalError("Failed to initialize StorageService: \(error)")
+        }
+    }()
+    
     private let persistentContainer: NSPersistentContainer
     private let maxEntries = 100
     
-    init() throws {
-        persistentContainer = NSPersistentContainer(name: "NutritionAI")
-        persistentContainer.persistentStoreDescriptions.first?.url = URL(fileURLWithPath: "/dev/null")
+    private init() throws {
+        // Build the Core Data model programmatically first
+        let model = StorageService.buildModel()
+        
+        // Initialize the container with the explicit managed object model
+        persistentContainer = NSPersistentContainer(name: "NutritionAI", managedObjectModel: model)
+        
+        // Use an in-memory store for now (ephemeral during app runs)
+        let description = NSPersistentStoreDescription()
+        description.type = NSInMemoryStoreType
+        persistentContainer.persistentStoreDescriptions = [description]
         
         var setupError: Error?
-        persistentContainer.loadPersistentStores { description, error in
+        persistentContainer.loadPersistentStores { _, error in
             if let error = error {
                 setupError = error
             }
@@ -22,11 +38,9 @@ class StorageService {
         if let error = setupError {
             throw error
         }
-        
-        try setupModel()
     }
     
-    private func setupModel() throws {
+    private static func buildModel() -> NSManagedObjectModel {
         let model = NSManagedObjectModel()
         
         let entity = NSEntityDescription()
@@ -36,10 +50,12 @@ class StorageService {
         let idAttribute = NSAttributeDescription()
         idAttribute.name = "id"
         idAttribute.attributeType = .UUIDAttributeType
+        idAttribute.isOptional = true
         
         let timestampAttribute = NSAttributeDescription()
         timestampAttribute.name = "timestamp"
         timestampAttribute.attributeType = .dateAttributeType
+        timestampAttribute.isOptional = true
         
         let thumbnailDataAttribute = NSAttributeDescription()
         thumbnailDataAttribute.name = "thumbnailData"
@@ -49,13 +65,22 @@ class StorageService {
         let nutritionDataAttribute = NSAttributeDescription()
         nutritionDataAttribute.name = "nutritionData"
         nutritionDataAttribute.attributeType = .binaryDataAttributeType
+        nutritionDataAttribute.isOptional = true
         
         let foodsDataAttribute = NSAttributeDescription()
         foodsDataAttribute.name = "foodsData"
         foodsDataAttribute.attributeType = .binaryDataAttributeType
+        foodsDataAttribute.isOptional = true
         
-        entity.properties = [idAttribute, timestampAttribute, thumbnailDataAttribute, nutritionDataAttribute, foodsDataAttribute]
+        entity.properties = [
+            idAttribute,
+            timestampAttribute,
+            thumbnailDataAttribute,
+            nutritionDataAttribute,
+            foodsDataAttribute
+        ]
         model.entities = [entity]
+        return model
     }
     
     @MainActor

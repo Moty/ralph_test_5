@@ -1,24 +1,8 @@
-//
-//  ContentView.swift
-//  NutritionAIApp
-//
-//  Created by Mordechai Moshin on 1/12/26.
-//
-
 import SwiftUI
+import NutritionAI
 
-struct ContentView: View {
+struct AppContentView: View {
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-        }
-        .padding()
+        NutritionAI.ContentView()
     }
-}
-
-#Preview {
-    ContentView()
 }

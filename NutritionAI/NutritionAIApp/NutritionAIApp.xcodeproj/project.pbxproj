@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		8D9BDE8E2F156C28004F9540 /* NutritionAI in Frameworks */ = {isa = PBXBuildFile; productRef = 8D9BDE8D2F156C28004F9540 /* NutritionAI */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		8D9BDE7E2F156932004F9540 /* NutritionAIApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NutritionAIApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8D9BDE8E2F156C28004F9540 /* NutritionAI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +70,7 @@
 			);
 			name = NutritionAIApp;
 			packageProductDependencies = (
+				8D9BDE8D2F156C28004F9540 /* NutritionAI */,
 			);
 			productName = NutritionAIApp;
 			productReference = 8D9BDE7E2F156932004F9540 /* NutritionAIApp.app */;
@@ -94,6 +100,9 @@
 			);
 			mainGroup = 8D9BDE752F156932004F9540;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				8D9BDE8C2F156C28004F9540 /* XCLocalSwiftPackageReference "../../NutritionAI" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8D9BDE7F2F156932004F9540 /* Products */;
 			projectDirPath = "";
@@ -256,6 +265,7 @@
 				DEVELOPMENT_TEAM = 46J247Z669;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "We need camera access to capture food photos for nutrition analysis";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -288,6 +298,7 @@
 				DEVELOPMENT_TEAM = 46J247Z669;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "We need camera access to capture food photos for nutrition analysis";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -332,6 +343,20 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		8D9BDE8C2F156C28004F9540 /* XCLocalSwiftPackageReference "../../NutritionAI" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../NutritionAI;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		8D9BDE8D2F156C28004F9540 /* NutritionAI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = NutritionAI;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 8D9BDE762F156932004F9540 /* Project object */;
 }

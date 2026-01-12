@@ -2,16 +2,19 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 let genAI: GoogleGenerativeAI | null = null;
 
-export function initializeModel() {
+export function initializeModel(modelName?: string) {
   const apiKey = process.env.GEMINI_API_KEY;
   
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY environment variable is required');
   }
   
+  // Use provided model, fall back to env var, then default
+  const model = modelName || process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+  
   try {
     genAI = new GoogleGenerativeAI(apiKey);
-    return genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    return genAI.getGenerativeModel({ model });
   } catch (error) {
     throw new Error(`Failed to initialize Gemini: ${error instanceof Error ? error.message : String(error)}`);
   }

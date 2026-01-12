@@ -13,11 +13,7 @@ struct CameraView: View {
     @State private var showPermissionAlert = false
     
     private let apiService = APIService()
-    private var storageService: StorageService?
-    
-    init() {
-        self.storageService = try? StorageService()
-    }
+    private let storageService = StorageService.shared
     
     var body: some View {
         ZStack {
@@ -169,11 +165,9 @@ struct CameraView: View {
                 let result = try await apiService.analyzeImage(image)
                 
                 // Save to local storage
-                if let storage = storageService {
-                    let thumbnailData = image.jpegData(compressionQuality: 0.5)
-                    try? await MainActor.run {
-                        try storage.save(analysis: result, thumbnail: thumbnailData)
-                    }
+                let thumbnailData = image.jpegData(compressionQuality: 0.5)
+                try? await MainActor.run {
+                    try storageService.save(analysis: result, thumbnail: thumbnailData)
                 }
                 
                 await MainActor.run {

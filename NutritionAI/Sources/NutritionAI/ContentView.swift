@@ -1,7 +1,9 @@
 import SwiftUI
 
-struct ContentView: View {
-    var body: some View {
+public struct ContentView: View {
+    public init() {}
+    
+    public var body: some View {
         TabView {
             CameraView()
                 .tabItem {
@@ -11,7 +13,10 @@ struct ContentView: View {
             HistoryView()
                 .tabItem {
                     Label("History", systemImage: "clock.fill")
-                }
-        }
+                }            
+            SettingsView()
+                .tabItem {
+                    Label("Settings", systemImage: "gear")
+                }        }
     }
 }

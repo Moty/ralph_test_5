@@ -14,12 +14,10 @@ enum APIError: Error {
 }
 
 class APIService {
-    private let baseURL: String
     private let session: URLSession
+    private let settings = SettingsManager.shared
     
-    init(baseURL: String = "http://localhost:3000") {
-        self.baseURL = baseURL
-        
+    init() {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 30
         config.timeoutIntervalForResource = 30
@@ -31,7 +29,7 @@ class APIService {
     /// - Returns: MealAnalysis with nutrition breakdown
     /// - Throws: APIError if request fails
     func analyzeImage(_ image: UIImage) async throws -> MealAnalysis {
-        guard let url = URL(string: "\(baseURL)/api/analyze") else {
+        guard let url = URL(string: "\(settings.backendURL)/api/analyze") else {
             throw APIError.invalidURL
         }
         
@@ -47,6 +45,12 @@ class APIService {
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
         
         var body = Data()
+        
+        // Add model parameter to body
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"model\"\r\n\r\n".data(using: .utf8)!)
+        body.append(settings.geminiModel.data(using: .utf8)!)
+        body.append("\r\n".data(using: .utf8)!)
         
         // Add image data to body
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
