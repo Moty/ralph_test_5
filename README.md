@@ -29,6 +29,7 @@ swift build
   - Empty state message when no history exists
   - Smooth scrolling with LazyVStack for performance
   - Error handling for storage failures
+  - **Dark Mode support** with adaptive colors
 - **Camera capture** with AVFoundation for taking food photos
   - Real-time camera preview
   - Capture button with retake/confirm workflow
@@ -46,6 +47,7 @@ swift build
   - Loading indicator during API calls
   - Error handling with user-friendly messages
   - Dismiss button to return to camera
+  - **Dark Mode support** with adaptive colors for light/dark themes
 - **Local Storage** with Core Data for meal history
   - Automatic saving of successful analyses
   - Stores nutrition data with optional thumbnail images
