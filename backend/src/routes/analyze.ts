@@ -147,6 +147,32 @@ export async function analyzeRoutes(server: FastifyInstance) {
       server.log.error(error);
       
       if (error instanceof Error) {
+        const errorMessage = error.message || '';
+        
+        // Check for quota exceeded
+        if (errorMessage.includes('429') || errorMessage.includes('quota') || errorMessage.includes('Too Many Requests')) {
+          return reply.code(429).send({ 
+            error: 'API quota exceeded. Please try a different AI model in Settings, or wait and try again later.',
+            code: 'QUOTA_EXCEEDED'
+          });
+        }
+        
+        // Check for model overload
+        if (errorMessage.includes('503') || errorMessage.includes('overloaded') || errorMessage.includes('Service Unavailable')) {
+          return reply.code(503).send({ 
+            error: 'AI model is temporarily overloaded. Please try again in a few seconds.',
+            code: 'MODEL_OVERLOADED'
+          });
+        }
+        
+        // Check for invalid API key
+        if (errorMessage.includes('401') || errorMessage.includes('API key')) {
+          return reply.code(500).send({ 
+            error: 'API configuration error. Please contact support.',
+            code: 'API_KEY_ERROR'
+          });
+        }
+        
         return reply.code(500).send({ 
           error: 'Analysis failed - please try again' 
         });

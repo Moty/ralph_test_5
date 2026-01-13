@@ -7,6 +7,22 @@ public struct ContentView: View {
     
     public init(apiService: APIService) {
         self.apiService = apiService
+        
+        // Customize TabBar appearance
+        let appearance = UITabBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = UIColor.systemBackground
+        
+        // Selected tab color
+        appearance.stackedLayoutAppearance.selected.iconColor = UIColor(AppColors.primaryGradientEnd)
+        appearance.stackedLayoutAppearance.selected.titleTextAttributes = [.foregroundColor: UIColor(AppColors.primaryGradientEnd)]
+        
+        // Normal tab color
+        appearance.stackedLayoutAppearance.normal.iconColor = UIColor.secondaryLabel
+        appearance.stackedLayoutAppearance.normal.titleTextAttributes = [.foregroundColor: UIColor.secondaryLabel]
+        
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
     }
     
     public var body: some View {
@@ -31,12 +47,13 @@ public struct ContentView: View {
                         }
                         .tag(2)
                     
-                    SettingsView()
+                    SettingsView(apiService: apiService)
                         .tabItem {
                             Label("Settings", systemImage: "gear")
                         }
                         .tag(3)
                 }
+                .tint(AppColors.primaryGradientEnd)
             } else {
                 LoginView(apiService: apiService)
             }

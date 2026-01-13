@@ -19,13 +19,18 @@ public struct HistoryView: View {
     
     public var body: some View {
         NavigationView {
-            Group {
-                if historyItems.isEmpty && error == nil {
-                    emptyStateView
-                } else if let error = error {
-                    errorView(message: error)
-                } else {
-                    historyListView
+            ZStack {
+                AppGradients.background
+                    .ignoresSafeArea()
+                
+                Group {
+                    if historyItems.isEmpty && error == nil {
+                        emptyStateView
+                    } else if let error = error {
+                        errorView(message: error)
+                    } else {
+                        historyListView
+                    }
                 }
             }
             .navigationTitle("History")
@@ -36,41 +41,63 @@ public struct HistoryView: View {
     }
     
     private var emptyStateView: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "tray")
-                .font(.system(size: 60))
-                .foregroundColor(.secondary)
+        VStack(spacing: 24) {
+            ZStack {
+                Circle()
+                    .fill(AppGradients.primary.opacity(0.2))
+                    .frame(width: 120, height: 120)
+                
+                Image(systemName: "tray")
+                    .font(.system(size: 50))
+                    .foregroundStyle(AppGradients.primary)
+            }
+            
             Text("No History Yet")
                 .font(.title2)
-                .fontWeight(.semibold)
+                .fontWeight(.bold)
+            
             Text("Start analyzing meals to see them here")
                 .font(.body)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
         }
+        .padding(40)
+        .glassMorphism()
+        .padding()
     }
     
     private func errorView(message: String) -> some View {
         VStack(spacing: 20) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 60))
-                .foregroundColor(.orange)
+            ZStack {
+                Circle()
+                    .fill(Color.orange.opacity(0.2))
+                    .frame(width: 100, height: 100)
+                
+                Image(systemName: "exclamationmark.triangle")
+                    .font(.system(size: 45))
+                    .foregroundColor(.orange)
+            }
+            
             Text("Error Loading History")
                 .font(.title2)
-                .fontWeight(.semibold)
+                .fontWeight(.bold)
+            
             Text(message)
                 .font(.body)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
         }
+        .padding(40)
+        .glassMorphism()
+        .padding()
     }
     
     private var historyListView: some View {
         ScrollView {
-            LazyVStack(spacing: 12) {
-                ForEach(historyItems) { item in
-                    HistoryItemCard(analysis: item.analysis, thumbnail: item.thumbnail)
+            LazyVStack(spacing: 14) {
+                ForEach(Array(historyItems.enumerated()), id: \.element.id) { index, item in
+                    HistoryItemCard(analysis: item.analysis, thumbnail: item.thumbnail, index: index)
                         .onTapGesture {
                             selectedMeal = item.analysis
                         }
@@ -117,62 +144,82 @@ struct NutritionDetailView: View {
     let mealAnalysis: MealAnalysis
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                // Total nutrition summary
-                VStack(spacing: 12) {
-                    Text("Total Nutrition")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                    
-                    HStack(spacing: 20) {
-                        NutritionSummaryCard(
-                            label: "Calories",
-                            value: String(format: "%.0f", mealAnalysis.totals.calories),
-                            unit: "kcal"
-                        )
+        ZStack {
+            AppGradients.background
+                .ignoresSafeArea()
+            
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Total nutrition summary
+                    VStack(spacing: 16) {
+                        HStack {
+                            Image(systemName: "chart.pie.fill")
+                                .foregroundStyle(AppGradients.primary)
+                            Text("Total Nutrition")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                        }
                         
-                        NutritionSummaryCard(
-                            label: "Protein",
-                            value: String(format: "%.1f", mealAnalysis.totals.protein),
-                            unit: "g"
-                        )
+                        HStack(spacing: 14) {
+                            NutritionSummaryCard(
+                                label: "Calories",
+                                value: String(format: "%.0f", mealAnalysis.totals.calories),
+                                unit: "kcal",
+                                color: AppColors.calories,
+                                icon: "flame.fill"
+                            )
+                            
+                            NutritionSummaryCard(
+                                label: "Protein",
+                                value: String(format: "%.1f", mealAnalysis.totals.protein),
+                                unit: "g",
+                                color: AppColors.protein,
+                                icon: "bolt.fill"
+                            )
+                        }
+                        
+                        HStack(spacing: 14) {
+                            NutritionSummaryCard(
+                                label: "Carbs",
+                                value: String(format: "%.1f", mealAnalysis.totals.carbs),
+                                unit: "g",
+                                color: AppColors.carbs,
+                                icon: "leaf.fill"
+                            )
+                            
+                            NutritionSummaryCard(
+                                label: "Fat",
+                                value: String(format: "%.1f", mealAnalysis.totals.fat),
+                                unit: "g",
+                                color: AppColors.fat,
+                                icon: "drop.fill"
+                            )
+                        }
                     }
+                    .padding(20)
+                    .background(
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .fill(Color(.systemBackground))
+                            .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 4)
+                    )
                     
-                    HStack(spacing: 20) {
-                        NutritionSummaryCard(
-                            label: "Carbs",
-                            value: String(format: "%.1f", mealAnalysis.totals.carbs),
-                            unit: "g"
-                        )
+                    // Individual food items
+                    VStack(alignment: .leading, spacing: 16) {
+                        HStack {
+                            Image(systemName: "list.bullet.circle.fill")
+                                .foregroundStyle(AppGradients.primary)
+                            Text("Food Items")
+                                .font(.title3)
+                                .fontWeight(.bold)
+                        }
                         
-                        NutritionSummaryCard(
-                            label: "Fat",
-                            value: String(format: "%.1f", mealAnalysis.totals.fat),
-                            unit: "g"
-                        )
+                        ForEach(Array(mealAnalysis.foods.enumerated()), id: \.offset) { index, food in
+                            FoodItemCard(food: food, index: index)
+                        }
                     }
                 }
                 .padding()
-                #if canImport(UIKit)
-                .background(Color(.secondarySystemBackground))
-                #else
-                .background(Color.gray.opacity(0.1))
-                #endif
-                .cornerRadius(12)
-                
-                // Individual food items
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Food Items")
-                        .font(.title3)
-                        .fontWeight(.semibold)
-                    
-                    ForEach(Array(mealAnalysis.foods.enumerated()), id: \.offset) { index, food in
-                        FoodItemCard(food: food)
-                    }
-                }
             }
-            .padding()
         }
     }
 }
@@ -180,10 +227,11 @@ struct NutritionDetailView: View {
 struct HistoryItemCard: View {
     let analysis: MealAnalysis
     let thumbnail: UIImage?
+    let index: Int
     
     var body: some View {
-        HStack(spacing: 12) {
-            // Thumbnail or placeholder
+        HStack(spacing: 16) {
+            // Thumbnail or gradient placeholder
             Group {
                 if let thumbnail = thumbnail {
                     #if canImport(UIKit)
@@ -192,45 +240,54 @@ struct HistoryItemCard: View {
                         .aspectRatio(contentMode: .fill)
                     #endif
                 } else {
-                    Image(systemName: "fork.knife")
-                        .font(.title2)
-                        .foregroundColor(.secondary)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    ZStack {
+                        AppGradients.cardGradient(at: index)
+                        Image(systemName: "fork.knife")
+                            .font(.title2)
+                            .foregroundColor(.white)
+                    }
                 }
             }
-            .frame(width: 60, height: 60)
-            #if canImport(UIKit)
-            .background(Color(.tertiarySystemBackground))
-            #else
-            .background(Color.gray.opacity(0.2))
-            #endif
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .frame(width: 70, height: 70)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
             
-            VStack(alignment: .leading, spacing: 4) {
-                Text("\(Int(analysis.totals.calories)) cal")
-                    .font(.headline)
-                    .foregroundColor(.primary)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text("\(Int(analysis.totals.calories))")
+                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                    Text("cal")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                
                 Text(formatDate(analysis.timestamp))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
-                Text("\(analysis.foods.count) item\(analysis.foods.count == 1 ? "" : "s")")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                
+                HStack(spacing: 12) {
+                    Label("\(analysis.foods.count) items", systemImage: "leaf.fill")
+                        .font(.caption)
+                        .foregroundColor(AppColors.primaryGradientStart)
+                    
+                    Label(String(format: "%.0fg protein", analysis.totals.protein), systemImage: "bolt.fill")
+                        .font(.caption)
+                        .foregroundColor(AppColors.protein)
+                }
             }
             
             Spacer()
             
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundColor(.secondary)
+            Image(systemName: "chevron.right.circle.fill")
+                .font(.title3)
+                .foregroundStyle(AppGradients.primary)
         }
-        .padding()
-        #if canImport(UIKit)
-        .background(Color(.secondarySystemBackground))
-        #else
-        .background(Color.white)
-        #endif
-        .cornerRadius(12)
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color(.systemBackground))
+                .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 4)
+        )
     }
     
     private func formatDate(_ date: Date) -> String {

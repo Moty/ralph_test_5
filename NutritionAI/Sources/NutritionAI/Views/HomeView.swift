@@ -12,84 +12,42 @@ struct HomeView: View {
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    // Welcome Header
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Welcome back,")
-                            .font(.title3)
-                            .foregroundColor(.secondary)
-                        Text(authService.currentUser?.name ?? "User")
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
-                    }
-                    .padding(.horizontal)
-                    .padding(.top)
-                    
-                    // Stats Section
-                    if isLoading {
-                        ProgressView()
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                    } else if let error = errorMessage {
-                        VStack(spacing: 12) {
-                            Text("Failed to load stats")
-                                .font(.headline)
-                            Text(error)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            Button("Retry") {
-                                loadStats()
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                    } else if let stats = stats {
-                        statsSection(stats)
-                    } else {
-                        emptyStateView
-                    }
-                    
-                    // Quick Capture Section
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Quick Capture")
-                            .font(.headline)
-                            .padding(.horizontal)
+            ZStack {
+                // Animated background
+                AnimatedBackground()
+                
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        // Welcome Header with gradient
+                        welcomeHeader
                         
-                        LazyVGrid(columns: [
-                            GridItem(.flexible()),
-                            GridItem(.flexible())
-                        ], spacing: 12) {
-                            QuickCaptureTile(
-                                icon: "camera.fill",
-                                label: "Full Meal"
-                            ) {
-                                selectedTab = 1 // Navigate to Camera tab
-                            }
-                            
-                            QuickCaptureTile(
-                                icon: "fork.knife",
-                                label: "Snack"
-                            ) {
-                                selectedTab = 1 // Navigate to Camera tab
-                            }
-                            
-                            QuickCaptureTile(
-                                icon: "plus.circle.fill",
-                                label: "Quick Add"
-                            ) {
-                                selectedTab = 1 // Navigate to Camera tab
-                            }
+                        // Stats Section
+                        if isLoading {
+                            loadingView
+                        } else if let error = errorMessage {
+                            errorStateView(error)
+                        } else if let stats = stats {
+                            statsSection(stats)
+                        } else {
+                            emptyStateView
                         }
-                        .padding(.horizontal)
+                        
+                        // Quick Capture Section
+                        quickCaptureSection
+                        
+                        Spacer(minLength: 40)
                     }
-                    
-                    Spacer()
+                    .padding(.bottom)
                 }
-                .padding(.bottom)
             }
-            .navigationTitle("Home")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("NutritionAI")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                }
+            }
             .refreshable {
                 loadStats()
             }
@@ -112,37 +70,167 @@ struct HomeView: View {
         }
     }
     
-    private var emptyStateView: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "chart.bar.fill")
-                .font(.system(size: 60))
+    private var welcomeHeader: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Welcome back,")
+                .font(.title3)
                 .foregroundColor(.secondary)
-            Text("No meals logged yet")
+            
+            HStack {
+                Text(authService.currentUser?.name ?? "User")
+                    .font(.system(size: 32, weight: .bold, design: .rounded))
+                    .foregroundStyle(AppGradients.welcomeHeader)
+                
+                Text("👋")
+                    .font(.title)
+            }
+        }
+        .padding(.horizontal)
+        .padding(.top, 20)
+    }
+    
+    private var loadingView: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+                .scaleEffect(1.5)
+            Text("Loading your stats...")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(40)
+        .glassMorphism()
+        .padding(.horizontal)
+    }
+    
+    private func errorStateView(_ error: String) -> some View {
+        VStack(spacing: 16) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 50))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [.orange, .red],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+            
+            Text("Failed to load stats")
                 .font(.headline)
+            
+            Text(error)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+            
+            Button(action: loadStats) {
+                HStack {
+                    Image(systemName: "arrow.clockwise")
+                    Text("Retry")
+                }
+                .fontWeight(.semibold)
+            }
+            .buttonStyle(GradientButtonStyle())
+        }
+        .frame(maxWidth: .infinity)
+        .padding(30)
+        .glassMorphism()
+        .padding(.horizontal)
+    }
+    
+    private var emptyStateView: some View {
+        VStack(spacing: 20) {
+            ZStack {
+                Circle()
+                    .fill(AppGradients.primary.opacity(0.2))
+                    .frame(width: 100, height: 100)
+                
+                Image(systemName: "chart.bar.fill")
+                    .font(.system(size: 45))
+                    .foregroundStyle(AppGradients.primary)
+            }
+            
+            Text("No meals logged yet")
+                .font(.title3)
+                .fontWeight(.bold)
+            
             Text("Start tracking by capturing your first meal below")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
-        .padding()
+        .padding(30)
+        .glassMorphism()
+        .padding(.horizontal)
     }
     
-    private func statsSection(_ stats: UserStats) -> some View {
+    private var quickCaptureSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Today Stats
-            Text("Today")
-                .font(.headline)
-                .padding(.horizontal)
+            HStack {
+                Image(systemName: "camera.viewfinder")
+                    .foregroundStyle(AppGradients.primary)
+                Text("Quick Capture")
+                    .font(.title3)
+                    .fontWeight(.bold)
+            }
+            .padding(.horizontal)
             
             LazyVGrid(columns: [
                 GridItem(.flexible()),
                 GridItem(.flexible())
-            ], spacing: 12) {
+            ], spacing: 14) {
+                QuickCaptureTile(
+                    icon: "camera.fill",
+                    label: "Full Meal",
+                    gradientIndex: 0
+                ) {
+                    selectedTab = 1
+                }
+                
+                QuickCaptureTile(
+                    icon: "fork.knife",
+                    label: "Snack",
+                    gradientIndex: 1
+                ) {
+                    selectedTab = 1
+                }
+                
+                QuickCaptureTile(
+                    icon: "plus.circle.fill",
+                    label: "Quick Add",
+                    gradientIndex: 2
+                ) {
+                    selectedTab = 1
+                }
+                
+                QuickCaptureTile(
+                    icon: "clock.arrow.circlepath",
+                    label: "Recent",
+                    gradientIndex: 3
+                ) {
+                    selectedTab = 2
+                }
+            }
+            .padding(.horizontal)
+        }
+    }
+    
+    private func statsSection(_ stats: UserStats) -> some View {
+        VStack(alignment: .leading, spacing: 20) {
+            // Today Stats
+            sectionHeader(title: "Today", icon: "sun.max.fill")
+            
+            LazyVGrid(columns: [
+                GridItem(.flexible()),
+                GridItem(.flexible())
+            ], spacing: 14) {
                 StatsCard(
                     title: "Meals",
                     value: "\(stats.today.count)",
-                    subtitle: nil
+                    subtitle: nil,
+                    icon: "fork.knife",
+                    gradientIndex: 0
                 )
                 .onTapGesture {
                     showingFilteredMeals = .today
@@ -151,7 +239,9 @@ struct HomeView: View {
                 StatsCard(
                     title: "Calories",
                     value: "\(stats.today.totalCalories)",
-                    subtitle: "kcal"
+                    subtitle: "kcal",
+                    icon: "flame.fill",
+                    gradientIndex: 1
                 )
                 .onTapGesture {
                     showingFilteredMeals = .today
@@ -160,18 +250,18 @@ struct HomeView: View {
             .padding(.horizontal)
             
             // This Week Stats
-            Text("This Week")
-                .font(.headline)
-                .padding(.horizontal)
+            sectionHeader(title: "This Week", icon: "calendar")
             
             LazyVGrid(columns: [
                 GridItem(.flexible()),
                 GridItem(.flexible())
-            ], spacing: 12) {
+            ], spacing: 14) {
                 StatsCard(
                     title: "Meals",
                     value: "\(stats.week.count)",
-                    subtitle: nil
+                    subtitle: nil,
+                    icon: "fork.knife",
+                    gradientIndex: 2
                 )
                 .onTapGesture {
                     showingFilteredMeals = .thisWeek
@@ -180,7 +270,9 @@ struct HomeView: View {
                 StatsCard(
                     title: "Avg Calories",
                     value: "\(stats.week.avgCalories)",
-                    subtitle: "kcal/meal"
+                    subtitle: "kcal/meal",
+                    icon: "chart.line.uptrend.xyaxis",
+                    gradientIndex: 3
                 )
                 .onTapGesture {
                     showingFilteredMeals = .thisWeek
@@ -189,7 +281,9 @@ struct HomeView: View {
                 StatsCard(
                     title: "Total Calories",
                     value: "\(stats.week.totalCalories)",
-                    subtitle: "kcal"
+                    subtitle: "kcal",
+                    icon: "flame.fill",
+                    gradientIndex: 0
                 )
                 .onTapGesture {
                     showingFilteredMeals = .thisWeek
@@ -198,7 +292,9 @@ struct HomeView: View {
                 StatsCard(
                     title: "Protein",
                     value: "\(stats.week.totalProtein)g",
-                    subtitle: nil
+                    subtitle: nil,
+                    icon: "bolt.fill",
+                    gradientIndex: 1
                 )
                 .onTapGesture {
                     showingFilteredMeals = .thisWeek
@@ -207,28 +303,41 @@ struct HomeView: View {
             .padding(.horizontal)
             
             // All Time Stats
-            Text("All Time")
-                .font(.headline)
-                .padding(.horizontal)
+            sectionHeader(title: "All Time", icon: "star.fill")
             
             LazyVGrid(columns: [
                 GridItem(.flexible()),
                 GridItem(.flexible())
-            ], spacing: 12) {
+            ], spacing: 14) {
                 StatsCard(
                     title: "Total Meals",
                     value: "\(stats.allTime.count)",
-                    subtitle: nil
+                    subtitle: nil,
+                    icon: "tray.full.fill",
+                    gradientIndex: 2
                 )
                 
                 StatsCard(
                     title: "Avg Calories",
                     value: "\(stats.allTime.avgCalories)",
-                    subtitle: "kcal/meal"
+                    subtitle: "kcal/meal",
+                    icon: "chart.bar.fill",
+                    gradientIndex: 3
                 )
             }
             .padding(.horizontal)
         }
+    }
+    
+    private func sectionHeader(title: String, icon: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .foregroundStyle(AppGradients.primary)
+            Text(title)
+                .font(.title3)
+                .fontWeight(.bold)
+        }
+        .padding(.horizontal)
     }
     
     private func loadStats() {

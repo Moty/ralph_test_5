@@ -20,6 +20,7 @@ export async function userRoutes(server: FastifyInstance) {
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const userId = request.user!.userId;
+        server.log.info({ userId }, 'Fetching user stats');
 
         // Get current date boundaries
         const now = new Date();
@@ -31,6 +32,7 @@ export async function userRoutes(server: FastifyInstance) {
 
         // Fetch all user's meal analyses
         const allMeals = await db.findMealAnalysesByUserId(userId);
+        server.log.info({ userId, mealCount: allMeals.length }, 'Fetched user meals');
 
         // Filter meals by time periods
         const todayMeals = allMeals.filter(
@@ -84,7 +86,7 @@ export async function userRoutes(server: FastifyInstance) {
 
         return reply.code(200).send(stats);
       } catch (error) {
-        server.log.error(error);
+        server.log.error({ error, userId: request.user?.userId }, 'Error fetching user stats');
         return reply.code(500).send({ error: 'Failed to fetch user stats' });
       }
     }

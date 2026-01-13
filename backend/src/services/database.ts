@@ -12,6 +12,7 @@ import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { getFirestoreDb, isFirebaseEnabled } from './firebase.js';
 import type { Firestore } from 'firebase-admin/firestore';
+import admin from 'firebase-admin';
 
 export type DatabaseType = 'postgres' | 'firestore';
 
@@ -196,21 +197,47 @@ class FirestoreDatabase implements DatabaseService {
   }
 
   async findMealAnalysesByUserId(userId: string): Promise<MealAnalysis[]> {
-    const snapshot = await this.db.collection('mealAnalyses')
-      .where('userId', '==', userId)
-      .orderBy('createdAt', 'desc')
-      .get();
-    
-    return snapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        userId: data.userId,
-        imageUrl: data.imageUrl,
-        nutritionData: data.nutritionData,
-        createdAt: data.createdAt?.toDate() || new Date()
-      };
-    });
+    try {
+      // Try with orderBy (requires composite index)
+      const snapshot = await this.db.collection('mealAnalyses')
+        .where('userId', '==', userId)
+        .orderBy('createdAt', 'desc')
+        .get();
+      
+      return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          userId: data.userId,
+          imageUrl: data.imageUrl,
+          nutritionData: data.nutritionData,
+          createdAt: data.createdAt?.toDate() || new Date()
+        };
+      });
+    } catch (error: any) {
+      // If index not ready, fallback to no ordering (sort in memory)
+      if (error.code === 9 || error.message?.includes('index')) {
+        console.log('Firestore index not ready, fetching without order...');
+        const snapshot = await this.db.collection('mealAnalyses')
+          .where('userId', '==', userId)
+          .get();
+        
+        const meals = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            userId: data.userId,
+            imageUrl: data.imageUrl,
+            nutritionData: data.nutritionData,
+            createdAt: data.createdAt?.toDate() || new Date()
+          };
+        });
+        
+        // Sort in memory
+        return meals.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      }
+      throw error;
+    }
   }
 
   async findMealAnalysisById(id: string): Promise<MealAnalysis | null> {
@@ -264,6 +291,3 @@ export function getDb(): DatabaseService {
   }
   return dbInstance;
 }
-
-// Import admin for Firestore timestamp
-import admin from 'firebase-admin';

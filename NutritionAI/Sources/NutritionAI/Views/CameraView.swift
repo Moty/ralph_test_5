@@ -33,84 +33,153 @@ struct CameraView: View {
                 )
             } else if let image = capturedImage {
                 // Preview captured photo
-                VStack {
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFit()
+                ZStack {
+                    Color.black.ignoresSafeArea()
                     
-                    HStack(spacing: 40) {
-                        Button("Retake") {
-                            capturedImage = nil
-                            camera.retake()
-                        }
-                        .padding()
-                        .background(Color.gray.opacity(0.8))
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
+                    VStack(spacing: 0) {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFit()
+                            .clipShape(RoundedRectangle(cornerRadius: 20))
+                            .padding()
+                            .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 10)
                         
-                        Button("Confirm") {
-                            analyzeImage(image)
+                        Spacer()
+                        
+                        HStack(spacing: 50) {
+                            Button(action: {
+                                capturedImage = nil
+                                camera.retake()
+                            }) {
+                                VStack(spacing: 8) {
+                                    ZStack {
+                                        Circle()
+                                            .fill(Color.white.opacity(0.2))
+                                            .frame(width: 60, height: 60)
+                                        
+                                        Image(systemName: "arrow.counterclockwise")
+                                            .font(.system(size: 24, weight: .semibold))
+                                            .foregroundColor(.white)
+                                    }
+                                    Text("Retake")
+                                        .font(.caption)
+                                        .foregroundColor(.white)
+                                }
+                            }
+                            
+                            Button(action: {
+                                analyzeImage(image)
+                            }) {
+                                VStack(spacing: 8) {
+                                    ZStack {
+                                        Circle()
+                                            .fill(AppGradients.primary)
+                                            .frame(width: 70, height: 70)
+                                            .shadow(color: AppColors.primaryGradientStart.opacity(0.5), radius: 10, x: 0, y: 4)
+                                        
+                                        Image(systemName: "sparkles")
+                                            .font(.system(size: 28, weight: .semibold))
+                                            .foregroundColor(.white)
+                                    }
+                                    Text("Analyze")
+                                        .font(.caption)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.white)
+                                }
+                            }
                         }
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
+                        .padding(.bottom, 50)
                     }
-                    .padding()
                 }
             } else {
                 // Camera preview
                 if camera.permissionDenied {
-                    VStack(spacing: 20) {
-                        Image(systemName: "camera.fill")
-                            .font(.system(size: 60))
-                            .foregroundColor(.gray)
+                    ZStack {
+                        AppGradients.background
+                            .ignoresSafeArea()
                         
-                        Text("Camera Access Required")
-                            .font(.title2)
-                            .fontWeight(.bold)
-                        
-                        Text("Please enable camera access in Settings to use this feature.")
-                            .multilineTextAlignment(.center)
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal, 40)
-                        
-                        Button("Open Settings") {
-                            if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
-                                UIApplication.shared.open(settingsURL)
+                        VStack(spacing: 24) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.gray.opacity(0.2))
+                                    .frame(width: 120, height: 120)
+                                
+                                Image(systemName: "camera.fill")
+                                    .font(.system(size: 50))
+                                    .foregroundColor(.gray)
                             }
+                            
+                            Text("Camera Access Required")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                            
+                            Text("Please enable camera access in Settings to use this feature.")
+                                .multilineTextAlignment(.center)
+                                .foregroundColor(.secondary)
+                                .padding(.horizontal, 40)
+                            
+                            Button(action: {
+                                if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+                                    UIApplication.shared.open(settingsURL)
+                                }
+                            }) {
+                                HStack {
+                                    Image(systemName: "gear")
+                                    Text("Open Settings")
+                                }
+                                .fontWeight(.semibold)
+                            }
+                            .buttonStyle(GradientButtonStyle())
                         }
+                        .padding(40)
+                        .glassMorphism()
                         .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color(UIColor.systemBackground))
                 } else {
-                    CameraPreview(session: camera.session)
-                        .ignoresSafeArea()
-                    
-                    VStack {
-                        Spacer()
+                    ZStack {
+                        CameraPreview(session: camera.session)
+                            .ignoresSafeArea()
                         
-                        Button(action: {
-                            camera.capturePhoto { image in
-                                if let compressed = compressImage(image) {
-                                    capturedImage = compressed
+                        // Viewfinder overlay
+                        VStack {
+                            Spacer()
+                            
+                            // Capture hints
+                            Text("Position your meal in the frame")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 10)
+                                .background(Color.black.opacity(0.5))
+                                .clipShape(Capsule())
+                                .padding(.bottom, 20)
+                            
+                            // Capture button
+                            Button(action: {
+                                camera.capturePhoto { image in
+                                    if let compressed = compressImage(image) {
+                                        capturedImage = compressed
+                                    }
+                                }
+                            }) {
+                                ZStack {
+                                    Circle()
+                                        .fill(AppGradients.primary)
+                                        .frame(width: 75, height: 75)
+                                        .shadow(color: AppColors.primaryGradientStart.opacity(0.5), radius: 10, x: 0, y: 4)
+                                    
+                                    Circle()
+                                        .stroke(Color.white, lineWidth: 4)
+                                        .frame(width: 85, height: 85)
+                                    
+                                    Image(systemName: "camera.fill")
+                                        .font(.system(size: 28))
+                                        .foregroundColor(.white)
                                 }
                             }
-                        }) {
-                            Circle()
-                                .fill(Color.white)
-                                .frame(width: 70, height: 70)
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.white, lineWidth: 3)
-                                        .frame(width: 80, height: 80)
-                                )
+                            .padding(.bottom, 50)
                         }
-                        .padding(.bottom, 40)
                     }
                 }
             }
