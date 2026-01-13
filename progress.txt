@@ -156,3 +156,19 @@ Started: Mon Jan 12 19:15:13 PST 2026
   - Task + await MainActor.run for async UI updates
   - SecureField for password inputs, TextField for email
 ---
+
+## 2026-01-13T03:25 - US-011
+- Created StatsCard component at NutritionAI/Sources/NutritionAI/Views/StatsCard.swift
+- Reusable SwiftUI view with title, value, and optional subtitle
+- Card-based design with system gray background
+- Uses VStack for vertical layout, left-aligned
+- Title in uppercase caption, value in bold title2, subtitle in caption
+- Rounded corners (12pt) for modern look
+- maxWidth: .infinity makes it responsive in grids
+- Files changed: StatsCard.swift
+- **Learnings for future iterations:**
+  - Optional parameters in SwiftUI views using default nil
+  - Use Color(.systemGray6) for adaptive light/dark mode backgrounds
+  - .textCase(.uppercase) for title styling
+  - frame(maxWidth:) for responsive grid layouts
+---
