@@ -119,3 +119,21 @@ Started: Mon Jan 12 19:15:13 PST 2026
   - @MainActor ensures all state updates happen on main thread
   - ObservableObject for SwiftUI state management
 ---
+
+## 2026-01-13T03:23 - US-009
+- Updated APIService to support authentication
+- Added authService property to access JWT tokens
+- Created addAuthHeader() helper to add Bearer token to requests
+- Added register() method - POST /api/auth/register
+- Added login() method - POST /api/auth/login
+- Added fetchUserStats() method - GET /api/user/stats
+- analyzeImage() now includes auth header
+- Handle 401 responses by calling authService.logout()
+- Added unauthorized case to APIError enum
+- Created AuthResponse helper struct for decoding auth responses
+- Files changed: NutritionAI/Sources/NutritionAI/Services/APIService.swift
+- **Learnings for future iterations:**
+  - AuthService reference set externally (dependency injection)
+  - Use Task { @MainActor in } to ensure UI updates on main thread
+  - 401 triggers logout, 403 is expired token (backend distinction)
+---
