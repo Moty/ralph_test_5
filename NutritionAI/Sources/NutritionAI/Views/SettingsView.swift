@@ -2,8 +2,10 @@ import SwiftUI
 
 public struct SettingsView: View {
     @StateObject private var settings = SettingsManager.shared
+    @EnvironmentObject var authService: AuthService
     @State private var tempURL: String = ""
     @State private var showSaved = false
+    @State private var showLogoutConfirm = false
     
     public init() {}
     
@@ -12,9 +14,8 @@ public struct SettingsView: View {
             Form {
                 Section {
                     TextField("Backend URL", text: $tempURL)
-                        .textInputAutocapitalization(.never)
+                        .autocapitalization(.none)
                         .autocorrectionDisabled()
-                        .keyboardType(.URL)
                     
                     Text("Current: \(settings.backendURL)")
                         .font(.caption)
@@ -97,10 +98,30 @@ public struct SettingsView: View {
                 } header: {
                     Text("Help")
                 }
+                
+                Section {
+                    Button(role: .destructive) {
+                        showLogoutConfirm = true
+                    } label: {
+                        HStack {
+                            Spacer()
+                            Text("Logout")
+                            Spacer()
+                        }
+                    }
+                } header: {
+                    Text("Account")
+                }
             }
             .navigationTitle("Settings")
             .onAppear {
                 tempURL = settings.backendURL
+            }
+            .confirmationDialog("Are you sure you want to logout?", isPresented: $showLogoutConfirm) {
+                Button("Logout", role: .destructive) {
+                    authService.logout()
+                }
+                Button("Cancel", role: .cancel) {}
             }
         }
     }

@@ -208,3 +208,20 @@ Started: Mon Jan 12 19:15:13 PST 2026
   - onAppear checks if stats == nil before loading
   - Separate empty state, loading state, error state, and success state views
 ---
+
+## 2026-01-13T03:28 - US-014
+- Updated NutritionAIApp.swift to add authentication flow
+- Created @StateObject for AuthService in app root
+- App shows LoginView when !isAuthenticated, ContentView when authenticated
+- Updated ContentView to accept apiService parameter
+- Added HomeView as first tab with house.fill icon
+- Tab order now: Home, Camera, History, Settings
+- Wired up apiService.authService in app init
+- ContentView propagates apiService to HomeView
+- Files changed: NutritionAIApp.swift, ContentView.swift
+- **Learnings for future iterations:**
+  - @StateObject creates and owns ObservableObject in app lifecycle
+  - Pass services via initializers for dependency injection
+  - Root view switches based on authentication state
+  - environmentObject propagates through view hierarchy
+---
