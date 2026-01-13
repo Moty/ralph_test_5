@@ -11,6 +11,7 @@ struct CameraView: View {
     @StateObject private var camera = CameraManager()
     @State private var showPreview = false
     @State private var showResults = false
+    @State private var showPermissionAlert = false
     
     var body: some View {
         ZStack {
@@ -98,6 +99,14 @@ struct CameraView: View {
                         .multilineTextAlignment(.center)
                         .foregroundColor(.secondary)
                         .padding(.horizontal, 40)
+                    
+                    Button("Open Settings") {
+                        if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+                            UIApplication.shared.open(settingsURL)
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .padding(.top, 10)
                 }
             }
         }
@@ -107,6 +116,21 @@ struct CameraView: View {
         .onDisappear {
             showPreview = false
             camera.capturedImage = nil
+        }
+        .onChange(of: camera.permissionGranted) { granted in
+            if !granted && camera.permissionChecked {
+                showPermissionAlert = true
+            }
+        }
+        .alert("Camera Access Denied", isPresented: $showPermissionAlert) {
+            Button("Open Settings") {
+                if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(settingsURL)
+                }
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("Please enable camera access in Settings to use this feature")
         }
         .fullScreenCover(isPresented: $showResults) {
             if let image = camera.capturedImage {
@@ -149,6 +173,7 @@ struct CameraPreviewView: UIViewRepresentable {
 @MainActor
 class CameraManager: NSObject, ObservableObject {
     @Published var permissionGranted = false
+    @Published var permissionChecked = false
     @Published var capturedImage: UIImage?
     
     let session = AVCaptureSession()
@@ -158,11 +183,13 @@ class CameraManager: NSObject, ObservableObject {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
             permissionGranted = true
+            permissionChecked = true
             setupCamera()
         case .notDetermined:
             requestPermission()
         default:
             permissionGranted = false
+            permissionChecked = true
         }
     }
     
@@ -170,6 +197,7 @@ class CameraManager: NSObject, ObservableObject {
         AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
             Task { @MainActor in
                 self?.permissionGranted = granted
+                self?.permissionChecked = true
                 if granted {
                     self?.setupCamera()
                 }
