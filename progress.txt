@@ -77,3 +77,15 @@ Started: Mon Jan 12 19:15:13 PST 2026
   - Week calculation: subtract getDay() to get to Sunday
   - Use filter after fetch for date range queries on small datasets
 ---
+
+## 2026-01-13T03:20 - US-006
+- Added auth middleware to POST /api/analyze endpoint
+- Changed userId from placeholder to request.user.userId
+- Imported authMiddleware in analyze.ts
+- Route now returns 401 if Authorization header missing or invalid
+- Files changed: backend/src/routes/analyze.ts
+- **Learnings for future iterations:**
+  - Apply middleware using { preHandler: authMiddleware } in route options
+  - Access authenticated user via request.user (set by middleware)
+  - Non-null assertion (!) safe after middleware validation
+---
