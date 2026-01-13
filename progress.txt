@@ -89,3 +89,17 @@ Started: Mon Jan 12 19:15:13 PST 2026
   - Access authenticated user via request.user (set by middleware)
   - Non-null assertion (!) safe after middleware validation
 ---
+
+## 2026-01-13T03:21 - US-007
+- Created User model at NutritionAI/Sources/NutritionAI/Models/User.swift
+- Created UserStats model at NutritionAI/Sources/NutritionAI/Models/UserStats.swift
+- User has id, email, name fields
+- UserStats has today, week, allTime fields each containing PeriodStats
+- PeriodStats has count, avgCalories, totalCalories, totalProtein, totalCarbs, totalFat
+- Both models conform to Codable protocol
+- Files changed: NutritionAI/Sources/NutritionAI/Models/User.swift, NutritionAI/Sources/NutritionAI/Models/UserStats.swift
+- **Learnings for future iterations:**
+  - Swift models use struct with Codable for JSON serialization
+  - Nested structs for complex data structures (UserStats -> PeriodStats)
+  - Build errors in other files don't block creating new models
+---
