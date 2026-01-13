@@ -4,8 +4,8 @@ import CoreData
 import UIKit
 #endif
 
-class StorageService {
-    static let shared: StorageService = {
+public class StorageService {
+    public static let shared: StorageService = {
         do {
             return try StorageService()
         } catch {
@@ -84,7 +84,7 @@ class StorageService {
     }
     
     @MainActor
-    func save(analysis: MealAnalysis, thumbnail: Data?) throws {
+    public func save(analysis: MealAnalysis, thumbnail: Data?) throws {
         let context = persistentContainer.viewContext
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
@@ -106,7 +106,7 @@ class StorageService {
     }
     
     @MainActor
-    func fetchHistory() throws -> [MealAnalysis] {
+    public func fetchHistory() throws -> [MealAnalysis] {
         let context = persistentContainer.viewContext
         let request = NSFetchRequest<StoredMealAnalysis>(entityName: "StoredMealAnalysis")
         request.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: false)]
@@ -130,7 +130,7 @@ class StorageService {
     }
     
     @MainActor
-    func fetchRecentHistory(limit: Int = 10) throws -> [MealAnalysis] {
+    public func fetchRecentHistory(limit: Int = 10) throws -> [MealAnalysis] {
         let context = persistentContainer.viewContext
         let request = NSFetchRequest<StoredMealAnalysis>(entityName: "StoredMealAnalysis")
         request.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: false)]

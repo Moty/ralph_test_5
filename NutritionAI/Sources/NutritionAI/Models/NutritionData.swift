@@ -13,7 +13,7 @@ public struct NutritionData: Codable {
         self.fat = fat
     }
     
-    var macroPercentages: MacroPercentages {
+    public var macroPercentages: MacroPercentages {
         let totalCalories = (protein * 4) + (carbs * 4) + (fat * 9)
         guard totalCalories > 0 else {
             return MacroPercentages(protein: 0, carbs: 0, fat: 0)
@@ -30,5 +30,11 @@ public struct NutritionData: Codable {
         public let protein: Double
         public let carbs: Double
         public let fat: Double
+        
+        public init(protein: Double, carbs: Double, fat: Double) {
+            self.protein = protein
+            self.carbs = carbs
+            self.fat = fat
+        }
     }
 }

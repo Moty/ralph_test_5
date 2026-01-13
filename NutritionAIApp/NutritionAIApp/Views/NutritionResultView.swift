@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import NutritionAI
 
 struct NutritionResultView: View {
     let image: UIImage
@@ -115,6 +116,9 @@ struct NutritionResultView: View {
                 await MainActor.run {
                     self.mealAnalysis = analysis
                     self.isLoading = false
+                    
+                    // Save to storage
+                    saveToStorage(analysis: analysis)
                 }
             } catch {
                 await MainActor.run {
@@ -125,6 +129,21 @@ struct NutritionResultView: View {
                         self.errorMessage = "An unexpected error occurred"
                     }
                 }
+            }
+        }
+    }
+    
+    private func saveToStorage(analysis: MealAnalysis) {
+        // Save asynchronously without blocking UI
+        Task {
+            do {
+                // Create thumbnail from image
+                let thumbnailData = image.jpegData(compressionQuality: 0.5)
+                
+                try StorageService.shared.save(analysis: analysis, thumbnail: thumbnailData)
+            } catch {
+                // Log error but don't block user
+                print("Failed to save analysis to storage: \(error.localizedDescription)")
             }
         }
     }

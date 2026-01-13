@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import NutritionAI
 
 struct NutritionSummaryCard: View {
     let nutrition: NutritionData

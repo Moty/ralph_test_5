@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import NutritionAI
 
 struct FoodItemCard: View {
     let foodItem: FoodItem
@@ -95,37 +96,37 @@ struct NutritionValueView: View {
         FoodItemCard(foodItem: FoodItem(
             name: "Grilled Chicken Breast",
             portion: "6 oz (170g)",
-            confidence: 0.92,
             nutrition: NutritionData(
                 calories: 280,
                 protein: 53,
                 carbs: 0,
                 fat: 6
-            )
+            ),
+            confidence: 0.92
         ))
         
         FoodItemCard(foodItem: FoodItem(
             name: "Brown Rice",
             portion: "1 cup (195g)",
-            confidence: 0.65,
             nutrition: NutritionData(
                 calories: 218,
                 protein: 5,
                 carbs: 46,
                 fat: 2
-            )
+            ),
+            confidence: 0.65
         ))
         
         FoodItemCard(foodItem: FoodItem(
             name: "Mixed Vegetables",
             portion: "1/2 cup (80g)",
-            confidence: 0.45,
             nutrition: NutritionData(
                 calories: 40,
                 protein: 2,
                 carbs: 8,
                 fat: 0
-            )
+            ),
+            confidence: 0.45
         ))
     }
     .padding()

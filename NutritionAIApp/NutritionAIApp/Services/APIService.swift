@@ -5,6 +5,7 @@
 
 import Foundation
 import UIKit
+import NutritionAI
 
 enum APIError: Error {
     case invalidURL
