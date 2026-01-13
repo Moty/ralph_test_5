@@ -15,3 +15,18 @@ Started: Mon Jan 12 19:15:13 PST 2026
   - Migrations created with `npx prisma migrate dev --name <name>`
   - Always make userId nullable when adding to existing tables for backward compatibility
 ---
+
+## 2026-01-13T03:16 - US-002
+- Created auth service at backend/src/services/auth.ts
+- Implemented hashPassword, verifyPassword, generateToken, verifyToken functions
+- Tokens include userId and email in payload
+- Token expiry set to 30 days
+- JWT_SECRET read from environment variable with fallback
+- Installed bcryptjs, jsonwebtoken and their type definitions
+- Added JWT_SECRET to .env.example
+- Files changed: backend/src/services/auth.ts, backend/.env.example, backend/package.json
+- **Learnings for future iterations:**
+  - Use bcrypt.hash with salt rounds (10) for password hashing
+  - JWT tokens signed with expiresIn option for expiry
+  - TypeScript requires @types packages for JS libraries
+---
