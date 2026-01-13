@@ -103,3 +103,19 @@ Started: Mon Jan 12 19:15:13 PST 2026
   - Nested structs for complex data structures (UserStats -> PeriodStats)
   - Build errors in other files don't block creating new models
 ---
+
+## 2026-01-13T03:22 - US-008
+- Created AuthService at NutritionAI/Sources/NutritionAI/Services/AuthService.swift
+- ObservableObject with @Published isAuthenticated and currentUser properties
+- Stores JWT token in iOS Keychain using Security framework
+- Implements login(), register(), logout() methods
+- Auto-login in init() by checking for valid token in Keychain
+- getToken() provides access to stored token for API requests
+- Keychain uses service identifier "com.nutritionai.app"
+- Files changed: NutritionAI/Sources/NutritionAI/Services/AuthService.swift
+- **Learnings for future iterations:**
+  - iOS Keychain API uses SecItemAdd, SecItemCopyMatching, SecItemDelete
+  - Delete existing token before adding new one to avoid duplicates
+  - @MainActor ensures all state updates happen on main thread
+  - ObservableObject for SwiftUI state management
+---
