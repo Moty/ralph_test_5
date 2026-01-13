@@ -24,13 +24,13 @@ class SettingsManager: ObservableObject {
     ]
     
     private init() {
-        // Default to the current Mac's LAN IP
-        self.backendURL = UserDefaults.standard.string(forKey: "backendURL") ?? "http://192.168.50.48:3000"
+        // Default to Cloud Run production URL
+        self.backendURL = UserDefaults.standard.string(forKey: "backendURL") ?? "https://nutrition-ai-backend-1051629517898.us-central1.run.app"
         self.geminiModel = UserDefaults.standard.string(forKey: "geminiModel") ?? "gemini-2.5-flash"
     }
     
     func resetToDefault() {
-        backendURL = "http://192.168.50.48:3000"
+        backendURL = "https://nutrition-ai-backend-1051629517898.us-central1.run.app"
         geminiModel = "gemini-2.5-flash"
     }
     
