@@ -5,6 +5,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import pg from 'pg';
 import { Buffer } from 'buffer';
 import { validateImage, ImageValidationError } from '../utils/imageValidation.js';
+import { authMiddleware } from '../middleware/auth.js';
 
 // Initialize PrismaClient with PostgreSQL adapter for Prisma 7
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
@@ -34,7 +35,7 @@ interface AnalyzeResponse {
 }
 
 export async function analyzeRoutes(server: FastifyInstance) {
-  server.post('/api/analyze', async (request: FastifyRequest, reply: FastifyReply) => {
+  server.post('/api/analyze', { preHandler: authMiddleware }, async (request: FastifyRequest, reply: FastifyReply) => {
     const timeout = setTimeout(() => {
       if (!reply.sent) {
         reply.code(408).send({ error: 'Request timeout - analysis took too long' });
@@ -127,7 +128,7 @@ export async function analyzeRoutes(server: FastifyInstance) {
       try {
         savedAnalysis = await prisma.mealAnalysis.create({
           data: {
-            userId: 'placeholder-user-id',
+            userId: request.user!.userId,
             imageUrl: '',
             nutritionData: nutritionData as any,
           },

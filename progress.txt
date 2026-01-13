@@ -62,3 +62,18 @@ Started: Mon Jan 12 19:15:13 PST 2026
   - Use unique constraint check before insert for better error messages
   - Return same error message for invalid email/password to prevent user enumeration
 ---
+
+## 2026-01-13T03:19 - US-005
+- Created user routes at backend/src/routes/user.ts
+- GET /api/user/stats - protected with auth middleware
+- Calculates meal count, avg calories, and totals for protein/carbs/fat
+- Returns stats for three periods: today, this week, all time
+- Today = midnight to now, Week = Sunday to now
+- Registered user routes in server.ts
+- Files changed: backend/src/routes/user.ts, backend/src/server.ts
+- **Learnings for future iterations:**
+  - Fastify routes use preHandler option to apply middleware
+  - JSON fields from Prisma need double type assertion (as unknown as Type)
+  - Week calculation: subtract getDay() to get to Sunday
+  - Use filter after fetch for date range queries on small datasets
+---
