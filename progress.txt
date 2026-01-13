@@ -189,3 +189,22 @@ Started: Mon Jan 12 19:15:13 PST 2026
   - scaleEffect provides tactile feedback
   - PlainButtonStyle removes default iOS button appearance
 ---
+
+## 2026-01-13T03:27 - US-013
+- Created HomeView at NutritionAI/Sources/NutritionAI/Views/HomeView.swift
+- Displays welcome message with user's name from authService.currentUser
+- Shows loading state with ProgressView while fetching stats
+- Empty state for users with no meals (chart icon + message)
+- Stats section organized by Today, This Week, All Time
+- LazyVGrid layout with 2 columns for responsive stats cards
+- Quick Capture section with 3 tiles: Full Meal, Snack, Quick Add
+- Pull-to-refresh support with .refreshable modifier
+- Loads stats in onAppear if not already loaded
+- Error handling with retry button
+- Files changed: HomeView.swift
+- **Learnings for future iterations:**
+  - ScrollView + LazyVGrid for responsive grid layouts
+  - .refreshable for pull-to-refresh on iOS
+  - onAppear checks if stats == nil before loading
+  - Separate empty state, loading state, error state, and success state views
+---
