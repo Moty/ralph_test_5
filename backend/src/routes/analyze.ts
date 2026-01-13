@@ -2,8 +2,9 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { initializeModel, createNutritionPrompt } from '../services/gemini.js';
 import { Buffer } from 'buffer';
 import { validateImage, ImageValidationError } from '../utils/imageValidation.js';
-import { authMiddleware } from '../middleware/auth.js';
+import { optionalAuthMiddleware } from '../middleware/auth.js';
 import { getDb } from '../services/database.js';
+import sharp from 'sharp';
 
 interface AnalyzeResponse {
   id?: string;
@@ -27,10 +28,26 @@ interface AnalyzeResponse {
   timestamp: string;
 }
 
+// Create a low-res thumbnail from the image buffer
+async function createThumbnail(buffer: Buffer, mimetype: string): Promise<string> {
+  try {
+    const thumbnailBuffer = await sharp(buffer)
+      .resize(200, 200, { fit: 'cover' })
+      .jpeg({ quality: 60 })
+      .toBuffer();
+    
+    return `data:image/jpeg;base64,${thumbnailBuffer.toString('base64')}`;
+  } catch (error) {
+    console.error('Failed to create thumbnail:', error);
+    return '';
+  }
+}
+
 export async function analyzeRoutes(server: FastifyInstance) {
   const db = getDb();
   
-  server.post('/api/analyze', { preHandler: authMiddleware }, async (request: FastifyRequest, reply: FastifyReply) => {
+  // Use optional auth - allows guests to analyze, but only saves to DB for authenticated users
+  server.post('/api/analyze', { preHandler: optionalAuthMiddleware }, async (request: FastifyRequest, reply: FastifyReply) => {
     const timeout = setTimeout(() => {
       if (!reply.sent) {
         reply.code(408).send({ error: 'Request timeout - analysis took too long' });
@@ -118,17 +135,26 @@ export async function analyzeRoutes(server: FastifyInstance) {
         });
       }
 
-      // Save to database
+      // Only save to database for authenticated users (not guests)
       let savedAnalysis;
-      try {
-        savedAnalysis = await db.createMealAnalysis({
-          userId: request.user!.userId,
-          imageUrl: '',
-          nutritionData: nutritionData as any,
-        });
-      } catch (dbError) {
-        server.log.error({ dbError }, 'Failed to save analysis to database');
-        // Continue and return the analysis even if database save fails
+      if (request.user) {
+        try {
+          // Create a thumbnail of the image for storage
+          const thumbnail = await createThumbnail(buffer!, mimetype);
+          
+          savedAnalysis = await db.createMealAnalysis({
+            userId: request.user.userId,
+            imageUrl: '',
+            thumbnail: thumbnail,
+            nutritionData: nutritionData as any,
+          });
+          console.log('Meal saved to database for user:', request.user.userId);
+        } catch (dbError) {
+          server.log.error({ dbError }, 'Failed to save analysis to database');
+          // Continue and return the analysis even if database save fails
+        }
+      } else {
+        console.log('Guest user - analysis not saved to database');
       }
 
       // Add analysis ID to response if saved

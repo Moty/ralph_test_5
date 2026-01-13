@@ -6,6 +6,7 @@ import rateLimit from '@fastify/rate-limit';
 import { analyzeRoutes } from './routes/analyze.js';
 import { authRoutes } from './routes/auth.js';
 import { userRoutes } from './routes/user.js';
+import { mealsRoutes } from './routes/meals.js';
 import { initializeFirebase } from './services/firebase.js';
 
 // Initialize Firebase if configured
@@ -62,6 +63,7 @@ server.get('/health', async (request, reply) => {
 await server.register(authRoutes);
 await server.register(userRoutes);
 await server.register(analyzeRoutes);
+await server.register(mealsRoutes);
 
 const start = async () => {
   try {

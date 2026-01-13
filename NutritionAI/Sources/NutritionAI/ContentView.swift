@@ -28,32 +28,68 @@ public struct ContentView: View {
     public var body: some View {
         Group {
             if authService.isAuthenticated {
-                TabView(selection: $selectedTab) {
-                    HomeView(selectedTab: $selectedTab, apiService: apiService)
-                        .tabItem {
-                            Label("Home", systemImage: "house.fill")
+                VStack(spacing: 0) {
+                    // Guest mode banner
+                    if authService.isGuest {
+                        HStack {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundColor(.orange)
+                            Text("Guest Mode – Data stored locally only")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                            Spacer()
+                            Button("Sign Up") {
+                                authService.logout() // Go back to login screen
+                            }
+                            .font(.caption)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(AppColors.primaryGradientEnd)
+                            .cornerRadius(12)
                         }
-                        .tag(0)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(Color.orange.opacity(0.15))
+                    }
                     
-                    CameraView(apiService: apiService)
-                        .tabItem {
-                            Label("Camera", systemImage: "camera.fill")
+                    TabView(selection: $selectedTab) {
+                        HomeView(selectedTab: $selectedTab, apiService: apiService)
+                            .tabItem {
+                                Label("Home", systemImage: "house.fill")
+                            }
+                            .tag(0)
+                        
+                        CameraView(apiService: apiService)
+                            .tabItem {
+                                Label("Camera", systemImage: "camera.fill")
+                            }
+                            .tag(1)
+                        
+                        // History only available for registered users
+                        if authService.isRegisteredUser {
+                            HistoryView()
+                                .tabItem {
+                                    Label("History", systemImage: "clock.fill")
+                                }
+                                .tag(2)
+                        } else {
+                            GuestHistoryView()
+                                .tabItem {
+                                    Label("History", systemImage: "clock.fill")
+                                }
+                                .tag(2)
                         }
-                        .tag(1)
-                    
-                    HistoryView()
-                        .tabItem {
-                            Label("History", systemImage: "clock.fill")
-                        }
-                        .tag(2)
-                    
-                    SettingsView(apiService: apiService)
-                        .tabItem {
-                            Label("Settings", systemImage: "gear")
-                        }
-                        .tag(3)
+                        
+                        SettingsView(apiService: apiService)
+                            .tabItem {
+                                Label("Settings", systemImage: "gear")
+                            }
+                            .tag(3)
+                    }
+                    .tint(AppColors.primaryGradientEnd)
                 }
-                .tint(AppColors.primaryGradientEnd)
             } else {
                 LoginView(apiService: apiService)
             }

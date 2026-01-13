@@ -54,13 +54,23 @@ public class SyncService: ObservableObject {
         }
         
         do {
-            // Fetch stats which includes all meals
-            print("[SyncService] Fetching user stats...")
-            let stats = try await apiService.fetchUserStats()
-            print("[SyncService] Stats fetched successfully: \(stats.today.count) meals today")
+            // Fetch all meals from the cloud
+            print("[SyncService] Fetching meals from cloud...")
+            let cloudMeals = try await apiService.fetchMeals()
+            print("[SyncService] Fetched \(cloudMeals.count) meals from cloud")
             
-            // TODO: Implement full meal sync when backend provides meal list endpoint
-            // For now, we just update the sync timestamp
+            // Clear local storage and save cloud meals
+            print("[SyncService] Clearing local storage...")
+            try storageService.clearAllMeals()
+            
+            print("[SyncService] Saving meals to local storage...")
+            for meal in cloudMeals {
+                try storageService.saveFromCloud(cloudMeal: meal)
+            }
+            
+            let localCount = try storageService.mealCount()
+            print("[SyncService] Sync complete: \(localCount) meals in local storage")
+            
             lastSyncDate = Date()
             UserDefaults.standard.set(lastSyncDate, forKey: "lastSyncDate")
             

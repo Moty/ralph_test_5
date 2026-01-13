@@ -4,9 +4,12 @@ import UIKit
 #endif
 
 public struct HistoryView: View {
+    @EnvironmentObject var authService: AuthService
+    @ObservedObject var syncService = SyncService.shared
     @State private var historyItems: [HistoryItem] = []
     @State private var error: String?
     @State private var selectedMeal: MealAnalysis?
+    @State private var isLoading: Bool = false
     private let storageService = StorageService.shared
     
     struct HistoryItem: Identifiable {
@@ -24,7 +27,15 @@ public struct HistoryView: View {
                     .ignoresSafeArea()
                 
                 Group {
-                    if historyItems.isEmpty && error == nil {
+                    if isLoading {
+                        VStack(spacing: 16) {
+                            ProgressView()
+                                .scaleEffect(1.5)
+                            Text("Syncing meals...")
+                                .font(.headline)
+                                .foregroundColor(.secondary)
+                        }
+                    } else if historyItems.isEmpty && error == nil {
                         emptyStateView
                     } else if let error = error {
                         errorView(message: error)
@@ -34,8 +45,18 @@ public struct HistoryView: View {
                 }
             }
             .navigationTitle("History")
+            .toolbar {
+                if !syncService.isSyncing {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button(action: { Task { await syncAndReload() } }) {
+                            Image(systemName: "arrow.clockwise")
+                                .foregroundStyle(AppGradients.primary)
+                        }
+                    }
+                }
+            }
             .onAppear {
-                loadHistory()
+                loadHistoryAndSyncIfNeeded()
             }
         }
     }
@@ -136,6 +157,31 @@ public struct HistoryView: View {
             }
         } catch {
             self.error = "Failed to load meal history"
+        }
+    }
+    
+    private func loadHistoryAndSyncIfNeeded() {
+        // First load any local data
+        loadHistory()
+        
+        // If authenticated and no local history, try to sync from cloud
+        if authService.isAuthenticated && historyItems.isEmpty {
+            Task {
+                await syncAndReload()
+            }
+        }
+    }
+    
+    private func syncAndReload() async {
+        isLoading = true
+        defer { isLoading = false }
+        
+        do {
+            try await syncService.syncFromCloud()
+            loadHistory()
+        } catch {
+            print("[HistoryView] Sync failed: \(error.localizedDescription)")
+            // Don't show error - just keep what we have locally
         }
     }
 }

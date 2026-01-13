@@ -64,7 +64,8 @@ struct HomeView: View {
             }
         }
         .onAppear {
-            if stats == nil {
+            // Only fetch stats for registered users, not guests
+            if stats == nil && authService.isRegisteredUser {
                 loadStats()
             }
         }

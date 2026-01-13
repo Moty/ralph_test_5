@@ -38,6 +38,11 @@ public class APIService {
     
     private func handleUnauthorized() {
         Task { @MainActor in
+            // Don't logout guest users - they're expected to have no token
+            if authService?.isGuest == true {
+                print("[APIService] Ignoring 401 for guest user")
+                return
+            }
             authService?.logout()
         }
     }
@@ -217,6 +222,173 @@ public class APIService {
             }
         } catch {
             throw APIError.networkError(error)
+        }
+    }
+    
+    /// Fetch all meals for the current user
+    func fetchMeals() async throws -> [CloudMeal] {
+        guard let url = URL(string: "\(settings.backendURL)/api/meals") else {
+            throw APIError.invalidURL
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        await addAuthHeader(to: &request)
+        
+        let (data, response) = try await session.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.invalidResponse
+        }
+        
+        if httpResponse.statusCode == 401 {
+            handleUnauthorized()
+            throw APIError.unauthorized
+        }
+        
+        if httpResponse.statusCode == 200 {
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            let mealsResponse = try decoder.decode(CloudMealsResponse.self, from: data)
+            return mealsResponse.meals
+        } else {
+            if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
+                throw APIError.serverError(errorResponse.error)
+            }
+            throw APIError.serverError("Failed to fetch meals")
+        }
+    }
+}
+
+// Helper struct for cloud meals response
+public struct CloudMealsResponse: Codable {
+    public let meals: [CloudMeal]
+}
+
+public struct CloudMeal: Codable {
+    public let id: String
+    public let thumbnail: String?
+    public let foods: [CloudFood]
+    public let totals: CloudTotals
+    public let timestamp: Date
+    
+    enum CodingKeys: String, CodingKey {
+        case id, thumbnail, foods, totals, timestamp
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        thumbnail = try container.decodeIfPresent(String.self, forKey: .thumbnail)
+        foods = try container.decodeIfPresent([CloudFood].self, forKey: .foods) ?? []
+        totals = try container.decode(CloudTotals.self, forKey: .totals)
+        
+        // Handle timestamp as either Date or String
+        if let date = try? container.decode(Date.self, forKey: .timestamp) {
+            timestamp = date
+        } else if let dateString = try? container.decode(String.self, forKey: .timestamp) {
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let date = formatter.date(from: dateString) {
+                timestamp = date
+            } else {
+                // Try without fractional seconds
+                formatter.formatOptions = [.withInternetDateTime]
+                timestamp = formatter.date(from: dateString) ?? Date()
+            }
+        } else {
+            timestamp = Date()
+        }
+    }
+}
+
+public struct CloudFood: Codable {
+    public let name: String
+    public let portion: String
+    public let nutrition: CloudNutrition
+    public let confidence: Double
+}
+
+public struct CloudNutrition: Codable {
+    public let calories: Double
+    public let protein: Double
+    public let carbs: Double
+    public let fat: Double
+    public let fiber: Double?
+    
+    enum CodingKeys: String, CodingKey {
+        case calories, protein, carbs, fat, fiber
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        // Handle both Int and Double from JSON
+        if let intVal = try? container.decode(Int.self, forKey: .calories) {
+            calories = Double(intVal)
+        } else {
+            calories = try container.decodeIfPresent(Double.self, forKey: .calories) ?? 0
+        }
+        if let intVal = try? container.decode(Int.self, forKey: .protein) {
+            protein = Double(intVal)
+        } else {
+            protein = try container.decodeIfPresent(Double.self, forKey: .protein) ?? 0
+        }
+        if let intVal = try? container.decode(Int.self, forKey: .carbs) {
+            carbs = Double(intVal)
+        } else {
+            carbs = try container.decodeIfPresent(Double.self, forKey: .carbs) ?? 0
+        }
+        if let intVal = try? container.decode(Int.self, forKey: .fat) {
+            fat = Double(intVal)
+        } else {
+            fat = try container.decodeIfPresent(Double.self, forKey: .fat) ?? 0
+        }
+        if let intVal = try? container.decode(Int.self, forKey: .fiber) {
+            fiber = Double(intVal)
+        } else {
+            fiber = try container.decodeIfPresent(Double.self, forKey: .fiber)
+        }
+    }
+}
+
+public struct CloudTotals: Codable {
+    public let calories: Double
+    public let protein: Double
+    public let carbs: Double
+    public let fat: Double
+    public let fiber: Double?
+    
+    enum CodingKeys: String, CodingKey {
+        case calories, protein, carbs, fat, fiber
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        // Handle both Int and Double from JSON
+        if let intVal = try? container.decode(Int.self, forKey: .calories) {
+            calories = Double(intVal)
+        } else {
+            calories = try container.decodeIfPresent(Double.self, forKey: .calories) ?? 0
+        }
+        if let intVal = try? container.decode(Int.self, forKey: .protein) {
+            protein = Double(intVal)
+        } else {
+            protein = try container.decodeIfPresent(Double.self, forKey: .protein) ?? 0
+        }
+        if let intVal = try? container.decode(Int.self, forKey: .carbs) {
+            carbs = Double(intVal)
+        } else {
+            carbs = try container.decodeIfPresent(Double.self, forKey: .carbs) ?? 0
+        }
+        if let intVal = try? container.decode(Int.self, forKey: .fat) {
+            fat = Double(intVal)
+        } else {
+            fat = try container.decodeIfPresent(Double.self, forKey: .fat) ?? 0
+        }
+        if let intVal = try? container.decode(Int.self, forKey: .fiber) {
+            fiber = Double(intVal)
+        } else {
+            fiber = try container.decodeIfPresent(Double.self, forKey: .fiber)
         }
     }
 }

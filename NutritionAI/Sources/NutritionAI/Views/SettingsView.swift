@@ -11,6 +11,14 @@ public struct SettingsView: View {
     
     let apiService: APIService
     
+    // Admin email addresses that can see advanced settings
+    private let adminEmails = ["moty.moshin@gmail.com"]
+    
+    private var isAdmin: Bool {
+        guard let email = authService.currentUser?.email else { return false }
+        return adminEmails.contains(email.lowercased())
+    }
+    
     public init(apiService: APIService) {
         self.apiService = apiService
     }
@@ -22,131 +30,136 @@ public struct SettingsView: View {
                     .ignoresSafeArea()
                 
                 Form {
-                    Section {
-                        TextField("Backend URL", text: $tempURL)
-                            .autocapitalization(.none)
-                            .autocorrectionDisabled()
+                    // Admin-only sections
+                    if isAdmin {
+                        Section {
+                            TextField("Backend URL", text: $tempURL)
+                                .autocapitalization(.none)
+                                .autocorrectionDisabled()
+                            
+                            Text("Current: \(settings.backendURL)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        } header: {
+                            Label("Server Configuration", systemImage: "server.rack")
+                        } footer: {
+                            Text("Enter the backend server URL including port (e.g., http://192.168.1.100:3000)")
+                        }
                         
-                        Text("Current: \(settings.backendURL)")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                        Section {
+                            Button(action: {
+                                if !tempURL.isEmpty {
+                                    settings.backendURL = tempURL
+                                    showSaved = true
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                        showSaved = false
+                                    }
+                                }
+                            }) {
+                                HStack {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundStyle(AppGradients.primary)
+                                    Text("Save URL")
+                                }
+                            }
+                            .disabled(tempURL.isEmpty)
+                            
+                            if showSaved {
+                                HStack {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundColor(AppColors.primaryGradientStart)
+                                    Text("URL Saved")
+                                        .foregroundColor(AppColors.primaryGradientStart)
+                                }
+                            }
+                        }
+                        
+                        Section {
+                            Picker("AI Model", selection: $settings.geminiModel) {
+                                ForEach(settings.availableModels, id: \.self) { model in
+                                    Text(model).tag(model)
+                                }
+                            }
+                            .tint(AppColors.primaryGradientEnd)
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Recommendations:")
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                            Text("• gemini-2.0-flash: ⭐ Unlimited quota, fast")
+                            Text("• gemini-2.0-flash-lite: Unlimited, fastest")
+                            Text("• gemini-2.5-flash-lite: Unlimited, balanced")
+                            Text("• gemini-3-flash: Newest model (10K/day)")
+                            Text("• gemini-2.5-pro: Best accuracy (10K/day)")
+                        }
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                     } header: {
-                        Label("Server Configuration", systemImage: "server.rack")
-                    } footer: {
-                        Text("Enter the backend server URL including port (e.g., http://192.168.1.100:3000)")
+                        Label("AI Model Selection", systemImage: "brain")
                     }
                     
                     Section {
                         Button(action: {
-                            if !tempURL.isEmpty {
-                                settings.backendURL = tempURL
-                                showSaved = true
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                    showSaved = false
-                                }
-                            }
+                            settings.setLocalhost()
+                            tempURL = settings.backendURL
                         }) {
                             HStack {
-                                Image(systemName: "checkmark.circle.fill")
+                                Image(systemName: "laptopcomputer")
                                     .foregroundStyle(AppGradients.primary)
-                                Text("Save URL")
+                                Text("Use Localhost (Simulator)")
                             }
                         }
-                        .disabled(tempURL.isEmpty)
                         
-                        if showSaved {
+                        Button(action: {
+                            settings.resetToDefault()
+                            tempURL = settings.backendURL
+                        }) {
                             HStack {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(AppColors.primaryGradientStart)
-                                Text("URL Saved")
-                                    .foregroundColor(AppColors.primaryGradientStart)
+                                Image(systemName: "arrow.counterclockwise")
+                                    .foregroundStyle(AppGradients.primary)
+                                Text("Reset to Default")
                             }
                         }
+                    } header: {
+                        Label("Quick Actions", systemImage: "bolt.fill")
                     }
                     
                     Section {
-                        Picker("AI Model", selection: $settings.geminiModel) {
-                            ForEach(settings.availableModels, id: \.self) { model in
-                                Text(model).tag(model)
-                            }
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Finding Your Mac's IP:")
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                            
+                            Text("1. Open Terminal on your Mac")
+                            Text("2. Run: ifconfig | grep \"inet \"")
+                            Text("3. Look for an address like 192.168.x.x")
+                            Text("4. Use http://YOUR-IP:3000")
                         }
-                        .tint(AppColors.primaryGradientEnd)
-                    
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Recommendations:")
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                        Text("• gemini-2.0-flash: ⭐ Unlimited quota, fast")
-                        Text("• gemini-2.0-flash-lite: Unlimited, fastest")
-                        Text("• gemini-2.5-flash-lite: Unlimited, balanced")
-                        Text("• gemini-3-flash: Newest model (10K/day)")
-                        Text("• gemini-2.5-pro: Best accuracy (10K/day)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    } header: {
+                        Text("Help")
                     }
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                } header: {
-                    Label("AI Model Selection", systemImage: "brain")
-                }
+                    } // End of admin-only sections
                 
-                Section {
-                    Button(action: {
-                        settings.setLocalhost()
-                        tempURL = settings.backendURL
-                    }) {
-                        HStack {
-                            Image(systemName: "laptopcomputer")
-                                .foregroundStyle(AppGradients.primary)
-                            Text("Use Localhost (Simulator)")
-                        }
-                    }
-                    
-                    Button(action: {
-                        settings.resetToDefault()
-                        tempURL = settings.backendURL
-                    }) {
-                        HStack {
-                            Image(systemName: "arrow.counterclockwise")
-                                .foregroundStyle(AppGradients.primary)
-                            Text("Reset to Default")
-                        }
-                    }
-                } header: {
-                    Label("Quick Actions", systemImage: "bolt.fill")
-                }
-                
-                Section {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Finding Your Mac's IP:")
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                        
-                        Text("1. Open Terminal on your Mac")
-                        Text("2. Run: ifconfig | grep \"inet \"")
-                        Text("3. Look for an address like 192.168.x.x")
-                        Text("4. Use http://YOUR-IP:3000")
-                    }
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                } header: {
-                    Text("Help")
-                }
-                
-                Section {
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                HStack {
-                                    Image(systemName: "icloud.fill")
-                                        .foregroundStyle(AppGradients.primary)
-                                    Text("Cloud Sync")
-                                        .font(.headline)
-                                }
-                                if let lastSync = syncService.lastSyncDate {
-                                    Text("Last synced: \(formatSyncDate(lastSync))")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                } else {
-                                    Text("Never synced")
+                // Data Sync section - only for registered users
+                if authService.isRegisteredUser {
+                    Section {
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    HStack {
+                                        Image(systemName: "icloud.fill")
+                                            .foregroundStyle(AppGradients.primary)
+                                        Text("Cloud Sync")
+                                            .font(.headline)
+                                    }
+                                    if let lastSync = syncService.lastSyncDate {
+                                        Text("Last synced: \(formatSyncDate(lastSync))")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    } else {
+                                        Text("Never synced")
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                 }
@@ -201,16 +214,65 @@ public struct SettingsView: View {
                 } header: {
                     Label("Data Sync", systemImage: "arrow.triangle.2.circlepath.circle.fill")
                 }
+                } else {
+                    // Guest mode - show upgrade prompt
+                    Section {
+                        VStack(alignment: .center, spacing: 16) {
+                            Image(systemName: "icloud.slash.fill")
+                                .font(.system(size: 40))
+                                .foregroundStyle(.secondary)
+                            
+                            Text("Cloud Sync Unavailable")
+                                .font(.headline)
+                            
+                            Text("Create a free account to sync your meals across all your devices and never lose your nutrition data.")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                            
+                            Button {
+                                authService.logout()
+                            } label: {
+                                Text("Create Free Account")
+                                    .fontWeight(.semibold)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 12)
+                                    .background(AppGradients.primary)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(10)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                        .padding(.vertical, 8)
+                    } header: {
+                        Label("Cloud Sync", systemImage: "icloud.fill")
+                    }
+                }
                 
+                // Account section - different for guests vs registered users
                 Section {
-                    Button(role: .destructive) {
-                        showLogoutConfirm = true
-                    } label: {
-                        HStack {
-                            Spacer()
-                            Image(systemName: "rectangle.portrait.and.arrow.right")
-                            Text("Logout")
-                            Spacer()
+                    if authService.isGuest {
+                        Button {
+                            authService.logout()
+                        } label: {
+                            HStack {
+                                Spacer()
+                                Image(systemName: "person.badge.plus")
+                                Text("Create Free Account")
+                                Spacer()
+                            }
+                            .foregroundStyle(AppGradients.primary)
+                        }
+                    } else {
+                        Button(role: .destructive) {
+                            showLogoutConfirm = true
+                        } label: {
+                            HStack {
+                                Spacer()
+                                Image(systemName: "rectangle.portrait.and.arrow.right")
+                                Text("Logout")
+                                Spacer()
+                            }
                         }
                     }
                 } header: {

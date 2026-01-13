@@ -40,3 +40,39 @@ export async function authMiddleware(
     return reply.code(500).send({ error: 'Authentication failed' });
   }
 }
+
+/**
+ * Optional auth middleware - sets user if valid token exists, but allows
+ * unauthenticated requests to proceed (for guest mode features)
+ */
+export async function optionalAuthMiddleware(
+  request: FastifyRequest,
+  reply: FastifyReply
+): Promise<void> {
+  try {
+    const authHeader = request.headers.authorization;
+
+    if (!authHeader) {
+      // No auth header - proceed as guest (request.user will be undefined)
+      return;
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+
+    if (!token) {
+      // Empty token - proceed as guest
+      return;
+    }
+
+    try {
+      const payload = verifyToken(token);
+      request.user = payload;
+    } catch (error) {
+      // Invalid/expired token - proceed as guest rather than rejecting
+      console.log('[OptionalAuth] Token validation failed, proceeding as guest');
+    }
+  } catch (error) {
+    // Auth error - proceed as guest
+    console.log('[OptionalAuth] Auth error, proceeding as guest');
+  }
+}

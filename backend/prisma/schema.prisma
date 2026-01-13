@@ -26,6 +26,7 @@ model MealAnalysis {
   userId        String?
   imageUrl      String
   nutritionData Json
+  thumbnail     String?  @db.Text
   createdAt     DateTime @default(now())
   user          User?    @relation(fields: [userId], references: [id])
 

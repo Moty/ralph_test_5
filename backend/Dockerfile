@@ -1,6 +1,9 @@
 # Use official Node.js runtime as base image
 FROM node:20-alpine
 
+# Install dependencies for sharp (image processing)
+RUN apk add --no-cache python3 make g++ vips-dev
+
 # Set working directory
 WORKDIR /app
 

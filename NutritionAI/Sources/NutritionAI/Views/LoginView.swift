@@ -145,6 +145,32 @@ struct LoginView: View {
                             }
                             .font(.subheadline)
                         }
+                        
+                        Divider()
+                            .padding(.vertical, 8)
+                        
+                        // Guest mode button
+                        Button {
+                            Task { @MainActor in
+                                authService.continueAsGuest()
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: "person.fill.questionmark")
+                                Text("Try as Guest")
+                                    .fontWeight(.medium)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(Color(.systemGray5))
+                            .foregroundColor(.primary)
+                            .cornerRadius(14)
+                        }
+                        
+                        Text("Guest data is stored locally only and won't sync to the cloud")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
                     }
                     .padding(24)
                     .background(

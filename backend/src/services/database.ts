@@ -28,6 +28,7 @@ export interface MealAnalysis {
   id: string;
   userId: string | null;
   imageUrl: string;
+  thumbnail: string | null;  // Base64 encoded thumbnail image
   nutritionData: any;
   createdAt: Date;
 }
@@ -39,7 +40,7 @@ export interface DatabaseService {
   findUserById(id: string): Promise<User | null>;
   
   // Meal analysis operations
-  createMealAnalysis(data: { userId?: string; imageUrl: string; nutritionData: any }): Promise<MealAnalysis>;
+  createMealAnalysis(data: { userId?: string; imageUrl: string; thumbnail?: string; nutritionData: any }): Promise<MealAnalysis>;
   findMealAnalysesByUserId(userId: string): Promise<MealAnalysis[]>;
   findMealAnalysisById(id: string): Promise<MealAnalysis | null>;
   
@@ -82,16 +83,18 @@ class PostgresDatabase implements DatabaseService {
     return user ? { ...user, createdAt: user.createdAt } : null;
   }
 
-  async createMealAnalysis(data: { userId?: string; imageUrl: string; nutritionData: any }): Promise<MealAnalysis> {
+  async createMealAnalysis(data: { userId?: string; imageUrl: string; thumbnail?: string; nutritionData: any }): Promise<MealAnalysis> {
     const analysis = await this.prisma.mealAnalysis.create({
       data: {
         userId: data.userId || null,
         imageUrl: data.imageUrl,
+        thumbnail: data.thumbnail || null,
         nutritionData: data.nutritionData
       }
     });
     return {
       ...analysis,
+      thumbnail: analysis.thumbnail || null,
       createdAt: analysis.createdAt
     };
   }
@@ -101,7 +104,7 @@ class PostgresDatabase implements DatabaseService {
       where: { userId },
       orderBy: { createdAt: 'desc' }
     });
-    return analyses.map(a => ({ ...a, createdAt: a.createdAt }));
+    return analyses.map(a => ({ ...a, thumbnail: a.thumbnail || null, createdAt: a.createdAt }));
   }
 
   async findMealAnalysisById(id: string): Promise<MealAnalysis | null> {
@@ -178,12 +181,13 @@ class FirestoreDatabase implements DatabaseService {
     };
   }
 
-  async createMealAnalysis(data: { userId?: string; imageUrl: string; nutritionData: any }): Promise<MealAnalysis> {
+  async createMealAnalysis(data: { userId?: string; imageUrl: string; thumbnail?: string; nutritionData: any }): Promise<MealAnalysis> {
     const id = this.generateId();
     const analysis: MealAnalysis = {
       id,
       userId: data.userId || null,
       imageUrl: data.imageUrl,
+      thumbnail: data.thumbnail || null,
       nutritionData: data.nutritionData,
       createdAt: new Date()
     };
@@ -210,6 +214,7 @@ class FirestoreDatabase implements DatabaseService {
           id: doc.id,
           userId: data.userId,
           imageUrl: data.imageUrl,
+          thumbnail: data.thumbnail || null,
           nutritionData: data.nutritionData,
           createdAt: data.createdAt?.toDate() || new Date()
         };
@@ -228,6 +233,7 @@ class FirestoreDatabase implements DatabaseService {
             id: doc.id,
             userId: data.userId,
             imageUrl: data.imageUrl,
+            thumbnail: data.thumbnail || null,
             nutritionData: data.nutritionData,
             createdAt: data.createdAt?.toDate() || new Date()
           };
@@ -250,6 +256,7 @@ class FirestoreDatabase implements DatabaseService {
       id: doc.id,
       userId: data.userId,
       imageUrl: data.imageUrl,
+      thumbnail: data.thumbnail || null,
       nutritionData: data.nutritionData,
       createdAt: data.createdAt?.toDate() || new Date()
     };
