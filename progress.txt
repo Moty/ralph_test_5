@@ -137,3 +137,22 @@ Started: Mon Jan 12 19:15:13 PST 2026
   - Use Task { @MainActor in } to ensure UI updates on main thread
   - 401 triggers logout, 403 is expired token (backend distinction)
 ---
+
+## 2026-01-13T03:24 - US-010
+- Created LoginView at NutritionAI/Sources/NutritionAI/Views/LoginView.swift
+- Created RegisterView at NutritionAI/Sources/NutritionAI/Views/RegisterView.swift
+- LoginView has email and password fields with proper keyboard types
+- RegisterView has name, email, password, confirmPassword fields
+- Both show ProgressView when isLoading is true
+- Error messages displayed in red below form fields
+- LoginView presents RegisterView as sheet
+- RegisterView has Cancel and back-to-login navigation
+- Client-side validation for password match and length
+- Calls authService.login/register on success which triggers navigation
+- Files changed: LoginView.swift, RegisterView.swift
+- **Learnings for future iterations:**
+  - Use @EnvironmentObject for shared state like AuthService
+  - Use @Environment(\.dismiss) for closing sheets
+  - Task + await MainActor.run for async UI updates
+  - SecureField for password inputs, TextField for email
+---
