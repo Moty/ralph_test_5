@@ -130,6 +130,38 @@ public class StorageService {
     }
     
     @MainActor
+    public func fetchHistoryWithThumbnails() throws -> [(analysis: MealAnalysis, thumbnail: UIImage?)] {
+        let context = persistentContainer.viewContext
+        let request = NSFetchRequest<StoredMealAnalysis>(entityName: "StoredMealAnalysis")
+        request.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: false)]
+        
+        let results = try context.fetch(request)
+        
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        
+        return try results.map { item in
+            guard let nutritionData = item.nutritionData,
+                  let foodsData = item.foodsData,
+                  let timestamp = item.timestamp else {
+                throw NSError(domain: "StorageService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid stored data"])
+            }
+            
+            let totals = try decoder.decode(NutritionData.self, from: nutritionData)
+            let foods = try decoder.decode([FoodItem].self, from: foodsData)
+            let analysis = MealAnalysis(foods: foods, totals: totals, timestamp: timestamp)
+            
+            let thumbnail: UIImage? = if let thumbnailData = item.thumbnailData {
+                UIImage(data: thumbnailData)
+            } else {
+                nil
+            }
+            
+            return (analysis: analysis, thumbnail: thumbnail)
+        }
+    }
+    
+    @MainActor
     public func fetchRecentHistory(limit: Int = 10) throws -> [MealAnalysis] {
         let context = persistentContainer.viewContext
         let request = NSFetchRequest<StoredMealAnalysis>(entityName: "StoredMealAnalysis")

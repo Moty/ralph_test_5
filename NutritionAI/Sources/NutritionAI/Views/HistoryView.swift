@@ -3,16 +3,24 @@ import SwiftUI
 import UIKit
 #endif
 
-struct HistoryView: View {
-    @State private var meals: [MealAnalysis] = []
+public struct HistoryView: View {
+    @State private var historyItems: [HistoryItem] = []
     @State private var error: String?
     @State private var selectedMeal: MealAnalysis?
     private let storageService = StorageService.shared
     
-    var body: some View {
+    struct HistoryItem: Identifiable {
+        let id: Date
+        let analysis: MealAnalysis
+        let thumbnail: UIImage?
+    }
+    
+    public init() {}
+    
+    public var body: some View {
         NavigationView {
             Group {
-                if meals.isEmpty && error == nil {
+                if historyItems.isEmpty && error == nil {
                     emptyStateView
                 } else if let error = error {
                     errorView(message: error)
@@ -31,13 +39,14 @@ struct HistoryView: View {
         VStack(spacing: 20) {
             Image(systemName: "tray")
                 .font(.system(size: 60))
-                .foregroundColor(.gray)
-            Text("No Meal History")
+                .foregroundColor(.secondary)
+            Text("No History Yet")
                 .font(.title2)
                 .fontWeight(.semibold)
-            Text("Analyzed meals will appear here")
+            Text("Start analyzing meals to see them here")
                 .font(.body)
                 .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
         }
     }
     
@@ -59,26 +68,28 @@ struct HistoryView: View {
     
     private var historyListView: some View {
         ScrollView {
-            LazyVStack(spacing: 16) {
-                ForEach(Array(meals.enumerated()), id: \.offset) { index, meal in
-                    HistoryItemCard(meal: meal)
+            LazyVStack(spacing: 12) {
+                ForEach(historyItems) { item in
+                    HistoryItemCard(analysis: item.analysis, thumbnail: item.thumbnail)
                         .onTapGesture {
-                            selectedMeal = meal
+                            selectedMeal = item.analysis
                         }
                 }
             }
             .padding()
         }
-        .sheet(item: Binding(
-            get: { selectedMeal },
-            set: { selectedMeal = $0 }
-        )) { meal in
+        .sheet(item: $selectedMeal) { meal in
             NavigationView {
-                NutritionResultView(analysis: meal)
+                NutritionDetailView(mealAnalysis: meal)
+                    .navigationTitle("Meal Details")
+                    .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
-                        ToolbarItem(placement: .automatic) {
-                            Button("Done") {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button {
                                 selectedMeal = nil
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.secondary)
                             }
                         }
                     }
@@ -88,34 +99,121 @@ struct HistoryView: View {
     
     private func loadHistory() {
         do {
-            meals = try storageService.fetchHistory()
+            let items = try storageService.fetchHistoryWithThumbnails()
+            historyItems = items.map { item in
+                HistoryItem(
+                    id: item.analysis.timestamp,
+                    analysis: item.analysis,
+                    thumbnail: item.thumbnail
+                )
+            }
         } catch {
             self.error = "Failed to load meal history"
         }
     }
 }
 
-struct HistoryItemCard: View {
-    let meal: MealAnalysis
+struct NutritionDetailView: View {
+    let mealAnalysis: MealAnalysis
     
     var body: some View {
-        HStack(spacing: 16) {
-            // Placeholder thumbnail
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color.gray.opacity(0.2))
-                .frame(width: 60, height: 60)
-                .overlay(
-                    Image(systemName: "photo")
-                        .foregroundColor(.gray)
-                )
+        ScrollView {
+            VStack(spacing: 24) {
+                // Total nutrition summary
+                VStack(spacing: 12) {
+                    Text("Total Nutrition")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                    
+                    HStack(spacing: 20) {
+                        NutritionSummaryCard(
+                            label: "Calories",
+                            value: String(format: "%.0f", mealAnalysis.totals.calories),
+                            unit: "kcal"
+                        )
+                        
+                        NutritionSummaryCard(
+                            label: "Protein",
+                            value: String(format: "%.1f", mealAnalysis.totals.protein),
+                            unit: "g"
+                        )
+                    }
+                    
+                    HStack(spacing: 20) {
+                        NutritionSummaryCard(
+                            label: "Carbs",
+                            value: String(format: "%.1f", mealAnalysis.totals.carbs),
+                            unit: "g"
+                        )
+                        
+                        NutritionSummaryCard(
+                            label: "Fat",
+                            value: String(format: "%.1f", mealAnalysis.totals.fat),
+                            unit: "g"
+                        )
+                    }
+                }
+                .padding()
+                #if canImport(UIKit)
+                .background(Color(.secondarySystemBackground))
+                #else
+                .background(Color.gray.opacity(0.1))
+                #endif
+                .cornerRadius(12)
+                
+                // Individual food items
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Food Items")
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                    
+                    ForEach(Array(mealAnalysis.foods.enumerated()), id: \.offset) { index, food in
+                        FoodItemCard(food: food)
+                    }
+                }
+            }
+            .padding()
+        }
+    }
+}
+
+struct HistoryItemCard: View {
+    let analysis: MealAnalysis
+    let thumbnail: UIImage?
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            // Thumbnail or placeholder
+            Group {
+                if let thumbnail = thumbnail {
+                    #if canImport(UIKit)
+                    Image(uiImage: thumbnail)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                    #endif
+                } else {
+                    Image(systemName: "fork.knife")
+                        .font(.title2)
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            }
+            .frame(width: 60, height: 60)
+            #if canImport(UIKit)
+            .background(Color(.tertiarySystemBackground))
+            #else
+            .background(Color.gray.opacity(0.2))
+            #endif
+            .clipShape(RoundedRectangle(cornerRadius: 8))
             
             VStack(alignment: .leading, spacing: 4) {
-                Text("\(Int(meal.totals.calories)) cal")
+                Text("\(Int(analysis.totals.calories)) cal")
                     .font(.headline)
-                Text(formatDate(meal.timestamp))
+                    .foregroundColor(.primary)
+                Text(formatDate(analysis.timestamp))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
-                Text("\(meal.foods.count) item\(meal.foods.count == 1 ? "" : "s")")
+                Text("\(analysis.foods.count) item\(analysis.foods.count == 1 ? "" : "s")")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -123,16 +221,16 @@ struct HistoryItemCard: View {
             Spacer()
             
             Image(systemName: "chevron.right")
-                .foregroundColor(.gray)
+                .font(.caption)
+                .foregroundColor(.secondary)
         }
         .padding()
         #if canImport(UIKit)
-        .background(Color(.systemBackground))
+        .background(Color(.secondarySystemBackground))
         #else
         .background(Color.white)
         #endif
         .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
     }
     
     private func formatDate(_ date: Date) -> String {
