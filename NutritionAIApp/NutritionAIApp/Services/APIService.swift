@@ -14,6 +14,7 @@ enum APIError: Error {
     case serverError(String)
     case networkError(Error)
     case timeout
+    case noInternetConnection
     
     var localizedDescription: String {
         switch self {
@@ -28,7 +29,9 @@ enum APIError: Error {
         case .networkError(let error):
             return "Network error: \(error.localizedDescription)"
         case .timeout:
-            return "Request timed out"
+            return "Request timed out. Please try again."
+        case .noInternetConnection:
+            return "No internet connection. Please check your network settings."
         }
     }
 }
@@ -103,13 +106,25 @@ class APIService {
             }
             
         } catch let error as URLError {
+            // Log error for debugging
+            print("API Error: \(error)")
+            
+            // Detect offline state
+            if error.code == .notConnectedToInternet || error.code == .networkConnectionLost {
+                throw APIError.noInternetConnection
+            }
+            
             if error.code == .timedOut {
                 throw APIError.timeout
             }
             throw APIError.networkError(error)
         } catch let error as APIError {
+            // Log error for debugging
+            print("API Error: \(error)")
             throw error
         } catch {
+            // Log error for debugging
+            print("API Error: \(error)")
             throw APIError.networkError(error)
         }
     }
