@@ -225,3 +225,20 @@ Started: Mon Jan 12 19:15:13 PST 2026
   - Root view switches based on authentication state
   - environmentObject propagates through view hierarchy
 ---
+
+## 2026-01-13T03:29 - US-015
+- Updated SettingsView to add logout functionality
+- Added @EnvironmentObject var authService: AuthService
+- Added showLogoutConfirm state for confirmation dialog
+- Created Account section with destructive Logout button
+- confirmationDialog shows "Are you sure?" with Logout and Cancel options
+- Tapping Logout calls authService.logout() which clears token and sets isAuthenticated = false
+- App automatically returns to LoginView when isAuthenticated becomes false
+- Removed iOS-only modifiers (.textInputAutocapitalization, .keyboardType) for Swift Package compatibility
+- Files changed: SettingsView.swift
+- **Learnings for future iterations:**
+  - Button(role: .destructive) for destructive actions
+  - confirmationDialog for action confirmation
+  - State changes in ObservableObject propagate automatically
+  - Remove platform-specific modifiers for cross-platform Swift packages
+---

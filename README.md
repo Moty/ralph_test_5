@@ -26,15 +26,16 @@ open /Users/moty/Projects/experiments/ralph_test_5/NutritionAI/NutritionAIApp.xc
 
 ⚠️ Do NOT open `/Users/moty/Projects/experiments/ralph_test_5/NutritionAIApp/` - that's the old project!
 
-#### 3. Configure Backend URL (First Time Only)
+#### 3. Configure Backend URL and Create Account
 
 The app defaults to `192.168.50.48:3000`. If your Mac's IP is different:
 
 1. Find your Mac's IP: `ifconfig | grep "inet " | grep -v 127.0.0.1`
 2. Run the app on your iPhone
-3. Go to **Settings** tab
-4. Enter your backend URL (e.g., `http://YOUR_IP:3000`)
-5. Tap **Save URL**
+3. **Register a new account** on the registration screen
+4. If needed, go to **Settings** tab to update backend URL
+5. Enter your backend URL (e.g., `http://YOUR_IP:3000`)
+6. Tap **Save URL**
 
 #### 4. Build and Run
 
@@ -45,11 +46,13 @@ The app defaults to `192.168.50.48:3000`. If your Mac's IP is different:
 
 #### 5. Test the App
 
-1. **Camera Tab**: Take a photo of food
-2. **Confirm**: Tap confirm to analyze
-3. **Results**: View nutrition breakdown (calories, protein, carbs, fat)
-4. **Settings Tab**: Change AI model or backend URL
-5. **History Tab**: View previously analyzed meals
+1. **Register/Login**: Create an account or login
+2. **Home Tab**: View your meal statistics and quick capture tiles
+3. **Camera Tab**: Take a photo of food
+4. **Confirm**: Tap confirm to analyze
+5. **Results**: View nutrition breakdown (calories, protein, carbs, fat)
+6. **History Tab**: View previously analyzed meals
+7. **Settings Tab**: Change AI model, backend URL, or logout
 
 ### Troubleshooting
 
@@ -87,8 +90,20 @@ swift build
 
 ### Features
 - SwiftUI-based iOS application
-- **Tab Navigation** between Camera and History views
-  - Clear tab icons (camera and clock) representing each function
+- **User Authentication**
+  - Register new account with email, name, and password
+  - Login with email and password
+  - JWT token stored securely in iOS Keychain
+  - Auto-login on app launch if valid token exists
+  - Logout functionality with confirmation dialog
+- **Home Dashboard**
+  - Personalized welcome message with user's name
+  - Meal statistics for today, this week, and all time
+  - Quick capture tiles for Full Meal, Snack, and Quick Add
+  - Pull-to-refresh to update stats
+  - Empty state for new users
+- **Tab Navigation** between Home, Camera, History, and Settings
+  - Clear tab icons representing each function
   - Smooth transitions between tabs
   - Tab selection persists when switching
   - Camera resets when navigating away and back
@@ -161,7 +176,13 @@ Create a `.env` file in the backend directory:
 PORT=3000
 DATABASE_URL=postgresql://user:password@localhost:5432/nutritionai
 GEMINI_API_KEY=your_gemini_api_key_here
+JWT_SECRET=your_jwt_secret_key_here
 ```
+
+### Database Schema
+The backend uses Prisma with PostgreSQL. The schema includes:
+- **User**: User accounts with email, password hash, and name
+- **MealAnalysis**: Nutrition analysis records linked to users
 
 ### Database Setup
 ```bash
@@ -182,15 +203,115 @@ npm test        # Run tests
 
 ### API Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | /health | Health check endpoint |
-| POST | /api/analyze | Analyze food image and return nutrition data |
+| Method | Path | Description | Auth Required |
+|--------|------|-------------|---------------|
+| GET | /health | Health check endpoint | No |
+| POST | /api/auth/register | Register new user account | No |
+| POST | /api/auth/login | Login with email and password | No |
+| GET | /api/user/stats | Get user meal statistics | Yes |
+| POST | /api/analyze | Analyze food image and return nutrition data | Yes |
 
-#### POST /api/analyze
-Accepts a food image and returns detailed nutritional analysis. Analysis is saved to the database for history tracking.
+#### POST /api/auth/register
+Create a new user account.
 
 **Request:**
+- Content-Type: `application/json`
+- Body:
+```json
+{
+  "email": "user@example.com",
+  "password": "password123",
+  "name": "John Doe"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "cm5abc123xyz",
+    "email": "user@example.com",
+    "name": "John Doe"
+  }
+}
+```
+
+**Error Responses:**
+- 400: Invalid email format, weak password, or email already exists
+
+#### POST /api/auth/login
+Login with email and password.
+
+**Request:**
+- Content-Type: `application/json`
+- Body:
+```json
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "cm5abc123xyz",
+    "email": "user@example.com",
+    "name": "John Doe"
+  }
+}
+```
+
+**Error Responses:**
+- 401: Invalid email or password
+
+#### GET /api/user/stats
+Get meal statistics for the authenticated user.
+
+**Request:**
+- Headers: `Authorization: Bearer <token>`
+
+**Response (200 OK):**
+```json
+{
+  "today": {
+    "count": 2,
+    "avgCalories": 450,
+    "totalCalories": 900,
+    "totalProtein": 60,
+    "totalCarbs": 80,
+    "totalFat": 30
+  },
+  "week": {
+    "count": 15,
+    "avgCalories": 500,
+    "totalCalories": 7500,
+    "totalProtein": 450,
+    "totalCarbs": 900,
+    "totalFat": 300
+  },
+  "allTime": {
+    "count": 50,
+    "avgCalories": 520,
+    "totalCalories": 26000,
+    "totalProtein": 1500,
+    "totalCarbs": 3000,
+    "totalFat": 1000
+  }
+}
+```
+
+**Error Responses:**
+- 401: Missing or invalid authentication token
+
+#### POST /api/analyze
+Analyze food image and return nutrition data (requires authentication).
+
+**Request:**
+- Headers: `Authorization: Bearer <token>`
 - Content-Type: `multipart/form-data`
 - Body: Image file (JPG/PNG, max 5MB)
 
@@ -231,11 +352,20 @@ Accepts a food image and returns detailed nutritional analysis. Analysis is save
 - CORS enabled for mobile app requests
 - Multipart file upload support
 - Environment-based configuration
+- **User Authentication**
+  - JWT-based authentication with 30-day token expiry
+  - bcrypt password hashing
+  - Register and login endpoints
+  - Auth middleware for protected routes
+- **User Management**
+  - User profiles with email, name, and password
+  - User statistics endpoint for dashboard
+  - Meal analyses linked to user accounts
 - Prisma ORM with PostgreSQL database
 - MealAnalysis model for storing nutrition data
 - **Database persistence** for meal analyses
   - Saves analysis results to PostgreSQL via Prisma
-  - Stores userId (placeholder), imageUrl, nutritionData JSON, timestamp
+  - Stores userId, imageUrl, nutritionData JSON, timestamp
   - Returns analysis ID in API response
   - Graceful error handling (analysis returned even if save fails)
 - **Gemini AI integration** for nutrition analysis
@@ -270,11 +400,19 @@ swift build
 - `Sources/NutritionAI/Views/CameraView.swift` - Camera capture interface with photo preview and API integration
 - `Sources/NutritionAI/Views/NutritionResultView.swift` - Nutrition results display with loading and error states
 - `Sources/NutritionAI/Views/HistoryView.swift` - Meal history list with navigation to details
+- `Sources/NutritionAI/Views/HomeView.swift` - Home dashboard with stats and quick capture
+- `Sources/NutritionAI/Views/LoginView.swift` - Login screen with email and password
+- `Sources/NutritionAI/Views/RegisterView.swift` - Registration screen for new users
+- `Sources/NutritionAI/Views/StatsCard.swift` - Reusable stats card component
+- `Sources/NutritionAI/Views/QuickCaptureTile.swift` - Quick capture tile component
 - `Sources/NutritionAI/Services/APIService.swift` - Backend API communication service
+- `Sources/NutritionAI/Services/AuthService.swift` - Authentication state management with Keychain storage
 - `Sources/NutritionAI/Services/StorageService.swift` - Core Data storage for meal history
 - `Sources/NutritionAI/Models/NutritionData.swift` - Nutrition data model with macro calculations
 - `Sources/NutritionAI/Models/FoodItem.swift` - Food item model with nutrition data
 - `Sources/NutritionAI/Models/MealAnalysis.swift` - Meal analysis model
+- `Sources/NutritionAI/Models/User.swift` - User model
+- `Sources/NutritionAI/Models/UserStats.swift` - User statistics model
 - `Tests/NutritionAITests/APIServiceTests.swift` - Unit tests for API service
 - `Info.plist` - Camera permissions and app configuration
 - `Package.swift` - Swift package definition
