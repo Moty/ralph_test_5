@@ -21,12 +21,16 @@
     "@google/generative-ai": "^0.24.1",
     "@prisma/adapter-pg": "^7.2.0",
     "@prisma/client": "^7.2.0",
+    "bcryptjs": "^3.0.3",
     "dotenv": "^17.2.3",
     "fastify": "^5.6.2",
+    "jsonwebtoken": "^9.0.3",
     "pg": "^8.16.3",
     "prisma": "^7.2.0"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.0.6",
     "@types/pg": "^8.16.0",
     "tsx": "^4.21.0",

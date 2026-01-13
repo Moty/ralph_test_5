@@ -1,3 +1,17 @@
 # Ralph Progress Log
 Started: Mon Jan 12 19:15:13 PST 2026
 ---
+
+## 2026-01-13T03:15 - US-001
+- Added User model to Prisma schema with id, email (unique), passwordHash, name, createdAt
+- Made MealAnalysis.userId nullable for backward compatibility
+- Added index on MealAnalysis.userId
+- Added relation between User and MealAnalysis
+- Generated and ran migration 20260113031542_add_user_model
+- Files changed: backend/prisma/schema.prisma, backend/prisma/migrations/
+- **Learnings for future iterations:**
+  - Prisma schema uses cuid() for default IDs
+  - Relations require both field and reference declarations
+  - Migrations created with `npx prisma migrate dev --name <name>`
+  - Always make userId nullable when adding to existing tables for backward compatibility
+---
