@@ -172,3 +172,20 @@ Started: Mon Jan 12 19:15:13 PST 2026
   - .textCase(.uppercase) for title styling
   - frame(maxWidth:) for responsive grid layouts
 ---
+
+## 2026-01-13T03:26 - US-012
+- Created QuickCaptureTile at NutritionAI/Sources/NutritionAI/Views/QuickCaptureTile.swift
+- Button-based component with SF Symbol icon and label text
+- Action closure for triggering camera or other flows
+- Visual feedback: scaleEffect 0.95 on tap with animation
+- Uses @State isPressed for temporary press state
+- DispatchQueue.main.asyncAfter for smooth animation timing
+- Card design with system gray background and rounded corners
+- PlainButtonStyle to avoid default button styling
+- Files changed: QuickCaptureTile.swift
+- **Learnings for future iterations:**
+  - withAnimation wraps state changes for smooth transitions
+  - DispatchQueue.main.asyncAfter delays action execution
+  - scaleEffect provides tactile feedback
+  - PlainButtonStyle removes default iOS button appearance
+---
