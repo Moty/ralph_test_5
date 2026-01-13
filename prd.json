@@ -1,393 +1,240 @@
 {
   "project": "NutritionAI",
-  "branchName": "ralph/nutrition-analyzer-mvp",
-  "description": "AI-Powered Nutrition Analyzer Mobile App - iOS app with photo-based food nutrition analysis",
+  "branchName": "ralph/user-auth-dashboard",
+  "description": "User Management and Home Dashboard - Add user authentication, account management, and personalized home dashboard",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Initialize iOS project with SwiftUI",
-      "description": "As a developer, I need the iOS project scaffolded with SwiftUI and camera capabilities.",
+      "title": "Add User database model and authentication schema",
+      "description": "As a developer, I need to store user accounts and link meal analyses to users.",
       "acceptanceCriteria": [
-        "Create new iOS project with SwiftUI app template",
-        "Set minimum iOS deployment target to 16.0",
-        "Add Info.plist entry: NSCameraUsageDescription",
-        "Configure basic navigation structure with ContentView",
-        "Project builds successfully without errors",
+        "Add User model to Prisma schema with fields: id, email (unique), passwordHash, name, createdAt",
+        "Add userId field to MealAnalysis (nullable for backward compatibility)",
+        "Add index on MealAnalysis.userId for performance",
+        "Generate and run Prisma migration successfully",
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-002",
-      "title": "Initialize Node.js backend with Fastify",
-      "description": "As a developer, I need the backend API initialized with TypeScript and Fastify.",
+      "title": "Implement JWT authentication service",
+      "description": "As a backend developer, I need JWT token generation and validation for secure authentication.",
       "acceptanceCriteria": [
-        "Initialize Node.js project with TypeScript configuration",
-        "Install dependencies: fastify, @fastify/cors, dotenv",
-        "Create basic server with GET /health endpoint",
-        "Configure CORS to allow mobile app requests",
-        "Server starts successfully on port from environment variable",
+        "Create auth service with generateToken and verifyToken functions",
+        "Tokens include userId, email in payload",
+        "Tokens expire after 30 days",
+        "Use environment variable for JWT secret",
+        "Hash passwords using bcrypt",
+        "Add bcryptjs and jsonwebtoken dependencies",
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-003",
-      "title": "Set up Prisma database schema",
-      "description": "As a developer, I need the database schema for storing meal analysis records.",
+      "title": "Create authentication middleware",
+      "description": "As a backend developer, I need middleware to protect authenticated routes.",
       "acceptanceCriteria": [
-        "Install and initialize Prisma with PostgreSQL",
-        "Create MealAnalysis model with fields: id, userId, imageUrl, nutritionData (JSON), createdAt",
-        "Define NutritionData type with calories, protein, carbs, fat fields",
-        "Generate Prisma client",
-        "Create initial migration file",
+        "Create auth middleware that validates JWT from Authorization header",
+        "Attach user object to request context",
+        "Return 401 for missing/invalid tokens",
+        "Return 403 for expired tokens",
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-004",
-      "title": "Create nutrition data models in Swift",
-      "description": "As a developer, I need structured Swift models for nutrition data.",
+      "title": "Add auth endpoints (register, login)",
+      "description": "As a user, I want to create an account and login to access my personalized data.",
       "acceptanceCriteria": [
-        "Create NutritionData struct with: calories, protein, carbs, fat (all Double)",
-        "Create FoodItem struct with: name, portion, confidence (0-1), nutrition",
-        "Create MealAnalysis struct combining foods array, totals, timestamp",
-        "All structs conform to Codable protocol",
-        "Add computed property for macro percentages on NutritionData",
+        "POST /api/auth/register - creates user, returns JWT token",
+        "POST /api/auth/login - validates credentials, returns JWT token",
+        "Validate email format and password strength (min 8 chars)",
+        "Return 400 for duplicate email on registration",
+        "Return 401 for invalid credentials on login",
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-005",
-      "title": "Implement camera preview with AVFoundation",
-      "description": "As a user, I want to see a live camera preview when I open the app.",
+      "title": "Add user stats endpoint",
+      "description": "As a user, I want to see my meal statistics on the home dashboard.",
       "acceptanceCriteria": [
-        "Create CameraView with AVFoundation camera preview layer",
-        "Request camera permission on first use",
-        "Display live camera preview when permission granted",
-        "Show permission denied message when permission not granted",
+        "GET /api/user/stats - returns meal count, avg calories, totals",
+        "Requires authentication (use auth middleware)",
+        "Calculate stats from user's MealAnalysis records",
+        "Return stats for: today, this week, all time",
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-006",
-      "title": "Add photo capture functionality",
-      "description": "As a user, I want to capture a photo of my food using the camera.",
+      "title": "Protect analyze endpoint with authentication",
+      "description": "As a developer, I need to associate meal analyses with the authenticated user.",
       "acceptanceCriteria": [
-        "Add capture button to camera view",
-        "Capture photo on button tap",
-        "Display captured photo in preview",
-        "Compress image to under 2MB",
-        "Add retake and confirm buttons",
+        "Add auth middleware to POST /api/analyze route",
+        "Store userId when creating MealAnalysis",
+        "Return 401 if not authenticated",
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-007",
-      "title": "Install and configure Gemini SDK",
-      "description": "As a developer, I need Gemini AI SDK integrated in the backend.",
+      "title": "Create User and UserStats iOS models",
+      "description": "As an iOS developer, I need Swift models for user data.",
       "acceptanceCriteria": [
-        "Install @google/generative-ai package",
-        "Configure Gemini API key from environment variable",
-        "Create gemini.ts service with initializeModel() function",
-        "Add environment variable validation on server start",
-        "Typecheck passes"
+        "Create User model matching backend (id, email, name)",
+        "Create UserStats model (todayMeals, weekMeals, avgCalories, etc.)",
+        "Both models conform to Codable",
+        "Compile and typecheck passes"
       ],
       "priority": 7,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-008",
-      "title": "Create Gemini nutrition analysis prompt",
-      "description": "As a developer, I need an optimized prompt for extracting nutrition data from food images.",
+      "title": "Create iOS AuthService for state management",
+      "description": "As an iOS developer, I need centralized authentication state management.",
       "acceptanceCriteria": [
-        "Create prompt template that requests food identification",
-        "Prompt asks for portion size estimation in common units",
-        "Prompt requests macro breakdown: calories, protein, carbs, fat per item and total",
-        "Specify JSON output format matching NutritionData schema",
-        "Include confidence scoring for each food item (0-1)",
-        "Document prompt in code comments",
-        "Typecheck passes"
+        "Create AuthService with @Published isAuthenticated property",
+        "Store JWT token in iOS Keychain securely",
+        "Implement login, register, logout functions",
+        "Auto-login on app launch if valid token exists",
+        "Clear token on logout",
+        "Compile and typecheck passes"
       ],
       "priority": 8,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-009",
-      "title": "Create image validation utilities",
-      "description": "As a developer, I need to validate uploaded images before processing.",
+      "title": "Update APIService with authentication",
+      "description": "As a developer, I need API calls to include authentication headers.",
       "acceptanceCriteria": [
-        "Validate image format (JPG/PNG only)",
-        "Validate image size (max 5MB)",
-        "Return clear error messages for invalid images",
-        "Typecheck passes",
-        "Tests pass"
+        "Add Authorization header with Bearer token to all requests",
+        "Add register() and login() API methods",
+        "Add fetchUserStats() API method",
+        "Handle 401 responses by triggering logout",
+        "Existing API methods still work",
+        "Compile and typecheck passes"
       ],
       "priority": 9,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-010",
-      "title": "Implement POST /api/analyze endpoint",
-      "description": "As a backend developer, I need an endpoint that accepts images and returns nutrition analysis.",
+      "title": "Create Login and Register views",
+      "description": "As a user, I want to login or create an account from the app.",
       "acceptanceCriteria": [
-        "Install @fastify/multipart for file uploads",
-        "Create POST /api/analyze route accepting multipart/form-data",
-        "Use image validation from US-009",
-        "Send image to Gemini with nutrition prompt",
-        "Parse Gemini response into structured JSON",
-        "Add timeout handling (30 seconds max)",
-        "Return 200 with nutrition data or 4xx/5xx with error message",
-        "Typecheck passes",
-        "Tests pass"
+        "LoginView with email and password fields",
+        "RegisterView with email, name, password, confirm password fields",
+        "Both views show loading state during API calls",
+        "Show error messages for failed auth",
+        "Navigate to main app on successful auth",
+        "Link between Login and Register views",
+        "Compile and typecheck passes"
       ],
       "priority": 10,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-011",
-      "title": "Create API service in iOS app",
-      "description": "As a developer, I need a service to communicate with the backend API.",
+      "title": "Create StatsCard component for dashboard",
+      "description": "As a user, I want to see my nutrition stats in visually clear cards.",
       "acceptanceCriteria": [
-        "Create APIService class with async/await methods",
-        "Implement analyzeImage() method that sends image to POST /api/analyze",
-        "Use URLSession with multipart/form-data encoding",
-        "Decode response into MealAnalysis model",
-        "Handle network errors and timeouts gracefully",
-        "Add timeout handling (30 seconds)",
-        "Typecheck passes"
+        "Reusable StatsCard component with title, value, subtitle",
+        "Support different stat types (count, calories, macros)",
+        "Clean, card-based design with system colors",
+        "Responsive layout in grid",
+        "Compile and typecheck passes"
       ],
       "priority": 11,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-012",
-      "title": "Create nutrition summary card component",
-      "description": "As a developer, I need a reusable component to display nutrition totals.",
+      "title": "Create QuickCaptureTile component",
+      "description": "As a user, I want quick-access tiles to capture full meals or partial meals.",
       "acceptanceCriteria": [
-        "Create NutritionSummaryCard SwiftUI view",
-        "Display total calories prominently",
-        "Show protein, carbs, fat in grams",
-        "Display macro percentages",
-        "Use adaptive colors for Dark Mode",
-        "Typecheck passes"
+        "QuickCaptureTile component with icon, label, and action",
+        "Tappable tile that triggers camera or specific capture flow",
+        "Support for Full Meal, Snack, Quick Add options",
+        "Visual feedback on tap",
+        "Compile and typecheck passes"
       ],
       "priority": 12,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-013",
-      "title": "Create food item list component",
-      "description": "As a developer, I need a component to display individual food items.",
+      "title": "Create HomeView dashboard",
+      "description": "As a user, I want a home dashboard showing my stats and quick meal capture options.",
       "acceptanceCriteria": [
-        "Create FoodItemCard SwiftUI view",
-        "Display food name and portion size",
-        "Show individual nutrition values",
-        "Display confidence score with color coding",
-        "Use adaptive colors for Dark Mode",
-        "Typecheck passes"
+        "Display welcome message with user's name",
+        "Show stats grid with today/week/total meals and calories",
+        "Show quick capture tiles for Full Meal, Snack, Quick Add",
+        "Refresh stats when view appears",
+        "Show loading state while fetching stats",
+        "Show empty state for new users",
+        "Compile and typecheck passes"
       ],
       "priority": 13,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-014",
-      "title": "Build nutrition results view",
-      "description": "As a user, I want to see the nutritional breakdown of my food after capture.",
+      "title": "Add HomeView to TabView and update app flow",
+      "description": "As a user, I want the Home tab to be the first tab when I open the app.",
       "acceptanceCriteria": [
-        "Create NutritionResultView using NutritionSummaryCard and FoodItemCard components",
-        "Add loading indicator during API call",
-        "Show error message if analysis fails",
-        "Add dismiss/retry button",
-        "Integrate into CameraView confirm button flow",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Add HomeView as first tab in TabView",
+        "Show login screen if not authenticated",
+        "Show main TabView with Home tab if authenticated",
+        "Home tab uses house.fill SF Symbol",
+        "Existing tabs (Camera, History, Settings) still work",
+        "Tab order: Home, Camera, History, Settings",
+        "Compile and typecheck passes"
       ],
       "priority": 14,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-015",
-      "title": "Implement local storage service with Core Data",
-      "description": "As a developer, I need to save meal analyses locally for history.",
+      "title": "Add logout functionality to Settings",
+      "description": "As a user, I want to logout from my account in the Settings tab.",
       "acceptanceCriteria": [
-        "Create StorageService using Core Data (iOS 16+ compatible)",
-        "Define StoredMealAnalysis entity with nutritionData, thumbnail, timestamp",
-        "Implement save() method for storing analyses",
-        "Implement fetch methods for retrieving history",
-        "Data persists across app restarts",
-        "Typecheck passes"
+        "Add Logout button to SettingsView",
+        "Tapping logout clears auth token and returns to login",
+        "Show confirmation dialog before logout",
+        "Existing settings functionality still works",
+        "Compile and typecheck passes"
       ],
       "priority": 15,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-016",
-      "title": "Add auto-pruning to storage service",
-      "description": "As a developer, I need to limit stored history to prevent excessive storage use.",
-      "acceptanceCriteria": [
-        "Implement auto-prune to keep maximum 100 entries",
-        "Delete oldest entries when limit exceeded",
-        "Auto-prune runs after each save",
-        "Typecheck passes"
-      ],
-      "priority": 16,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-017",
-      "title": "Integrate storage service into camera flow",
-      "description": "As a user, I want my analyzed meals saved automatically.",
-      "acceptanceCriteria": [
-        "Call StorageService.save() after successful analysis in CameraView",
-        "Store nutrition data and thumbnail image",
-        "Handle storage errors gracefully without blocking user",
-        "Typecheck passes"
-      ],
-      "priority": 17,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-018",
-      "title": "Extend backend to save analyses to database",
-      "description": "As a developer, I need meal analyses stored in PostgreSQL.",
-      "acceptanceCriteria": [
-        "Install pg and @prisma/adapter-pg packages",
-        "Initialize PrismaClient with PostgreSQL adapter",
-        "Extend POST /api/analyze to save analysis to database",
-        "Store userId (placeholder), imageUrl (empty), nutritionData JSON, timestamp",
-        "Return analysis ID in API response",
-        "Handle database errors gracefully",
-        "Typecheck passes",
-        "Tests pass"
-      ],
-      "priority": 18,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-019",
-      "title": "Create history item card component",
-      "description": "As a developer, I need a component to display history list items.",
-      "acceptanceCriteria": [
-        "Create HistoryItemCard SwiftUI view",
-        "Display total calories and timestamp",
-        "Show food item count",
-        "Display thumbnail or placeholder icon",
-        "Use adaptive colors for Dark Mode",
-        "Typecheck passes"
-      ],
-      "priority": 19,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-020",
-      "title": "Create history list view",
-      "description": "As a user, I want to view a list of my previously analyzed meals.",
-      "acceptanceCriteria": [
-        "Create HistoryView showing meals in reverse chronological order",
-        "Use LazyVStack for smooth scrolling performance",
-        "Show empty state when no history exists",
-        "Tapping item shows full nutrition details in sheet",
-        "Make MealAnalysis Identifiable for sheet presentation",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 20,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-021",
-      "title": "Add tab navigation between camera and history",
-      "description": "As a user, I want to easily switch between camera and history views.",
-      "acceptanceCriteria": [
-        "Create TabView in ContentView with Camera and History tabs",
-        "Use SF Symbols icons: camera.fill and clock.fill",
-        "Tab selection persists when switching",
-        "Camera view resets captured image when navigating away",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 21,
       "passes": false,
-      "notes": ""
-    },
-    {
-      "id": "US-022",
-      "title": "Add camera permission error handling",
-      "description": "As a user, I want clear guidance when camera access is denied.",
-      "acceptanceCriteria": [
-        "Show alert when camera permission is denied",
-        "Alert includes button to open Settings app",
-        "Display permission denied view in camera screen",
-        "Handle permission request on first app launch",
-        "No app crash when permission denied",
-        "Typecheck passes"
-      ],
-      "priority": 22,
-      "passes": false,
-      "notes": ""
-    },
-    {
-      "id": "US-023",
-      "title": "Add network error handling",
-      "description": "As a user, I want clear feedback when network requests fail.",
-      "acceptanceCriteria": [
-        "Add noInternetConnection case to APIError enum",
-        "Detect offline state (notConnectedToInternet, networkConnectionLost)",
-        "Show user-friendly error messages without exposing internals",
-        "Display retry button on errors",
-        "Log all errors for debugging",
-        "Typecheck passes"
-      ],
-      "priority": 23,
-      "passes": false,
-      "notes": ""
-    },
-    {
-      "id": "US-024",
-      "title": "Add backend rate limiting",
-      "description": "As a developer, I need to prevent API abuse with rate limiting.",
-      "acceptanceCriteria": [
-        "Install @fastify/rate-limit package",
-        "Configure rate limit: 100 requests per hour per IP",
-        "Return 429 status when limit exceeded",
-        "Include retry-after header in response",
-        "Log rate limit violations",
-        "Typecheck passes",
-        "Tests pass"
-      ],
-      "priority": 24,
-      "passes": true,
       "notes": ""
     }
   ]

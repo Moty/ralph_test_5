@@ -2,9 +2,74 @@
 
 AI-Powered Nutrition Analyzer Mobile App - iOS app with photo-based food nutrition analysis
 
+## Quick Start - Running the iOS App
+
+### Step-by-Step Build Instructions
+
+#### 1. Start the Backend Server
+
+```bash
+cd /Users/moty/Projects/experiments/ralph_test_5/backend
+npm install
+npm run dev
+```
+
+The server will start on port 3000 and show available IP addresses.
+
+#### 2. Open the Correct Xcode Project
+
+**IMPORTANT**: There are two Xcode projects. Open the one inside `NutritionAI/`:
+
+```bash
+open /Users/moty/Projects/experiments/ralph_test_5/NutritionAI/NutritionAIApp.xcodeproj
+```
+
+⚠️ Do NOT open `/Users/moty/Projects/experiments/ralph_test_5/NutritionAIApp/` - that's the old project!
+
+#### 3. Configure Backend URL (First Time Only)
+
+The app defaults to `192.168.50.48:3000`. If your Mac's IP is different:
+
+1. Find your Mac's IP: `ifconfig | grep "inet " | grep -v 127.0.0.1`
+2. Run the app on your iPhone
+3. Go to **Settings** tab
+4. Enter your backend URL (e.g., `http://YOUR_IP:3000`)
+5. Tap **Save URL**
+
+#### 4. Build and Run
+
+1. In Xcode, select your iPhone as the target device
+2. Clean build folder: **Product → Clean Build Folder** (⌘⇧K)
+3. Build and run: **Product → Run** (⌘R)
+4. Grant camera and local network permissions when prompted
+
+#### 5. Test the App
+
+1. **Camera Tab**: Take a photo of food
+2. **Confirm**: Tap confirm to analyze
+3. **Results**: View nutrition breakdown (calories, protein, carbs, fat)
+4. **Settings Tab**: Change AI model or backend URL
+5. **History Tab**: View previously analyzed meals
+
+### Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| Shows "Hello World" or old UI | You opened the wrong project. Open `NutritionAI/NutritionAIApp.xcodeproj` |
+| "No such module NutritionAI" | Select the NutritionAIApp target, add package to Frameworks |
+| Camera not working | Only works on physical iPhone, not simulator |
+| Network error | Check backend is running and URL is correct in Settings |
+| Quota exceeded | Switch to a different AI model in Settings |
+
+---
+
 ## Project Structure
 
-- **NutritionAI/** - iOS SwiftUI application with camera-based food analysis
+- **NutritionAI/** - iOS Swift Package + Wrapper App (USE THIS)
+  - `Sources/NutritionAI/` - Main package source code
+  - `NutritionAIApp/` - Wrapper Xcode app project
+  - `NutritionAIApp.xcodeproj` - Open this project!
+- **NutritionAIApp/** - Old standalone project (DEPRECATED - do not use)
 - **backend/** - Node.js/Fastify API server for nutrition analysis
 
 ## iOS App
