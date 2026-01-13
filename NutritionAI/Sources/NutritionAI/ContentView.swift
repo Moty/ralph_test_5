@@ -1,6 +1,8 @@
 import SwiftUI
 
 public struct ContentView: View {
+    @EnvironmentObject var authService: AuthService
+    @State private var selectedTab = 0
     let apiService: APIService
     
     public init(apiService: APIService) {
@@ -8,24 +10,36 @@ public struct ContentView: View {
     }
     
     public var body: some View {
-        TabView {
-            HomeView(apiService: apiService)
-                .tabItem {
-                    Label("Home", systemImage: "house.fill")
+        Group {
+            if authService.isAuthenticated {
+                TabView(selection: $selectedTab) {
+                    HomeView(selectedTab: $selectedTab, apiService: apiService)
+                        .tabItem {
+                            Label("Home", systemImage: "house.fill")
+                        }
+                        .tag(0)
+                    
+                    CameraView(apiService: apiService)
+                        .tabItem {
+                            Label("Camera", systemImage: "camera.fill")
+                        }
+                        .tag(1)
+                    
+                    HistoryView()
+                        .tabItem {
+                            Label("History", systemImage: "clock.fill")
+                        }
+                        .tag(2)
+                    
+                    SettingsView()
+                        .tabItem {
+                            Label("Settings", systemImage: "gear")
+                        }
+                        .tag(3)
                 }
-            
-            CameraView()
-                .tabItem {
-                    Label("Camera", systemImage: "camera.fill")
-                }
-            
-            HistoryView()
-                .tabItem {
-                    Label("History", systemImage: "clock.fill")
-                }            
-            SettingsView()
-                .tabItem {
-                    Label("Settings", systemImage: "gear")
-                }        }
+            } else {
+                LoginView(apiService: apiService)
+            }
+        }
     }
 }

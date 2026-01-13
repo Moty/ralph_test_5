@@ -242,3 +242,13 @@ Started: Mon Jan 12 19:15:13 PST 2026
   - State changes in ObservableObject propagate automatically
   - Remove platform-specific modifiers for cross-platform Swift packages
 ---
+
+## 2026-01-13T03:30 - Documentation Update
+- Updated README.md with authentication features
+- Added new API endpoints: /api/auth/register, /api/auth/login, /api/user/stats
+- Updated iOS features section with authentication and home dashboard
+- Updated quick start guide with account creation steps
+- Added database schema documentation
+- Updated backend features with authentication details
+- Updated project files list with new views and services
+---

@@ -2,14 +2,14 @@ import Foundation
 import Security
 
 @MainActor
-class AuthService: ObservableObject {
-    @Published var isAuthenticated = false
-    @Published var currentUser: User?
+public class AuthService: ObservableObject {
+    @Published public var isAuthenticated = false
+    @Published public var currentUser: User?
     
     private let keychainService = "com.nutritionai.app"
     private let tokenKey = "jwt_token"
     
-    init() {
+    public init() {
         checkAuthentication()
     }
     

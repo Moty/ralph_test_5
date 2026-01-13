@@ -1,7 +1,7 @@
 import Foundation
 
-struct User: Codable {
-    let id: String
-    let email: String
-    let name: String
+public struct User: Codable {
+    public let id: String
+    public let email: String
+    public let name: String
 }

@@ -1,13 +1,19 @@
+import 'dotenv/config';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import rateLimit from '@fastify/rate-limit';
-import { config } from 'dotenv';
 import { analyzeRoutes } from './routes/analyze.js';
 import { authRoutes } from './routes/auth.js';
 import { userRoutes } from './routes/user.js';
+import { initializeFirebase } from './services/firebase.js';
 
-config();
+// Initialize Firebase if configured
+try {
+  initializeFirebase();
+} catch (error) {
+  console.log('Firebase not initialized - will use PostgreSQL');
+}
 
 // Validate required environment variables
 if (!process.env.GEMINI_API_KEY) {
@@ -15,7 +21,7 @@ if (!process.env.GEMINI_API_KEY) {
   process.exit(1);
 }
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080; // Cloud Run uses 8080 by default
 
 const server = Fastify({
   logger: true

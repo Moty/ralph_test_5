@@ -12,7 +12,7 @@ struct CameraView: View {
     @State private var analysisError: String?
     @State private var showPermissionAlert = false
     
-    private let apiService = APIService()
+    let apiService: APIService
     private let storageService = StorageService.shared
     
     var body: some View {
@@ -210,6 +210,8 @@ struct CameraView: View {
             return "Image processing failed. Please try again."
         case .noInternetConnection:
             return "No internet connection. Please check your network."
+        case .unauthorized:
+            return "Please log in to analyze images."
         }
     }
 }

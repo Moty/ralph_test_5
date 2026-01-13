@@ -240,8 +240,3 @@ struct HistoryItemCard: View {
         return formatter.string(from: date)
     }
 }
-
-// Make MealAnalysis Identifiable for sheet presentation
-extension MealAnalysis: Identifiable {
-    public var id: Date { timestamp }
-}

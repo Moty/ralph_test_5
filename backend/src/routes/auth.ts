@@ -1,12 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { PrismaClient } from '@prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
-import pg from 'pg';
 import { hashPassword, verifyPassword, generateToken } from '../services/auth.js';
-
-const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+import { getDb } from '../services/database.js';
 
 interface RegisterBody {
   email: string;
@@ -29,6 +23,8 @@ function validatePassword(password: string): boolean {
 }
 
 export async function authRoutes(server: FastifyInstance) {
+  const db = getDb();
+  
   server.post('/api/auth/register', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { email, password, name } = request.body as RegisterBody;
@@ -46,9 +42,7 @@ export async function authRoutes(server: FastifyInstance) {
       }
 
       // Check if user already exists
-      const existingUser = await prisma.user.findUnique({
-        where: { email },
-      });
+      const existingUser = await db.findUserByEmail(email);
 
       if (existingUser) {
         return reply.code(400).send({ error: 'User with this email already exists' });
@@ -58,12 +52,10 @@ export async function authRoutes(server: FastifyInstance) {
       const passwordHash = await hashPassword(password);
 
       // Create user
-      const user = await prisma.user.create({
-        data: {
-          email,
-          passwordHash,
-          name,
-        },
+      const user = await db.createUser({
+        email,
+        passwordHash,
+        name,
       });
 
       // Generate token
@@ -95,9 +87,7 @@ export async function authRoutes(server: FastifyInstance) {
       }
 
       // Find user
-      const user = await prisma.user.findUnique({
-        where: { email },
-      });
+      const user = await db.findUserByEmail(email);
 
       if (!user) {
         return reply.code(401).send({ error: 'Invalid email or password' });

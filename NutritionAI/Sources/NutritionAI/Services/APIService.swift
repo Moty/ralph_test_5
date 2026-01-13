@@ -2,7 +2,7 @@ import Foundation
 #if canImport(UIKit)
 import UIKit
 
-enum APIError: Error {
+public enum APIError: Error {
     case invalidURL
     case invalidResponse
     case networkError(Error)
@@ -14,21 +14,25 @@ enum APIError: Error {
     case unauthorized
 }
 
-class APIService {
+public class APIService {
     private let session: URLSession
     private let settings = SettingsManager.shared
-    var authService: AuthService?
+    public var authService: AuthService?
     
-    init() {
+    public init() {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 30
         config.timeoutIntervalForResource = 30
         self.session = URLSession(configuration: config)
     }
     
-    private func addAuthHeader(to request: inout URLRequest) {
-        if let token = authService?.getToken() {
+    private func addAuthHeader(to request: inout URLRequest) async {
+        print("[APIService] addAuthHeader called, authService is \(authService == nil ? "nil" : "set")")
+        if let token = await authService?.getToken() {
+            print("[APIService] Got token, adding Authorization header")
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        } else {
+            print("[APIService] No token available")
         }
     }
     
@@ -106,7 +110,7 @@ class APIService {
         
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-        addAuthHeader(to: &request)
+        await addAuthHeader(to: &request)
         
         let (data, response) = try await session.data(for: request)
         
@@ -149,7 +153,7 @@ class APIService {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-        addAuthHeader(to: &request)
+        await addAuthHeader(to: &request)
         
         var body = Data()
         

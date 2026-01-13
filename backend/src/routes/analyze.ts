@@ -1,16 +1,9 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { initializeModel, createNutritionPrompt } from '../services/gemini.js';
-import { PrismaClient } from '@prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
-import pg from 'pg';
 import { Buffer } from 'buffer';
 import { validateImage, ImageValidationError } from '../utils/imageValidation.js';
 import { authMiddleware } from '../middleware/auth.js';
-
-// Initialize PrismaClient with PostgreSQL adapter for Prisma 7
-const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+import { getDb } from '../services/database.js';
 
 interface AnalyzeResponse {
   id?: string;
@@ -35,6 +28,8 @@ interface AnalyzeResponse {
 }
 
 export async function analyzeRoutes(server: FastifyInstance) {
+  const db = getDb();
+  
   server.post('/api/analyze', { preHandler: authMiddleware }, async (request: FastifyRequest, reply: FastifyReply) => {
     const timeout = setTimeout(() => {
       if (!reply.sent) {
@@ -126,12 +121,10 @@ export async function analyzeRoutes(server: FastifyInstance) {
       // Save to database
       let savedAnalysis;
       try {
-        savedAnalysis = await prisma.mealAnalysis.create({
-          data: {
-            userId: request.user!.userId,
-            imageUrl: '',
-            nutritionData: nutritionData as any,
-          },
+        savedAnalysis = await db.createMealAnalysis({
+          userId: request.user!.userId,
+          imageUrl: '',
+          nutritionData: nutritionData as any,
         });
       } catch (dbError) {
         server.log.error({ dbError }, 'Failed to save analysis to database');

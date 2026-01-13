@@ -1,12 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { PrismaClient } from '@prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
-import pg from 'pg';
 import { authMiddleware } from '../middleware/auth.js';
-
-const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+import { getDb } from '../services/database.js';
 
 interface NutritionData {
   totals: {
@@ -18,6 +12,8 @@ interface NutritionData {
 }
 
 export async function userRoutes(server: FastifyInstance) {
+  const db = getDb();
+  
   server.get(
     '/api/user/stats',
     { preHandler: authMiddleware },
@@ -34,10 +30,7 @@ export async function userRoutes(server: FastifyInstance) {
         weekStart.setDate(weekStart.getDate() - weekStart.getDay());
 
         // Fetch all user's meal analyses
-        const allMeals = await prisma.mealAnalysis.findMany({
-          where: { userId },
-          orderBy: { createdAt: 'desc' },
-        });
+        const allMeals = await db.findMealAnalysesByUserId(userId);
 
         // Filter meals by time periods
         const todayMeals = allMeals.filter(

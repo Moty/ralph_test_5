@@ -1,16 +1,16 @@
 import Foundation
 
-struct UserStats: Codable {
-    let today: PeriodStats
-    let week: PeriodStats
-    let allTime: PeriodStats
+public struct UserStats: Codable {
+    public let today: PeriodStats
+    public let week: PeriodStats
+    public let allTime: PeriodStats
 }
 
-struct PeriodStats: Codable {
-    let count: Int
-    let avgCalories: Int
-    let totalCalories: Int
-    let totalProtein: Int
-    let totalCarbs: Int
-    let totalFat: Int
+public struct PeriodStats: Codable {
+    public let count: Int
+    public let avgCalories: Int
+    public let totalCalories: Int
+    public let totalProtein: Int
+    public let totalCarbs: Int
+    public let totalFat: Int
 }

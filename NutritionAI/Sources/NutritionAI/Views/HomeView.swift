@@ -5,6 +5,8 @@ struct HomeView: View {
     @State private var stats: UserStats?
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var showingFilteredMeals: FilteredMealsView.MealFilterType?
+    @Binding var selectedTab: Int
     
     let apiService: APIService
     
@@ -62,21 +64,21 @@ struct HomeView: View {
                                 icon: "camera.fill",
                                 label: "Full Meal"
                             ) {
-                                // TODO: Navigate to camera
+                                selectedTab = 1 // Navigate to Camera tab
                             }
                             
                             QuickCaptureTile(
                                 icon: "fork.knife",
                                 label: "Snack"
                             ) {
-                                // TODO: Navigate to camera for snack
+                                selectedTab = 1 // Navigate to Camera tab
                             }
                             
                             QuickCaptureTile(
                                 icon: "plus.circle.fill",
                                 label: "Quick Add"
                             ) {
-                                // TODO: Show quick add sheet
+                                selectedTab = 1 // Navigate to Camera tab
                             }
                         }
                         .padding(.horizontal)
@@ -90,6 +92,17 @@ struct HomeView: View {
             .navigationBarTitleDisplayMode(.inline)
             .refreshable {
                 loadStats()
+            }
+            .sheet(item: Binding(
+                get: { showingFilteredMeals.map { FilteredMealsIdentifiable(type: $0) } },
+                set: { showingFilteredMeals = $0?.type }
+            )) { item in
+                NavigationView {
+                    FilteredMealsView(
+                        title: item.title,
+                        filterType: item.type
+                    )
+                }
             }
         }
         .onAppear {
@@ -131,12 +144,18 @@ struct HomeView: View {
                     value: "\(stats.today.count)",
                     subtitle: nil
                 )
+                .onTapGesture {
+                    showingFilteredMeals = .today
+                }
                 
                 StatsCard(
                     title: "Calories",
                     value: "\(stats.today.totalCalories)",
                     subtitle: "kcal"
                 )
+                .onTapGesture {
+                    showingFilteredMeals = .today
+                }
             }
             .padding(.horizontal)
             
@@ -154,24 +173,36 @@ struct HomeView: View {
                     value: "\(stats.week.count)",
                     subtitle: nil
                 )
+                .onTapGesture {
+                    showingFilteredMeals = .thisWeek
+                }
                 
                 StatsCard(
                     title: "Avg Calories",
                     value: "\(stats.week.avgCalories)",
                     subtitle: "kcal/meal"
                 )
+                .onTapGesture {
+                    showingFilteredMeals = .thisWeek
+                }
                 
                 StatsCard(
                     title: "Total Calories",
                     value: "\(stats.week.totalCalories)",
                     subtitle: "kcal"
                 )
+                .onTapGesture {
+                    showingFilteredMeals = .thisWeek
+                }
                 
                 StatsCard(
                     title: "Protein",
                     value: "\(stats.week.totalProtein)g",
                     subtitle: nil
                 )
+                .onTapGesture {
+                    showingFilteredMeals = .thisWeek
+                }
             }
             .padding(.horizontal)
             
@@ -231,6 +262,25 @@ struct HomeView: View {
                     errorMessage = "An unexpected error occurred"
                 }
             }
+        }
+    }
+}
+
+struct FilteredMealsIdentifiable: Identifiable {
+    let type: FilteredMealsView.MealFilterType
+    var id: String {
+        switch type {
+        case .today: return "today"
+        case .thisWeek: return "thisWeek"
+        case .all: return "all"
+        }
+    }
+    
+    var title: String {
+        switch type {
+        case .today: return "Today's Meals"
+        case .thisWeek: return "This Week's Meals"
+        case .all: return "All Meals"
         }
     }
 }
