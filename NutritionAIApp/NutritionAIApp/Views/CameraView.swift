@@ -10,6 +10,7 @@ import Combine
 struct CameraView: View {
     @StateObject private var camera = CameraManager()
     @State private var showPreview = false
+    @State private var showResults = false
     
     var body: some View {
         ZStack {
@@ -42,9 +43,7 @@ struct CameraView: View {
                                 }
                                 
                                 Button(action: {
-                                    // Confirm action - will be implemented later
-                                    showPreview = false
-                                    camera.capturedImage = nil
+                                    showResults = true
                                 }) {
                                     VStack {
                                         Image(systemName: "checkmark")
@@ -104,6 +103,15 @@ struct CameraView: View {
         }
         .onAppear {
             camera.checkPermission()
+        }
+        .fullScreenCover(isPresented: $showResults) {
+            if let image = camera.capturedImage {
+                NutritionResultView(image: image)
+                    .onDisappear {
+                        showPreview = false
+                        camera.capturedImage = nil
+                    }
+            }
         }
     }
 }

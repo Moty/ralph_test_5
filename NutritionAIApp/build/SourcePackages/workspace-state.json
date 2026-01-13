@@ -1,0 +1,27 @@
+{
+  "object" : {
+    "artifacts" : [
+
+    ],
+    "dependencies" : [
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "nutritionai",
+          "kind" : "fileSystem",
+          "location" : "/Users/moty/Projects/experiments/ralph_test_5/NutritionAI",
+          "name" : "NutritionAI"
+        },
+        "state" : {
+          "name" : "fileSystem",
+          "path" : "/Users/moty/Projects/experiments/ralph_test_5/NutritionAI"
+        },
+        "subpath" : "nutritionai"
+      }
+    ],
+    "prebuilts" : [
+
+    ]
+  },
+  "version" : 7
+}
