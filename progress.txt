@@ -30,3 +30,18 @@ Started: Mon Jan 12 19:15:13 PST 2026
   - JWT tokens signed with expiresIn option for expiry
   - TypeScript requires @types packages for JS libraries
 ---
+
+## 2026-01-13T03:17 - US-003
+- Created auth middleware at backend/src/middleware/auth.ts
+- Middleware validates JWT from Authorization header (Bearer token)
+- Attaches user object (userId, email) to request.user
+- Returns 401 for missing or invalid tokens
+- Returns 403 for expired tokens (TokenExpiredError)
+- Extended FastifyRequest interface to include user property
+- Files changed: backend/src/middleware/auth.ts
+- **Learnings for future iterations:**
+  - Fastify middleware uses preHandler hooks
+  - Module augmentation needed to extend FastifyRequest interface
+  - JWT errors have name property to distinguish expired vs invalid
+  - Authorization header format: "Bearer <token>"
+---
