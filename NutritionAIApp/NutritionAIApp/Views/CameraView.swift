@@ -104,6 +104,10 @@ struct CameraView: View {
         .onAppear {
             camera.checkPermission()
         }
+        .onDisappear {
+            showPreview = false
+            camera.capturedImage = nil
+        }
         .fullScreenCover(isPresented: $showResults) {
             if let image = camera.capturedImage {
                 NutritionResultView(image: image)
