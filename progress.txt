@@ -45,3 +45,20 @@ Started: Mon Jan 12 19:15:13 PST 2026
   - JWT errors have name property to distinguish expired vs invalid
   - Authorization header format: "Bearer <token>"
 ---
+
+## 2026-01-13T03:18 - US-004
+- Created auth routes at backend/src/routes/auth.ts
+- POST /api/auth/register - validates email/password, hashes password, creates user, returns JWT
+- POST /api/auth/login - validates credentials, returns JWT on success
+- Email validation using regex pattern
+- Password validation (min 8 characters)
+- Returns 400 for duplicate email, invalid format, or weak password
+- Returns 401 for invalid credentials
+- Registered auth routes in server.ts
+- Regenerated Prisma client to include User model
+- Files changed: backend/src/routes/auth.ts, backend/src/server.ts
+- **Learnings for future iterations:**
+  - Must run `npx prisma generate` after schema changes to update Prisma client types
+  - Use unique constraint check before insert for better error messages
+  - Return same error message for invalid email/password to prevent user enumeration
+---

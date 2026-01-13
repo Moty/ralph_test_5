@@ -5,6 +5,7 @@ import rateLimit from '@fastify/rate-limit';
 import { config } from 'dotenv';
 import { analyzeRoutes } from './routes/analyze.js';
 import { authRoutes } from './routes/auth.js';
+import { userRoutes } from './routes/user.js';
 
 config();
 
@@ -53,6 +54,7 @@ server.get('/health', async (request, reply) => {
 });
 
 await server.register(authRoutes);
+await server.register(userRoutes);
 await server.register(analyzeRoutes);
 
 const start = async () => {
