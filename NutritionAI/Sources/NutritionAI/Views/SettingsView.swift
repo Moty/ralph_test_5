@@ -3,6 +3,7 @@ import SwiftUI
 public struct SettingsView: View {
     @StateObject private var settings = SettingsManager.shared
     @StateObject private var syncService = SyncService.shared
+    @StateObject private var themeManager = ThemeManager.shared
     @EnvironmentObject var authService: AuthService
     @State private var tempURL: String = ""
     @State private var showSaved = false
@@ -141,6 +142,34 @@ public struct SettingsView: View {
                         Text("Help")
                     }
                     } // End of admin-only sections
+                
+                // Appearance Section - available to everyone
+                Section {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Choose how NutritionAI looks")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Picker("Theme", selection: Binding(
+                            get: { themeManager.colorScheme == nil ? 0 : (themeManager.colorScheme == .light ? 1 : 2) },
+                            set: { value in
+                                switch value {
+                                case 1: themeManager.colorScheme = .light
+                                case 2: themeManager.colorScheme = .dark
+                                default: themeManager.colorScheme = nil
+                                }
+                            }
+                        )) {
+                            Text("System").tag(0)
+                            Text("Light").tag(1)
+                            Text("Dark").tag(2)
+                        }
+                        .pickerStyle(.segmented)
+                    }
+                    .padding(.vertical, 4)
+                } header: {
+                    Label("Appearance", systemImage: "paintbrush.fill")
+                }
                 
                 // Data Sync section - only for registered users
                 if authService.isRegisteredUser {

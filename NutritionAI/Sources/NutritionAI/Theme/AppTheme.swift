@@ -1,43 +1,91 @@
 import SwiftUI
 
+// MARK: - Theme Manager
+class ThemeManager: ObservableObject {
+    static let shared = ThemeManager()
+    
+    @Published var colorScheme: ColorScheme? {
+        didSet {
+            if let scheme = colorScheme {
+                UserDefaults.standard.set(scheme == .dark ? "dark" : "light", forKey: "appColorScheme")
+            } else {
+                UserDefaults.standard.removeObject(forKey: "appColorScheme")
+            }
+        }
+    }
+    
+    private init() {
+        if let saved = UserDefaults.standard.string(forKey: "appColorScheme") {
+            colorScheme = saved == "dark" ? .dark : .light
+        } else {
+            colorScheme = nil // System default
+        }
+    }
+    
+    var isDarkMode: Bool {
+        colorScheme == .dark
+    }
+    
+    func toggle() {
+        colorScheme = (colorScheme == .dark) ? .light : .dark
+    }
+}
+
 // MARK: - App Color Palette
 struct AppColors {
-    // Primary gradient colors
-    static let primaryGradientStart = Color(red: 0.4, green: 0.8, blue: 0.6) // Fresh green
-    static let primaryGradientEnd = Color(red: 0.2, green: 0.6, blue: 0.9)   // Ocean blue
+    // Primary gradient colors - softer, easier on eyes
+    static let primaryGradientStart = Color(red: 0.35, green: 0.65, blue: 0.55) // Soft sage green
+    static let primaryGradientEnd = Color(red: 0.25, green: 0.50, blue: 0.70)   // Muted ocean blue
     
-    // Accent colors
-    static let accent = Color(red: 0.95, green: 0.4, blue: 0.5)              // Coral pink
-    static let accentSecondary = Color(red: 1.0, green: 0.6, blue: 0.3)      // Warm orange
+    // Accent colors - toned down
+    static let accent = Color(red: 0.85, green: 0.45, blue: 0.50)              // Soft coral
+    static let accentSecondary = Color(red: 0.90, green: 0.60, blue: 0.40)     // Muted peach
     
-    // Card gradient colors
-    static let cardGradient1Start = Color(red: 0.3, green: 0.7, blue: 0.9)   // Sky blue
-    static let cardGradient1End = Color(red: 0.5, green: 0.4, blue: 0.9)     // Purple
+    // Card gradient colors - softer pastels
+    static let cardGradient1Start = Color(red: 0.45, green: 0.60, blue: 0.75)  // Soft sky blue
+    static let cardGradient1End = Color(red: 0.55, green: 0.50, blue: 0.70)    // Soft lavender
     
-    static let cardGradient2Start = Color(red: 0.9, green: 0.5, blue: 0.6)   // Rose
-    static let cardGradient2End = Color(red: 1.0, green: 0.7, blue: 0.4)     // Peach
+    static let cardGradient2Start = Color(red: 0.75, green: 0.55, blue: 0.58)  // Dusty rose
+    static let cardGradient2End = Color(red: 0.85, green: 0.65, blue: 0.50)    // Soft peach
     
-    static let cardGradient3Start = Color(red: 0.4, green: 0.8, blue: 0.7)   // Teal
-    static let cardGradient3End = Color(red: 0.3, green: 0.6, blue: 0.8)     // Ocean
+    static let cardGradient3Start = Color(red: 0.45, green: 0.65, blue: 0.60)  // Soft teal
+    static let cardGradient3End = Color(red: 0.40, green: 0.55, blue: 0.65)    // Slate blue
     
-    static let cardGradient4Start = Color(red: 0.8, green: 0.6, blue: 0.9)   // Lavender
-    static let cardGradient4End = Color(red: 0.6, green: 0.4, blue: 0.8)     // Violet
+    static let cardGradient4Start = Color(red: 0.70, green: 0.58, blue: 0.75)  // Soft lavender
+    static let cardGradient4End = Color(red: 0.58, green: 0.48, blue: 0.68)    // Muted violet
     
-    // Nutrition-specific colors
-    static let calories = Color(red: 1.0, green: 0.45, blue: 0.35)           // Vibrant red-orange
-    static let protein = Color(red: 0.3, green: 0.7, blue: 0.95)             // Bright blue
-    static let carbs = Color(red: 1.0, green: 0.75, blue: 0.2)               // Golden yellow
-    static let fat = Color(red: 0.85, green: 0.55, blue: 0.9)                // Soft purple
+    // Nutrition-specific colors - slightly muted for less eye strain
+    static let calories = Color(red: 0.90, green: 0.50, blue: 0.45)           // Soft red-coral
+    static let protein = Color(red: 0.40, green: 0.60, blue: 0.80)            // Steel blue
+    static let carbs = Color(red: 0.90, green: 0.70, blue: 0.35)              // Soft amber
+    static let fat = Color(red: 0.75, green: 0.55, blue: 0.78)                // Soft purple
     
-    // Background colors
-    static let backgroundPrimary = Color(red: 0.97, green: 0.97, blue: 0.99)
-    static let backgroundSecondary = Color.white
-    static let cardBackground = Color.white
+    // Light mode background colors - warmer, easier on eyes
+    static let backgroundPrimary = Color(red: 0.96, green: 0.95, blue: 0.93)  // Warm off-white
+    static let backgroundSecondary = Color(red: 0.98, green: 0.97, blue: 0.95) // Cream white
+    static let cardBackground = Color(red: 0.99, green: 0.98, blue: 0.97)     // Soft white
     
-    // Dark mode variants
-    static let darkBackgroundPrimary = Color(red: 0.08, green: 0.08, blue: 0.12)
-    static let darkBackgroundSecondary = Color(red: 0.12, green: 0.12, blue: 0.16)
-    static let darkCardBackground = Color(red: 0.15, green: 0.15, blue: 0.2)
+    // Dark mode variants - comfortable dark theme
+    static let darkBackgroundPrimary = Color(red: 0.10, green: 0.11, blue: 0.13)
+    static let darkBackgroundSecondary = Color(red: 0.14, green: 0.15, blue: 0.17)
+    static let darkCardBackground = Color(red: 0.18, green: 0.19, blue: 0.22)
+    
+    // Dynamic colors that adapt to color scheme
+    static func background(for colorScheme: ColorScheme) -> Color {
+        colorScheme == .dark ? darkBackgroundPrimary : backgroundPrimary
+    }
+    
+    static func cardBg(for colorScheme: ColorScheme) -> Color {
+        colorScheme == .dark ? darkCardBackground : cardBackground
+    }
+    
+    static func textPrimary(for colorScheme: ColorScheme) -> Color {
+        colorScheme == .dark ? Color(white: 0.92) : Color(white: 0.15)
+    }
+    
+    static func textSecondary(for colorScheme: ColorScheme) -> Color {
+        colorScheme == .dark ? Color(white: 0.65) : Color(white: 0.45)
+    }
 }
 
 // MARK: - Gradient Definitions
@@ -48,20 +96,36 @@ struct AppGradients {
         endPoint: .bottomTrailing
     )
     
+    // Softer, eye-friendly background gradient for light mode
     static let background = LinearGradient(
         colors: [
-            Color(red: 0.95, green: 0.97, blue: 1.0),
-            Color(red: 0.98, green: 0.95, blue: 0.98)
+            Color(red: 0.96, green: 0.95, blue: 0.93),  // Warm cream
+            Color(red: 0.95, green: 0.94, blue: 0.92)   // Soft beige
         ],
         startPoint: .top,
         endPoint: .bottom
     )
     
+    // Dark mode background gradient
+    static let darkBackground = LinearGradient(
+        colors: [
+            Color(red: 0.10, green: 0.11, blue: 0.13),
+            Color(red: 0.12, green: 0.13, blue: 0.15)
+        ],
+        startPoint: .top,
+        endPoint: .bottom
+    )
+    
+    // Adaptive background that works with color scheme
+    static func adaptiveBackground(for colorScheme: ColorScheme) -> LinearGradient {
+        colorScheme == .dark ? darkBackground : background
+    }
+    
     static let loginBackground = LinearGradient(
         colors: [
-            Color(red: 0.2, green: 0.6, blue: 0.85),
-            Color(red: 0.4, green: 0.75, blue: 0.7),
-            Color(red: 0.5, green: 0.85, blue: 0.6)
+            Color(red: 0.25, green: 0.50, blue: 0.70),  // Muted blue
+            Color(red: 0.35, green: 0.60, blue: 0.60),  // Soft teal
+            Color(red: 0.40, green: 0.65, blue: 0.55)   // Sage green
         ],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
@@ -88,13 +152,14 @@ struct AppGradients {
 // MARK: - Glass Morphism Effect
 struct GlassMorphismModifier: ViewModifier {
     let cornerRadius: CGFloat
+    @Environment(\.colorScheme) var colorScheme
     
     func body(content: Content) -> some View {
         content
             .background(.ultraThinMaterial)
-            .background(Color.white.opacity(0.4))
+            .background(colorScheme == .dark ? Color.white.opacity(0.08) : Color.white.opacity(0.5))
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-            .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 4)
+            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.06), radius: 8, x: 0, y: 4)
     }
 }
 
@@ -203,23 +268,26 @@ struct AnimatedBubble: View {
 }
 
 struct AnimatedBackground: View {
+    @Environment(\.colorScheme) var colorScheme
+    
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                AppGradients.background
+                // Adaptive background gradient
+                (colorScheme == .dark ? AppGradients.darkBackground : AppGradients.background)
                     .ignoresSafeArea()
                 
-                // Floating bubbles
-                AnimatedBubble(size: 200, color: AppColors.primaryGradientStart, delay: 0)
+                // Softer floating bubbles with reduced opacity
+                AnimatedBubble(size: 200, color: AppColors.primaryGradientStart.opacity(colorScheme == .dark ? 0.15 : 0.25), delay: 0)
                     .position(x: geometry.size.width * 0.1, y: geometry.size.height * 0.2)
                 
-                AnimatedBubble(size: 150, color: AppColors.primaryGradientEnd, delay: 0.5)
+                AnimatedBubble(size: 150, color: AppColors.primaryGradientEnd.opacity(colorScheme == .dark ? 0.12 : 0.20), delay: 0.5)
                     .position(x: geometry.size.width * 0.9, y: geometry.size.height * 0.3)
                 
-                AnimatedBubble(size: 180, color: AppColors.accentSecondary, delay: 1)
+                AnimatedBubble(size: 180, color: AppColors.accentSecondary.opacity(colorScheme == .dark ? 0.10 : 0.15), delay: 1)
                     .position(x: geometry.size.width * 0.3, y: geometry.size.height * 0.8)
                 
-                AnimatedBubble(size: 120, color: AppColors.accent, delay: 1.5)
+                AnimatedBubble(size: 120, color: AppColors.accent.opacity(colorScheme == .dark ? 0.08 : 0.12), delay: 1.5)
                     .position(x: geometry.size.width * 0.8, y: geometry.size.height * 0.7)
             }
         }

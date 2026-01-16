@@ -2,6 +2,7 @@ import SwiftUI
 
 public struct ContentView: View {
     @EnvironmentObject var authService: AuthService
+    @StateObject private var themeManager = ThemeManager.shared
     @State private var selectedTab = 0
     let apiService: APIService
     
@@ -94,5 +95,6 @@ public struct ContentView: View {
                 LoginView(apiService: apiService)
             }
         }
+        .preferredColorScheme(themeManager.colorScheme)
     }
 }

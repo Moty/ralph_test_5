@@ -14,16 +14,16 @@ struct LoginView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                // Animated gradient background
+                // Animated gradient background - softer, easier on eyes
                 LinearGradient(
                     colors: animateGradient ? [
-                        Color(red: 0.2, green: 0.5, blue: 0.9),
-                        Color(red: 0.4, green: 0.7, blue: 0.75),
-                        Color(red: 0.3, green: 0.8, blue: 0.6)
+                        Color(red: 0.25, green: 0.45, blue: 0.70),  // Muted blue
+                        Color(red: 0.35, green: 0.55, blue: 0.60),  // Soft teal
+                        Color(red: 0.35, green: 0.60, blue: 0.55)   // Sage green
                     ] : [
-                        Color(red: 0.3, green: 0.8, blue: 0.6),
-                        Color(red: 0.2, green: 0.5, blue: 0.9),
-                        Color(red: 0.4, green: 0.7, blue: 0.75)
+                        Color(red: 0.35, green: 0.60, blue: 0.55),  // Sage green
+                        Color(red: 0.25, green: 0.45, blue: 0.70),  // Muted blue
+                        Color(red: 0.35, green: 0.55, blue: 0.60)   // Soft teal
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -35,16 +35,16 @@ struct LoginView: View {
                     }
                 }
                 
-                // Decorative circles
+                // Decorative circles - softer opacity
                 GeometryReader { geometry in
                     Circle()
-                        .fill(Color.white.opacity(0.1))
+                        .fill(Color.white.opacity(0.08))
                         .frame(width: 300, height: 300)
                         .blur(radius: 2)
                         .offset(x: -100, y: -50)
                     
                     Circle()
-                        .fill(Color.white.opacity(0.1))
+                        .fill(Color.white.opacity(0.08))
                         .frame(width: 200, height: 200)
                         .blur(radius: 2)
                         .offset(x: geometry.size.width - 80, y: geometry.size.height - 200)
@@ -57,7 +57,7 @@ struct LoginView: View {
                     VStack(spacing: 16) {
                         ZStack {
                             Circle()
-                                .fill(Color.white.opacity(0.2))
+                                .fill(Color.white.opacity(0.15))
                                 .frame(width: 100, height: 100)
                             
                             Image(systemName: "leaf.circle.fill")

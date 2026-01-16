@@ -69,7 +69,6 @@ struct HomeView: View {
                 loadStats()
             }
         }
-        .preferredColorScheme(.light)
     }
     
     private var welcomeHeader: some View {
