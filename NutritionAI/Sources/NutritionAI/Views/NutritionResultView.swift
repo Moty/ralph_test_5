@@ -231,6 +231,7 @@ struct NutritionSummaryCard: View {
 }
 
 struct FoodItemCard: View {
+    @Environment(\.colorScheme) var colorScheme
     let food: FoodItem
     var index: Int = 0
     
@@ -274,7 +275,7 @@ struct FoodItemCard: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(.systemBackground))
+                .fill(AppColors.cardBg(for: colorScheme))
                 .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 4)
         )
     }
@@ -285,7 +286,7 @@ struct ConfidenceBadge: View {
     
     var color: Color {
         if confidence >= 0.8 { return AppColors.primaryGradientStart }
-        if confidence >= 0.6 { return .orange }
+        if confidence >= 0.6 { return AppColors.accentSecondary }
         return AppColors.accent
     }
     

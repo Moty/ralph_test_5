@@ -4,13 +4,14 @@ import SwiftUI
 /// Encourages them to register to access meal tracking history
 public struct GuestHistoryView: View {
     @EnvironmentObject var authService: AuthService
+    @Environment(\.colorScheme) private var colorScheme
     
     public init() {}
     
     public var body: some View {
         NavigationView {
             ZStack {
-                AppGradients.background
+                AppGradients.adaptiveBackground(for: colorScheme)
                     .ignoresSafeArea()
                 
                 VStack(spacing: 32) {
@@ -48,11 +49,7 @@ public struct GuestHistoryView: View {
                         benefitRow(icon: "lock.shield.fill", text: "Keep your data safe and secure")
                     }
                     .padding(24)
-                    .background(
-                        RoundedRectangle(cornerRadius: 20)
-                            .fill(Color(.systemBackground))
-                            .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
-                    )
+                    .glassMorphism(cornerRadius: 20)
                     .padding(.horizontal, 24)
                     
                     Spacer()

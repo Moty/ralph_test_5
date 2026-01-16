@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct HomeView: View {
+    @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var authService: AuthService
     @State private var stats: UserStats?
     @State private var isLoading = false
@@ -75,7 +76,7 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Welcome back,")
                 .font(.title3)
-                .foregroundColor(Color(red: 0.3, green: 0.3, blue: 0.35))
+                .foregroundColor(AppColors.textSecondary(for: colorScheme))
             
             HStack {
                 Text(authService.currentUser?.name ?? "User")
@@ -154,12 +155,22 @@ struct HomeView: View {
             Text("No meals logged yet")
                 .font(.title3)
                 .fontWeight(.bold)
-                .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.25))
+                .foregroundColor(AppColors.textPrimary(for: colorScheme))
 
             Text("Start tracking by capturing your first meal below")
                 .font(.subheadline)
-                .foregroundColor(Color(red: 0.4, green: 0.4, blue: 0.45))
+                .foregroundColor(AppColors.textSecondary(for: colorScheme))
                 .multilineTextAlignment(.center)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Snap a photo", systemImage: "camera.fill")
+                Label("Review the AI results", systemImage: "sparkles")
+                Label("Track progress over time", systemImage: "chart.line.uptrend.xyaxis")
+            }
+            .font(.caption)
+            .foregroundColor(AppColors.textSecondary(for: colorScheme))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 12)
         }
         .frame(maxWidth: .infinity)
         .padding(30)
@@ -175,8 +186,20 @@ struct HomeView: View {
                 Text("Quick Capture")
                     .font(.title3)
                     .fontWeight(.bold)
-                    .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.25))
+                    .foregroundColor(AppColors.textPrimary(for: colorScheme))
             }
+            .padding(.horizontal)
+
+            Button {
+                selectedTab = 1
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "camera.fill")
+                    Text("Capture Meal")
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(GradientButtonStyle())
             .padding(.horizontal)
             
             LazyVGrid(columns: [
@@ -339,7 +362,7 @@ struct HomeView: View {
             Text(title)
                 .font(.title3)
                 .fontWeight(.bold)
-                .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.25))
+                .foregroundColor(AppColors.textPrimary(for: colorScheme))
         }
         .padding(.horizontal)
     }
