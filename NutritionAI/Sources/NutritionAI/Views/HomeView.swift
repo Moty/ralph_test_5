@@ -69,13 +69,14 @@ struct HomeView: View {
                 loadStats()
             }
         }
+        .preferredColorScheme(.light)
     }
     
     private var welcomeHeader: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Welcome back,")
                 .font(.title3)
-                .foregroundColor(.secondary)
+                .foregroundColor(Color(red: 0.3, green: 0.3, blue: 0.35))
             
             HStack {
                 Text(authService.currentUser?.name ?? "User")
@@ -145,19 +146,20 @@ struct HomeView: View {
                 Circle()
                     .fill(AppGradients.primary.opacity(0.2))
                     .frame(width: 100, height: 100)
-                
+
                 Image(systemName: "chart.bar.fill")
                     .font(.system(size: 45))
                     .foregroundStyle(AppGradients.primary)
             }
-            
+
             Text("No meals logged yet")
                 .font(.title3)
                 .fontWeight(.bold)
-            
+                .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.25))
+
             Text("Start tracking by capturing your first meal below")
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundColor(Color(red: 0.4, green: 0.4, blue: 0.45))
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
@@ -174,6 +176,7 @@ struct HomeView: View {
                 Text("Quick Capture")
                     .font(.title3)
                     .fontWeight(.bold)
+                    .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.25))
             }
             .padding(.horizontal)
             
@@ -337,6 +340,7 @@ struct HomeView: View {
             Text(title)
                 .font(.title3)
                 .fontWeight(.bold)
+                .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.25))
         }
         .padding(.horizontal)
     }
