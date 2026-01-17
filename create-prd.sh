@@ -325,7 +325,19 @@ fi
 
 run_copilot() {
   local prompt="$1"
-  copilot -p "$prompt" --allow-all-tools
+  local model_flag=""
+  case "$PREFERRED_MODEL" in
+    claude-opus) model_flag="--model claude-opus-4.5" ;;
+    claude-sonnet) model_flag="--model claude-sonnet-4.5" ;;
+    claude-haiku) model_flag="--model claude-haiku-4.5" ;;
+    gemini-pro) model_flag="--model gpt-5.2-codex" ;;  # Fallback: Copilot doesn't have Gemini
+    gpt-codex) model_flag="--model gpt-5.2-codex" ;;
+    *) model_flag="" ;;  # Use Copilot's default
+  esac
+  if [ -n "$model_flag" ]; then
+    echo -e "${CYAN}Using Copilot with model: ${YELLOW}${model_flag#--model }${NC}"
+  fi
+  copilot -p "$prompt" --allow-all-tools $model_flag
 }
 
 run_claude() {
