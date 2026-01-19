@@ -4,13 +4,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-NutritionAI is an AI-powered nutrition analyzer consisting of an iOS app and a Node.js backend. Users photograph food to get nutritional analysis via Google Gemini AI.
+NutritionAI is an AI-powered nutrition analyzer with iOS, web, and Node.js backend components. Users photograph food to get nutritional analysis via Google Gemini AI.
 
 ## Repository Structure
 
+- **web/** - React + Vite + TypeScript web application (Firebase Hosting)
 - **NutritionAI/** - iOS Swift Package + Wrapper App (primary iOS project)
 - **backend/** - Node.js/Fastify API server with TypeScript
 - **NutritionAIApp/** - Deprecated standalone iOS project (do not use)
+
+## Production Environment
+
+| Component | URL |
+|-----------|-----|
+| Web App | https://nutritionai2026.web.app |
+| Backend | https://nutrition-ai-backend-1051629517898.us-central1.run.app |
+
+Verify backend health:
+```bash
+curl -s https://nutrition-ai-backend-1051629517898.us-central1.run.app/health
+```
 
 ## Common Commands
 
@@ -28,6 +41,24 @@ npm test                 # Run tests (requires PostgreSQL test DB)
 npm run deploy           # Deploy to Google Cloud Run
 npx prisma generate      # Generate Prisma client
 npx prisma migrate dev   # Run database migrations
+```
+
+### Web App
+
+```bash
+cd web
+npm install              # Install dependencies
+npm run dev              # Start dev server (http://localhost:5173)
+npm run build            # Type check + production build
+npm run lint             # Run ESLint
+npm test                 # Run tests with Vitest
+npm run test:ui          # Run tests with UI
+npm run preview          # Preview production build
+```
+
+Deploy to Firebase Hosting:
+```bash
+cd web && npm run build && cd .. && firebase deploy --only hosting
 ```
 
 ### iOS App
@@ -80,7 +111,23 @@ The app is structured as a Swift Package with a wrapper Xcode project for device
 - `Info.plist` contains camera permission (`NSCameraUsageDescription`)
 - Backend URL configurable in Settings view (default: 192.168.50.48:3000)
 
-## Environment Variables (Backend)
+### Web App (React + Vite)
+
+React 19 SPA with React Router for navigation and context-based auth state.
+
+**Key components:**
+- `src/App.tsx` - Main routing with protected routes, 401 auto-logout handler
+- `src/contexts/AuthContext.tsx` - Auth state management (JWT in localStorage, guest mode)
+- `src/services/api.ts` - API client with typed endpoints (`authApi`, `userApi`, `mealApi`)
+- `src/pages/` - Route components: Home, Camera, Analyze, History, MealDetail, Settings, Login
+
+**Configuration:**
+- `VITE_API_BASE_URL` env var for backend URL (default: localhost:3001)
+- `VITE_SHOW_API_OVERRIDE` to show API URL override in Settings (dev only)
+
+## Environment Variables
+
+### Backend
 
 Required:
 - `GEMINI_API_KEY` - Google Generative AI key
@@ -93,6 +140,11 @@ Database (one of):
 Optional:
 - `PORT` - Server port (default: 8080)
 - `DATABASE_TYPE` - Force `firestore` or `postgres`
+
+### Web App
+
+- `VITE_API_BASE_URL` - Backend URL (default: http://localhost:3001)
+- `VITE_SHOW_API_OVERRIDE` - Show API URL override in Settings (dev only)
 
 ## API Endpoints
 
@@ -112,18 +164,26 @@ Optional:
 
 **Backend tests** use Node.js built-in test runner:
 ```bash
-npm test  # Runs src/__tests__/*.test.ts
+cd backend && npm test  # Runs src/__tests__/*.test.ts
+```
+
+**Web tests** use Vitest with React Testing Library:
+```bash
+cd web && npm test              # Run all tests
+cd web && npm test -- --run     # Run once without watch
+cd web && npm run test:ui       # Interactive test UI
 ```
 
 **iOS tests** run via Swift Package Manager or Xcode:
 ```bash
-swift test  # Runs Tests/NutritionAITests/
+cd NutritionAI && swift test  # Runs Tests/NutritionAITests/
 ```
 
 ## Key Patterns
 
 - Backend uses singleton pattern for database connection (`getDb()`)
 - iOS uses `@Published` properties in service classes for SwiftUI reactivity
+- Web uses React Context for auth state with auto-logout on 401 responses
 - All API responses follow consistent JSON structure with `foods[]` array and `totals` object
 - Image uploads limited to 5MB, compressed on iOS before sending
 - Rate limiting: 100 requests/hour per IP

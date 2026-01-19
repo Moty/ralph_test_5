@@ -8,6 +8,7 @@
 nav {
   display: flex;
   gap: var(--spacing-sm);
+  flex-wrap: wrap;
   padding: var(--spacing-md);
   background: var(--color-card-background);
   box-shadow: var(--shadow-sm);
@@ -33,11 +34,4 @@ nav a:hover {
 main {
   flex: 1;
   padding: var(--spacing-lg) 0;
-  padding-top: calc(var(--spacing-lg) + 60px);
 }
-
-/* Compensate for sticky nav height */
-nav {
-  height: 60px;
-}
-
