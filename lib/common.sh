@@ -144,6 +144,65 @@ validate_prd_json() {
     return 1
   fi
 
+  # Validate blockedBy dependencies if present
+  local all_story_ids=$(jq -r '.userStories[].id' "$prd_file")
+  
+  # Check blockedBy references
+  for i in $(jq -r '.userStories | keys[]' "$prd_file"); do
+    local story_id=$(jq -r ".userStories[$i].id" "$prd_file")
+    
+    # Check if blockedBy field exists
+    if jq -e ".userStories[$i] | has(\"blockedBy\")" "$prd_file" >/dev/null 2>&1; then
+      # Validate blockedBy is an array
+      if ! jq -e ".userStories[$i].blockedBy | type == \"array\"" "$prd_file" >/dev/null 2>&1; then
+        log_error "Story $story_id: blockedBy must be an array"
+        echo -e "${RED}Error: Story $story_id: blockedBy must be an array${NC}"
+        has_invalid=true
+        continue
+      fi
+
+      # Check each blockedBy reference exists
+      local blocked_by_ids=$(jq -r ".userStories[$i].blockedBy[]? // empty" "$prd_file")
+      for blocked_id in $blocked_by_ids; do
+        # Check if blocked_id exists in all_story_ids
+        local id_exists=false
+        for existing_id in $all_story_ids; do
+          if [ "$existing_id" = "$blocked_id" ]; then
+            id_exists=true
+            break
+          fi
+        done
+        
+        if [ "$id_exists" = false ]; then
+          log_error "Story $story_id: blockedBy references non-existent story ID: $blocked_id"
+          echo -e "${RED}Error: Story $story_id references non-existent dependency: $blocked_id${NC}"
+          has_invalid=true
+        fi
+      done
+    fi
+  done
+
+  # Detect circular dependencies
+  for i in $(jq -r '.userStories | keys[]' "$prd_file"); do
+    local story_id=$(jq -r ".userStories[$i].id" "$prd_file")
+    local blocked_by_ids=$(jq -r ".userStories[$i].blockedBy[]? // empty" "$prd_file")
+    
+    for blocked_id in $blocked_by_ids; do
+      # Check if the blocking story also blocks back on this story
+      local reverse_deps=$(jq -r ".userStories[] | select(.id == \"$blocked_id\") | .blockedBy[]? // empty" "$prd_file")
+      for reverse_dep in $reverse_deps; do
+        if [ "$reverse_dep" = "$story_id" ]; then
+          log_warn "Circular dependency detected: $story_id blocks $blocked_id and vice versa"
+          echo -e "${YELLOW}Warning: Circular dependency detected between $story_id and $blocked_id${NC}"
+        fi
+      done
+    done
+  done
+
+  if [ "$has_invalid" = true ]; then
+    return 1
+  fi
+
   log_info "PRD validation successful: $story_count user stories found"
   echo -e "${GREEN}✓ PRD validation passed${NC} ($story_count stories)"
   return 0

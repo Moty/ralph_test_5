@@ -33,6 +33,20 @@ Take a PRD (markdown file or text) and convert it to `prd.json` in your ralph di
         "Typecheck passes"
       ],
       "priority": 1,
+      "blockedBy": [],
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "[Story that depends on US-001]",
+      "description": "As a [user], I want [feature] so that [benefit]",
+      "acceptanceCriteria": [
+        "Criterion 1",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "blockedBy": ["US-001"],
       "passes": false,
       "notes": ""
     }
@@ -120,9 +134,41 @@ Frontend stories are NOT complete until visually verified. Ralph will use the de
 1. **Each user story becomes one JSON entry**
 2. **IDs**: Sequential (US-001, US-002, etc.)
 3. **Priority**: Based on dependency order, then document order
-4. **All stories**: `passes: false` and empty `notes`
-5. **branchName**: Derive from feature name, kebab-case, prefixed with `ralph/`
-6. **Always add**: "Typecheck passes" to every story's acceptance criteria
+4. **blockedBy**: Array of story IDs that must complete before this story can start
+   - Database/schema stories: usually `[]` (no dependencies)
+   - Backend stories: blocked by schema stories they depend on
+   - UI stories: blocked by backend/schema stories they consume
+   - Example: UI displaying priority badge is `blockedBy: ["US-001"]` if US-001 adds the priority field
+5. **All stories**: `passes: false` and empty `notes`
+6. **branchName**: Derive from feature name, kebab-case, prefixed with `ralph/`
+7. **Always add**: "Typecheck passes" to every story's acceptance criteria
+
+---
+
+## Dependency Detection Rules
+
+When converting a PRD, identify dependencies by analyzing what each story needs:
+
+### Common Dependency Patterns:
+
+| Story Type | Typically Blocked By |
+|------------|---------------------|
+| Database schema/migration | Nothing (foundational) |
+| Backend API/service | Schema stories it reads/writes |
+| UI component | Backend APIs it calls, schema it displays |
+| Integration/E2E | All related component stories |
+
+### How to Identify Dependencies:
+
+1. **Data dependencies**: If story B displays/uses data created by story A → B blockedBy A
+2. **API dependencies**: If story B calls an API created by story A → B blockedBy A  
+3. **Component dependencies**: If story B uses a component created by story A → B blockedBy A
+4. **Implicit dependencies**: Read the acceptance criteria - if it mentions something from another story, add the dependency
+
+### Validation:
+- Every ID in `blockedBy` must exist in the PRD
+- No circular dependencies (A blocks B, B blocks A)
+- Foundation stories (schema, config) should have empty `blockedBy: []`
 
 ---
 
@@ -177,6 +223,7 @@ Add ability to mark tasks with different statuses.
         "Typecheck passes"
       ],
       "priority": 1,
+      "blockedBy": [],
       "passes": false,
       "notes": ""
     },
@@ -191,6 +238,7 @@ Add ability to mark tasks with different statuses.
         "Verify in browser using dev-browser skill"
       ],
       "priority": 2,
+      "blockedBy": ["US-001"],
       "passes": false,
       "notes": ""
     },
@@ -206,6 +254,7 @@ Add ability to mark tasks with different statuses.
         "Verify in browser using dev-browser skill"
       ],
       "priority": 3,
+      "blockedBy": ["US-001"],
       "passes": false,
       "notes": ""
     },
@@ -220,6 +269,7 @@ Add ability to mark tasks with different statuses.
         "Verify in browser using dev-browser skill"
       ],
       "priority": 4,
+      "blockedBy": ["US-001", "US-002"],
       "passes": false,
       "notes": ""
     }

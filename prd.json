@@ -1,63 +1,297 @@
 {
-  "project": "MyApp",
-  "branchName": "ralph/task-priority",
-  "description": "Task Priority System - Add priority levels to tasks",
+  "project": "NutritionAI",
+  "branchName": "ralph/nutritionai-web-app",
+  "description": "NutritionAI Web App - Mobile-first web experience mirroring core iOS flows hosted on Firebase",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Add priority field to database",
-      "description": "As a developer, I need to store task priority so it persists across sessions.",
+      "title": "Scaffold React + Vite web app",
+      "description": "As a developer, I want a React + Vite + TypeScript web app scaffolded with routing so that we can build the NutritionAI web experience.",
       "acceptanceCriteria": [
-        "Add priority column to tasks table: 'high' | 'medium' | 'low' (default 'medium')",
-        "Generate and run migration successfully",
+        "Create a React + Vite + TypeScript app under web/ with npm scripts",
+        "Add routes for Home, Camera, History, Settings, and Auth with placeholder screens",
+        "Support VITE_API_BASE_URL in environment config",
+        "web app builds via npm run build",
+        "Verify in browser using dev-browser skill",
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": false,
+      "blockedBy": [],
+      "passes": true,
       "notes": ""
     },
     {
       "id": "US-002",
-      "title": "Display priority indicator on task cards",
-      "description": "As a user, I want to see task priority at a glance.",
+      "title": "Add iOS-inspired theme tokens and base UI",
+      "description": "As a user, I want the web app to use the iOS color and typography system so that it feels like the NutritionAI app.",
       "acceptanceCriteria": [
-        "Each task card shows colored priority badge (red=high, yellow=medium, gray=low)",
-        "Priority visible without hovering or clicking",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Translate AppTheme.swift colors and gradients into CSS variables in web/src/styles",
+        "Apply mobile-first base typography and spacing to the app shell",
+        "Create shared UI primitives (card, button, section header) aligned to the theme",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
+      "blockedBy": [
+        "US-001"
+      ],
+      "passes": true,
       "notes": ""
     },
     {
       "id": "US-003",
-      "title": "Add priority selector to task edit",
-      "description": "As a user, I want to change a task's priority when editing it.",
+      "title": "Build API client with auth headers",
+      "description": "As a developer, I want a typed API client that attaches JWTs so that the web app can call existing backend endpoints securely.",
       "acceptanceCriteria": [
-        "Priority dropdown in task edit modal",
-        "Shows current priority as selected",
-        "Saves immediately on selection change",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Create web/src/services/api.ts with base URL from VITE_API_BASE_URL",
+        "Implement GET/POST helpers that surface backend error messages",
+        "Attach Authorization: Bearer <token> when a token exists in localStorage",
+        "Expose functions for /api/auth/register, /api/auth/login, /api/user/stats, /api/analyze, /api/meals",
+        "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
+      "blockedBy": [
+        "US-001"
+      ],
+      "passes": true,
       "notes": ""
     },
     {
       "id": "US-004",
-      "title": "Filter tasks by priority",
-      "description": "As a user, I want to filter the task list to see only high-priority items.",
+      "title": "Implement auth session state",
+      "description": "As a user, I want my login session to persist so that I stay signed in across reloads.",
       "acceptanceCriteria": [
-        "Filter dropdown with options: All | High | Medium | Low",
-        "Filter persists in URL params",
-        "Empty state message when no tasks match filter",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Create auth state module/context that stores token and guest/authenticated state",
+        "Load token from localStorage on startup and expose isAuthenticated and isGuest flags",
+        "Provide login, register, and logout actions that update state and storage",
+        "Handle 401 responses by clearing session and routing to Login",
+        "Typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
+      "blockedBy": [
+        "US-003"
+      ],
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Build login, registration, and guest entry screens",
+      "description": "As a new user, I want to register, sign in, or continue as a guest so that I can access the app.",
+      "acceptanceCriteria": [
+        "Create Login and Register screens matching iOS layout (gradient header, card form)",
+        "Display inline validation for email, password length, and password confirmation",
+        "Add guest mode entry with a local-only data disclaimer",
+        "Successful login/register or guest entry routes to Home",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "blockedBy": [
+        "US-002",
+        "US-004"
+      ],
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Build Home dashboard UI layout",
+      "description": "As a user, I want a home dashboard layout with stats cards and quick capture actions so that I can navigate core flows.",
+      "acceptanceCriteria": [
+        "Implement Home screen layout with Today/Week/All Time stat sections",
+        "Add Quick Capture buttons that navigate to the Camera route",
+        "Show a guest-mode info card when in guest state",
+        "Use shared theme components for cards and buttons",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "blockedBy": [
+        "US-002",
+        "US-004"
+      ],
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Wire Home dashboard to stats API",
+      "description": "As a logged-in user, I want my stats loaded on the Home dashboard so that I can see nutrition progress.",
+      "acceptanceCriteria": [
+        "Fetch /api/user/stats and render Today/Week/All Time values",
+        "Show loading and error states with retry actions",
+        "Skip stats fetch and show guest-mode card when in guest state",
+        "Add pull-to-refresh or refresh button on mobile",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "blockedBy": [
+        "US-003",
+        "US-004",
+        "US-006"
+      ],
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Implement camera capture UI",
+      "description": "As a user, I want to capture or upload a meal photo so that I can analyze nutrition.",
+      "acceptanceCriteria": [
+        "Use getUserMedia to show live camera preview on supported devices",
+        "Provide file upload fallback when camera access is unavailable",
+        "After capture/upload, show a preview with Retake and Continue actions",
+        "Continue action navigates to an analyze step with the selected image",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
+      ],
+      "priority": 8,
+      "blockedBy": [
+        "US-002"
+      ],
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Submit meal image for analysis and show results",
+      "description": "As a user, I want to submit my meal photo and see nutrition results so that I can review macros.",
+      "acceptanceCriteria": [
+        "Send the selected image to /api/analyze as multipart/form-data using the API client",
+        "Display loading state and backend error message on failure",
+        "Render results view with totals and item breakdown matching iOS layout",
+        "Provide navigation back to Home or History after viewing results",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
+      ],
+      "priority": 9,
+      "blockedBy": [
+        "US-003",
+        "US-008",
+        "US-002"
+      ],
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Render meal history list",
+      "description": "As a user, I want to see my meal history list so that I can review past analyses.",
+      "acceptanceCriteria": [
+        "Fetch /api/meals and render the list with most recent first",
+        "Show thumbnails when available and placeholders when missing",
+        "Guest mode shows local-only history or an empty state message",
+        "Tapping a list item opens the detail route",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
+      ],
+      "priority": 10,
+      "blockedBy": [
+        "US-003",
+        "US-004",
+        "US-002"
+      ],
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Add meal history detail view",
+      "description": "As a user, I want to open a meal detail view so that I can see full nutrition breakdown.",
+      "acceptanceCriteria": [
+        "Detail view shows meal photo, totals, and item breakdown for the selected entry",
+        "Detail view is reachable from the history list via route or modal",
+        "Provide back navigation to the history list",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
+      ],
+      "priority": 11,
+      "blockedBy": [
+        "US-010",
+        "US-002"
+      ],
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Create settings page with theme toggle",
+      "description": "As a user, I want to switch between light, dark, and system themes so that the app matches my preference.",
+      "acceptanceCriteria": [
+        "Settings screen layout mirrors iOS section styling",
+        "Theme toggle options include System, Light, and Dark",
+        "Persist theme selection in localStorage and apply at app root",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
+      ],
+      "priority": 12,
+      "blockedBy": [
+        "US-002"
+      ],
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-013",
+      "title": "Extend settings with model selector and logout",
+      "description": "As a user, I want to choose the AI model and sign out so that I can control analysis and my account.",
+      "acceptanceCriteria": [
+        "Add AI model selector whose options match the iOS SettingsView model list",
+        "Persist selected model locally and use it when submitting /api/analyze requests",
+        "Add logout action that clears auth token and returns to Login",
+        "Expose backend URL override input only when VITE_SHOW_API_OVERRIDE=true",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
+      ],
+      "priority": 13,
+      "blockedBy": [
+        "US-003",
+        "US-004",
+        "US-009",
+        "US-012"
+      ],
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-014",
+      "title": "Configure Firebase Hosting and backend CORS",
+      "description": "As a developer, I want Firebase Hosting configured so that the web app can be deployed and access the backend.",
+      "acceptanceCriteria": [
+        "Add firebase.json and .firebaserc configured for project nutritionai2026 with web build output",
+        "Document deployment steps and required env vars for the web app",
+        "Update backend CORS allowlist to include the Firebase Hosting domain",
+        "Typecheck passes"
+      ],
+      "priority": 14,
+      "blockedBy": [
+        "US-001"
+      ],
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-015",
+      "title": "Add web app tests for critical flows",
+      "description": "As a developer, I want basic tests for API client, auth state, and routing so that core flows are protected.",
+      "acceptanceCriteria": [
+        "Add unit tests for API client request/response handling and auth state persistence",
+        "Add smoke tests covering Login, Home, History, and Settings routes",
+        "Tests pass",
+        "Typecheck passes"
+      ],
+      "priority": 15,
+      "blockedBy": [
+        "US-003",
+        "US-004",
+        "US-005",
+        "US-006",
+        "US-010",
+        "US-012"
+      ],
+      "passes": true,
       "notes": ""
     }
   ]

@@ -1,0 +1,212 @@
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { initializeModel, createNutritionPrompt } from '../services/gemini.js';
+import { Buffer } from 'buffer';
+import { validateImage, ImageValidationError } from '../utils/imageValidation.js';
+import { optionalAuthMiddleware } from '../middleware/auth.js';
+import { getDb } from '../services/database.js';
+import sharp from 'sharp';
+
+interface AnalyzeResponse {
+  id?: string;
+  foods: Array<{
+    name: string;
+    portion: string;
+    nutrition: {
+      calories: number;
+      protein: number;
+      carbs: number;
+      fat: number;
+    };
+    confidence: number;
+  }>;
+  totals: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+  timestamp: string;
+}
+
+// Create a low-res thumbnail from the image buffer
+async function createThumbnail(buffer: Buffer, mimetype: string): Promise<string> {
+  try {
+    const thumbnailBuffer = await sharp(buffer)
+      .resize(200, 200, { fit: 'cover' })
+      .jpeg({ quality: 60 })
+      .toBuffer();
+    
+    return `data:image/jpeg;base64,${thumbnailBuffer.toString('base64')}`;
+  } catch (error) {
+    console.error('Failed to create thumbnail:', error);
+    return '';
+  }
+}
+
+export async function analyzeRoutes(server: FastifyInstance) {
+  const db = getDb();
+  
+  // Use optional auth - allows guests to analyze, but only saves to DB for authenticated users
+  server.post('/api/analyze', { preHandler: optionalAuthMiddleware }, async (request: FastifyRequest, reply: FastifyReply) => {
+    const timeout = setTimeout(() => {
+      if (!reply.sent) {
+        reply.code(408).send({ error: 'Request timeout - analysis took too long' });
+      }
+    }, 30000);
+
+    try {
+      console.log('Starting multipart parsing...');
+      
+      // Parse multipart form data - collect all parts
+      const parts = request.parts();
+      let buffer: Buffer | null = null;
+      let mimetype: string = '';
+      let modelName: string | undefined;
+      
+      for await (const part of parts) {
+        console.log('Processing part:', part.fieldname, part.type);
+        
+        if (part.type === 'file' && part.fieldname === 'image') {
+          // Read buffer immediately while stream is open
+          mimetype = part.mimetype;
+          buffer = await part.toBuffer();
+          console.log('Image buffer size:', buffer.length);
+        } else if (part.type === 'field' && part.fieldname === 'model') {
+          modelName = part.value as string;
+          console.log('Model from request:', modelName);
+        }
+      }
+      
+      console.log('Parsing complete. Has buffer:', !!buffer, 'Model:', modelName);
+      
+      if (!buffer) {
+        clearTimeout(timeout);
+        return reply.code(400).send({ error: 'No image file provided' });
+      }
+
+      // Validate image
+      try {
+        validateImage(mimetype, buffer.length);
+      } catch (error) {
+        clearTimeout(timeout);
+        if (error instanceof ImageValidationError) {
+          return reply.code(400).send({ error: error.message });
+        }
+        throw error;
+      }
+
+      // Initialize Gemini model (use client-provided model if available)
+      const model = initializeModel(modelName);
+
+      // Prepare image for Gemini
+      const imagePart = {
+        inlineData: {
+          data: buffer.toString('base64'),
+          mimeType: mimetype
+        }
+      };
+
+      // Generate content with Gemini
+      console.log('Calling Gemini with model:', modelName || 'default');
+      const prompt = createNutritionPrompt();
+      const result = await model.generateContent([prompt, imagePart]);
+      const response = result.response;
+      const text = response.text();
+
+      // Parse JSON response
+      let nutritionData: AnalyzeResponse;
+      try {
+        // Remove markdown code blocks if present
+        const cleanText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        nutritionData = JSON.parse(cleanText);
+      } catch (parseError) {
+        clearTimeout(timeout);
+        server.log.error({ parseError, responseText: text }, 'Failed to parse Gemini response');
+        return reply.code(500).send({ 
+          error: 'Failed to analyze image - unable to parse nutrition data' 
+        });
+      }
+
+      // Validate response structure
+      if (!nutritionData.foods || !nutritionData.totals) {
+        clearTimeout(timeout);
+        return reply.code(500).send({ 
+          error: 'Invalid response from analysis service' 
+        });
+      }
+
+      // Only save to database for authenticated users (not guests)
+      let savedAnalysis;
+      if (request.user) {
+        try {
+          // Create a thumbnail of the image for storage
+          const thumbnail = await createThumbnail(buffer!, mimetype);
+          
+          savedAnalysis = await db.createMealAnalysis({
+            userId: request.user.userId,
+            imageUrl: '',
+            thumbnail: thumbnail,
+            nutritionData: nutritionData as any,
+          });
+          console.log('Meal saved to database for user:', request.user.userId);
+        } catch (dbError) {
+          server.log.error({ dbError }, 'Failed to save analysis to database');
+          // Continue and return the analysis even if database save fails
+        }
+      } else {
+        console.log('Guest user - analysis not saved to database');
+      }
+
+      // Add analysis ID to response if saved
+      const responseData: AnalyzeResponse = {
+        ...nutritionData,
+        timestamp: new Date().toISOString(),
+        ...(savedAnalysis && { id: savedAnalysis.id }),
+      };
+
+      console.log('Analysis complete, returning response');
+      clearTimeout(timeout);
+      return reply.code(200).send(responseData);
+
+    } catch (error) {
+      clearTimeout(timeout);
+      server.log.error(error);
+      
+      if (error instanceof Error) {
+        const errorMessage = error.message || '';
+        
+        // Check for quota exceeded
+        if (errorMessage.includes('429') || errorMessage.includes('quota') || errorMessage.includes('Too Many Requests')) {
+          return reply.code(429).send({ 
+            error: 'API quota exceeded. Please try a different AI model in Settings, or wait and try again later.',
+            code: 'QUOTA_EXCEEDED'
+          });
+        }
+        
+        // Check for model overload
+        if (errorMessage.includes('503') || errorMessage.includes('overloaded') || errorMessage.includes('Service Unavailable')) {
+          return reply.code(503).send({ 
+            error: 'AI model is temporarily overloaded. Please try again in a few seconds.',
+            code: 'MODEL_OVERLOADED'
+          });
+        }
+        
+        // Check for invalid API key
+        if (errorMessage.includes('401') || errorMessage.includes('API key')) {
+          return reply.code(500).send({ 
+            error: 'API configuration error. Please contact support.',
+            code: 'API_KEY_ERROR'
+          });
+        }
+        
+        return reply.code(500).send({ 
+          error: 'Analysis failed - please try again' 
+        });
+      }
+      
+      return reply.code(500).send({ 
+        error: 'An unexpected error occurred' 
+      });
+    }
+  });
+}

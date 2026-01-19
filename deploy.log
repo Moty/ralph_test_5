@@ -1,0 +1,7 @@
+Building using Buildpacks and deploying container to Cloud Run service [[1mnutrition-ai-backend[m] in project [[1mnutritionai2026[m] region [[1mus-central1[m]
+Building and deploying...
+Validating Service........done
+Uploading sources............done
+Building Container.........................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................failed
+Deployment failed
+ERROR: (gcloud.run.deploy) Build failed; check build logs for details

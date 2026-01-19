@@ -19,12 +19,9 @@ build/
 .env
 .env.local
 .env.*.local
-backend/.env
-web/.env
 
 # Firebase
 .firebase/
-.firebaserc
 firebase-debug.log
 firestore-debug.log
 
@@ -38,7 +35,6 @@ firestore-debug.log
 *.xcuserstate
 
 # iOS/Swift
-*.xcworkspace
 xcuserdata/
 DerivedData/
 .swiftpm/
@@ -58,7 +54,7 @@ logs/
 # Testing
 coverage/
 
-# Misc
+# Secrets
 *.pem
 *.p12
 *.key
