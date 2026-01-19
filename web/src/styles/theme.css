@@ -1,0 +1,113 @@
+:root {
+  /* Primary gradient colors - softer teal/sage theme */
+  --color-primary-gradient-start: rgb(71, 158, 148);
+  --color-primary-gradient-end: rgb(56, 115, 153);
+  
+  /* Accent colors - complementary soft tones */
+  --color-accent: rgb(209, 115, 128);
+  --color-accent-secondary: rgb(224, 166, 89);
+  
+  /* Card gradient colors - sophisticated pastels */
+  --color-card-gradient-1-start: rgb(102, 140, 179);
+  --color-card-gradient-1-end: rgb(128, 115, 166);
+  
+  --color-card-gradient-2-start: rgb(179, 128, 140);
+  --color-card-gradient-2-end: rgb(204, 153, 115);
+  
+  --color-card-gradient-3-start: rgb(102, 153, 140);
+  --color-card-gradient-3-end: rgb(89, 128, 153);
+  
+  --color-card-gradient-4-start: rgb(166, 140, 179);
+  --color-card-gradient-4-end: rgb(140, 115, 166);
+  
+  /* Nutrition-specific colors - clear but not jarring */
+  --color-calories: rgb(217, 115, 102);
+  --color-protein: rgb(89, 140, 191);
+  --color-carbs: rgb(217, 166, 77);
+  --color-fat: rgb(179, 128, 191);
+  
+  /* Light mode background colors - warm neutral (Sand/Cream) */
+  --color-background-primary: rgb(247, 245, 240);
+  --color-background-secondary: rgb(252, 250, 245);
+  --color-card-background: rgb(255, 252, 250);
+  
+  /* Light mode text colors */
+  --color-text-primary: rgb(38, 38, 46);
+  --color-text-secondary: rgb(115, 115, 122);
+  
+  /* Spacing system */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  
+  /* Border radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  
+  /* Shadows */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.12);
+  
+  /* Typography */
+  --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-base: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 30px;
+  --font-size-4xl: 36px;
+  
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+}
+
+/* Dark mode variants - deep rich dark (Charcoal/Navy) */
+[data-theme="dark"] {
+  --color-background-primary: rgb(20, 26, 31);
+  --color-background-secondary: rgb(31, 36, 41);
+  --color-card-background: rgb(41, 46, 51);
+  --color-text-primary: rgb(242, 242, 242);
+  --color-text-secondary: rgb(179, 179, 179);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
+}
+
+/* Gradients */
+.gradient-primary {
+  background: linear-gradient(135deg, var(--color-primary-gradient-start), var(--color-primary-gradient-end));
+}
+
+.gradient-background {
+  background: linear-gradient(180deg, var(--color-background-primary), var(--color-background-secondary));
+}
+
+.gradient-card-1 {
+  background: linear-gradient(135deg, var(--color-card-gradient-1-start), var(--color-card-gradient-1-end));
+}
+
+.gradient-card-2 {
+  background: linear-gradient(135deg, var(--color-card-gradient-2-start), var(--color-card-gradient-2-end));
+}
+
+.gradient-card-3 {
+  background: linear-gradient(135deg, var(--color-card-gradient-3-start), var(--color-card-gradient-3-end));
+}
+
+.gradient-card-4 {
+  background: linear-gradient(135deg, var(--color-card-gradient-4-start), var(--color-card-gradient-4-end));
+}

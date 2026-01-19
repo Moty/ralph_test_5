@@ -1,0 +1,19 @@
+.card {
+  background: var(--color-card-background);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-md);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card.gradient-card-1,
+.card.gradient-card-2,
+.card.gradient-card-3,
+.card.gradient-card-4 {
+  color: white;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.card:active {
+  transform: scale(0.98);
+}

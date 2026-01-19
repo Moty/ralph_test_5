@@ -17,13 +17,15 @@ function App() {
           <Link to="/settings">Settings</Link>
           <Link to="/login">Login</Link>
         </nav>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/camera" element={<Camera />} />
-          <Route path="/history" element={<History />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/login" element={<Login />} />
-        </Routes>
+        <main>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/camera" element={<Camera />} />
+            <Route path="/history" element={<History />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/login" element={<Login />} />
+          </Routes>
+        </main>
       </div>
     </BrowserRouter>
   );

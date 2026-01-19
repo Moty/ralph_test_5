@@ -1,0 +1,46 @@
+# Ralph Agent Configuration
+# 
+# CLI versions are determined by what's installed on your system.
+# Run: claude --version / codex --version / copilot --version / gemini --version to check.
+#
+# This file configures which agent to use and agent-specific options.
+# Agent priority (when auto-detecting): GitHub Copilot CLI → Claude Code → Gemini → Codex
+
+agent:
+  # Options: github-copilot, claude-code, gemini, codex, auto (auto-detect based on availability)
+  primary: github-copilot
+  fallback: codex
+# Claude Code settings
+claude-code:
+  model: claude-sonnet-4-20250514 # or: claude-3-5-sonnet, claude-3-opus, etc.
+  # Additional CLI flags (optional)
+  # flags: "--verbose"
+# Codex settings  
+codex:
+  model: gpt-5.2-codex # Latest: gpt-5.2-codex, gpt-5.1-codex-max, gpt-5.1-codex-mini, gpt-5.2
+  approval-mode: full-auto # full-auto, danger, or omit for interactive
+  sandbox: full-access # full-access (git allowed), workspace-write, read-only
+  # Additional CLI flags (optional)
+  # flags: ""
+# GitHub Copilot CLI settings
+github-copilot:
+  # Model selection for Copilot CLI
+  # Options: claude-opus-4.5, claude-sonnet-4.5, claude-haiku-4.5, gpt-5.2-codex, gpt-5.2, gpt-5.1, auto
+  model: auto # auto = let Copilot choose, or specify a model explicitly
+  # Tool permissions for automated execution
+  # Options: allow-all, selective, or omit for interactive
+  tool-approval: allow-all # allow-all grants all tool permissions automatically
+  # Specific tools to deny even when allow-all is set (optional)
+  # deny-tools:
+  #   - "shell (rm)"
+  #   - "fetch"
+  # Additional CLI flags (optional)
+  # flags: ""
+# Gemini settings (Google AI)
+gemini:
+  model: gemini-3-pro # Options: gemini-3-pro, gemini-3-flash, gemini-2.5-pro, gemini-2.5-flash
+  # approval-mode: auto (default), yolo (auto-approve all tools), default (prompt for approval)
+  approval-mode: auto
+  # Gemini CLI uses 'gemini' command (npm install -g @anthropic/gemini-cli)
+  # Additional CLI flags (optional)
+  # flags: ""

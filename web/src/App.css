@@ -1,30 +1,37 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
 .app {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, var(--color-background-primary), var(--color-background-secondary));
 }
 
 nav {
   display: flex;
-  gap: 1rem;
-  padding: 1rem;
-  background: #1a1a1a;
-  border-radius: 8px;
-  margin-bottom: 2rem;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background: var(--color-card-background);
+  box-shadow: var(--shadow-sm);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 nav a {
-  color: #646cff;
+  color: var(--color-primary-gradient-start);
   text-decoration: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  transition: background 0.3s;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-sm);
+  transition: background 0.2s ease;
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-sm);
 }
 
 nav a:hover {
-  background: rgba(100, 108, 255, 0.1);
+  background: rgba(71, 158, 148, 0.1);
 }
+
+main {
+  flex: 1;
+  padding: var(--spacing-lg) 0;
+}
+
