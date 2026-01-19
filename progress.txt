@@ -16,3 +16,20 @@ Started: Sun Jan 18 17:35:36 PST 2026
   - Environment variables must be prefixed with VITE_ to be accessible in the app
   - npm run build runs both typecheck (tsc -b) and production build
 ---
+
+## 2026-01-19T01:40:39.459Z - US-002
+- Translated AppTheme.swift colors and gradients into CSS variables in web/src/styles/theme.css
+- Created mobile-first base styles in web/src/styles/base.css with typography, spacing, and utilities
+- Built shared UI primitives: Card, Button, SectionHeader components
+- Updated App.tsx and App.css to use new theme tokens
+- Demonstrated theme on Home page with gradient cards and buttons
+- Verified in browser at localhost:5173
+- Typecheck and build passing
+- Files changed: web/src/styles/theme.css, web/src/styles/base.css, web/src/components/ui/*.tsx, web/src/App.css, web/src/App.tsx, web/src/main.tsx, web/src/pages/Home.tsx
+- **Learnings for future iterations:**
+  - Theme uses CSS variables for all colors, spacing, typography
+  - All type-only imports must use 'import type' syntax due to verbatimModuleSyntax
+  - Gradient cards numbered 1-4 correspond to iOS cardGradients array
+  - UI components are in web/src/components/ui with co-located CSS files
+  - Dev server runs on port 5173
+---
