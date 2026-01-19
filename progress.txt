@@ -103,3 +103,21 @@ Started: Sun Jan 18 17:35:36 PST 2026
   - Quick Capture buttons navigate to /camera route using useNavigate
   - Stats display placeholder 0 values (will be wired in US-007)
 ---
+
+## 2026-01-19T01:53:00.000Z - US-007
+- Wired Home dashboard to fetch stats from /api/user/stats
+- Added loading state with spinner animation while fetching
+- Implemented error state with error message display and retry button
+- Added refresh button in header for authenticated users
+- Stats fetch is skipped when in guest mode
+- Stats display Today/Week/All Time values from API response
+- Build and typecheck passing
+- Files changed: web/src/pages/Home.tsx
+- **Learnings for future iterations:**
+  - Stats fetch uses useEffect with isGuest dependency to reload when auth state changes
+  - Error handling shows red error card with retry button
+  - Refresh button shows rotating icon during loading state
+  - Stats values use nullish coalescing (??) to display 0 when no data
+  - Guest mode bypasses API call entirely
+  - UserStats type has today/week/allTime structure from api.ts
+---

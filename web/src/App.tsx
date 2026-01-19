@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import './App.css';
 import Home from './pages/Home';
 import Camera from './pages/Camera';
+import Analyze from './pages/Analyze';
 import History from './pages/History';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
@@ -49,6 +50,9 @@ function AppContent() {
           } />
           <Route path="/camera" element={
             requiresAuth ? <Navigate to="/login" replace /> : <Camera />
+          } />
+          <Route path="/camera/analyze" element={
+            requiresAuth ? <Navigate to="/login" replace /> : <Analyze />
           } />
           <Route path="/history" element={
             requiresAuth ? <Navigate to="/login" replace /> : <History />

@@ -132,7 +132,7 @@
         "US-004",
         "US-006"
       ],
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -151,7 +151,7 @@
       "blockedBy": [
         "US-002"
       ],
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
