@@ -33,3 +33,37 @@ Started: Sun Jan 18 17:35:36 PST 2026
   - UI components are in web/src/components/ui with co-located CSS files
   - Dev server runs on port 5173
 ---
+
+## 2026-01-19T01:44:45.000Z - US-003
+- Implemented typed API client in web/src/services/api.ts
+- Created ApiClient class with GET, POST, and postFormData methods
+- Implemented automatic Authorization header attachment from localStorage
+- Surfaced backend error messages through ApiError interface
+- Exposed authApi (register, login), userApi (getStats), and mealApi (analyze, getMeals) functions
+- Build and typecheck passing
+- Files changed: web/src/services/api.ts (new)
+- **Learnings for future iterations:**
+  - API client reads VITE_API_BASE_URL from environment, defaults to localhost:3001
+  - Auth token stored in localStorage under 'authToken' key
+  - FormData endpoints don't set Content-Type header (browser sets with boundary)
+  - Error handling extracts message from backend response.message or response.error
+  - All API methods are typed with TypeScript interfaces
+---
+
+## 2026-01-19T01:46:52.000Z - US-004
+- Implemented AuthContext with React Context API for auth state management
+- Created AuthProvider component that stores token and guest/authenticated state
+- Auth state loads from localStorage on app startup
+- Provided login, register, logout, and enterGuestMode actions
+- Updated API client to handle 401 responses via setApiUnauthorizedHandler
+- Integrated AuthProvider into App.tsx with automatic logout and redirect on 401
+- Build and typecheck passing
+- Files changed: web/src/contexts/AuthContext.tsx (new), web/src/services/api.ts, web/src/App.tsx
+- **Learnings for future iterations:**
+  - Auth token stored in localStorage under 'authToken' key
+  - Guest mode flag stored under 'guestMode' key
+  - AuthContext exposes isAuthenticated, isGuest, and isLoading flags
+  - 401 handling uses callback pattern to avoid circular dependencies
+  - Must use type-only imports for React types due to verbatimModuleSyntax
+  - AuthProvider wraps BrowserRouter, AppContent uses useNavigate for 401 redirects
+---
