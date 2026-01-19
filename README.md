@@ -413,12 +413,54 @@ npm run preview # Preview production build
 ### Features
 - React + Vite + TypeScript web application
 - **Routing** with react-router-dom
-  - Home - Dashboard placeholder
-  - Camera - Camera capture placeholder
-  - History - Meal history placeholder
-  - Settings - Settings placeholder
-  - Login - Login/Register placeholder
+  - Home - Dashboard with stats from backend API
+  - Camera - Live camera capture or file upload
+  - Analyze - Submit image for nutrition analysis
+  - History - Meal history list with thumbnails
+  - Meal Detail - Full nutrition breakdown for individual meals
+  - Settings - Theme toggle, AI model selector, logout
+  - Login/Register - User authentication with guest mode
+- **User Authentication**
+  - Login and registration with JWT tokens
+  - Guest mode for local-only usage
+  - Persistent session via localStorage
+  - 401 auto-logout and redirect to login
+- **Home Dashboard**
+  - Today/Week/All Time statistics
+  - Loading and error states with retry
+  - Refresh button for authenticated users
+  - Guest mode info card
+- **Camera Capture**
+  - Live camera preview using getUserMedia
+  - File upload fallback when camera unavailable
+  - Preview with retake/continue actions
+  - Image compression and File conversion
+- **Meal Analysis**
+  - Submit image to /api/analyze with selected AI model
+  - Loading state and error handling
+  - Results view with totals and item breakdown
+  - Navigation to Home or History after viewing
+- **Meal History**
+  - Fetch and display meal list from /api/meals
+  - Thumbnails with fallback emoji
+  - Empty state for new users
+  - Click to view meal detail
+  - Guest mode shows unavailable message
+- **Settings**
+  - System/Light/Dark theme toggle
+  - AI model selector (7 Gemini models)
+  - Logout for authenticated users
+  - Backend URL override (dev only)
+- **iOS-Inspired Theme**
+  - CSS variables for colors and typography
+  - Light and dark mode support
+  - Gradient cards matching iOS design
+  - Mobile-first responsive layout
 - Environment-based backend API configuration
+- TypeScript strict mode with verbatimModuleSyntax
+
+### Deployment
+See [DEPLOYMENT.md](DEPLOYMENT.md) for Firebase Hosting setup and deployment instructions.
 
 ## Development
 

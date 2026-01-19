@@ -214,3 +214,22 @@ Started: Sun Jan 18 17:35:36 PST 2026
   - Theme applied to document.documentElement (root) for global CSS variable override
   - Dark theme uses rich charcoal/navy color scheme from iOS version
 ---
+
+## 2026-01-19T01:59:00.000Z - US-013
+- Added AI model selector dropdown with 7 models matching iOS SettingsView list
+- Model selection persisted in localStorage under 'selectedModel' key
+- Analyze page reads selected model and passes to mealApi.analyze()
+- Added logout button in Account section (only shown when isAuthenticated)
+- Logout clears auth state and navigates to /login
+- Backend URL override input shown only when VITE_SHOW_API_OVERRIDE=true
+- API override URL persisted in localStorage under 'apiBaseUrl' key
+- Build and typecheck passing
+- Files changed: web/src/pages/Settings.tsx, web/src/pages/Analyze.tsx
+- **Learnings for future iterations:**
+  - Model list matches iOS SettingsManager.availableModels exactly
+  - Default model is gemini-2.0-flash (unlimited RPD)
+  - Settings sections: Appearance, AI Model, Developer (conditional), Account
+  - Logout uses useAuth hook and useNavigate for redirect
+  - API override only enabled via environment variable for security
+  - Select dropdown styled with theme CSS variables
+---
