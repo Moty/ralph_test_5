@@ -67,3 +67,39 @@ Started: Sun Jan 18 17:35:36 PST 2026
   - Must use type-only imports for React types due to verbatimModuleSyntax
   - AuthProvider wraps BrowserRouter, AppContent uses useNavigate for 401 redirects
 ---
+
+## 2026-01-19T01:50:00.000Z - US-005
+- Implemented Login and Register screens matching iOS layout with gradient background
+- Created Login.tsx with embedded Register component for seamless switching
+- Added inline validation for email format, password length (min 8 chars), and password confirmation
+- Implemented guest mode entry button with local-only data disclaimer
+- Updated App.tsx routing to protect authenticated routes and redirect unauthenticated users to login
+- Successful login/register/guest mode navigates to Home
+- Created Login.css with iOS-inspired gradient animations and card styling
+- Build and typecheck passing
+- Files changed: web/src/pages/Login.tsx, web/src/pages/Login.css, web/src/App.tsx
+- **Learnings for future iterations:**
+  - Login page uses gradient animations matching iOS LoginView and RegisterView
+  - Register component is embedded in Login.tsx, toggled via state (no separate route)
+  - Auth routing uses Navigate component from react-router-dom for protected routes
+  - Validation happens inline before calling auth context methods
+  - Error messages from API are caught and displayed in the UI
+  - Guest mode disclaimer text matches iOS version
+  - Protected routes check isAuthenticated || isGuest flags
+---
+
+## 2026-01-19T01:52:00.000Z - US-006
+- Implemented Home dashboard UI layout with Today/Week/All Time stat sections
+- Added Quick Capture buttons that navigate to Camera route
+- Shows guest-mode info card when isGuest is true
+- Extended Card component to accept style prop for inline styling
+- Used shared theme components for cards, buttons, and section headers
+- Build passes successfully
+- Files changed: web/src/pages/Home.tsx, web/src/components/ui/Card.tsx
+- **Learnings for future iterations:**
+  - Home dashboard displays 3 time periods: Today, Week, All Time
+  - Guest mode card shown conditionally based on isGuest flag from AuthContext
+  - Card component now accepts optional style prop (CSSProperties)
+  - Quick Capture buttons navigate to /camera route using useNavigate
+  - Stats display placeholder 0 values (will be wired in US-007)
+---

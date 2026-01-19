@@ -91,7 +91,7 @@
         "US-002",
         "US-004"
       ],
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -111,7 +111,7 @@
         "US-002",
         "US-004"
       ],
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
