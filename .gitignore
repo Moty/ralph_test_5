@@ -3,13 +3,58 @@
 progress.txt
 ralph.log
 .ralph-models-cache.json
+.ralph/
+.ralph-backup/
 archive/
 
-# Node.js
+# Dependencies
 node_modules/
-.env
-dist/
 
-# Swift
+# Build outputs
+dist/
+build/
 .build/
+
+# Environment files (contain secrets)
+.env
+.env.local
+.env.*.local
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+
+# macOS
 .DS_Store
+*.swp
+
+# IDE
+.idea/
+.vscode/
+*.xcuserstate
+
+# iOS/Swift
+xcuserdata/
+DerivedData/
+.swiftpm/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+
+# Logs
+*.log
+logs/
+
+# Testing
+coverage/
+
+# Secrets
+*.pem
+*.p12
+*.key
