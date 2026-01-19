@@ -121,3 +121,21 @@ Started: Sun Jan 18 17:35:36 PST 2026
   - Guest mode bypasses API call entirely
   - UserStats type has today/week/allTime structure from api.ts
 ---
+
+## 2026-01-19T01:54:00.000Z - US-008
+- Implemented camera capture UI with live preview using getUserMedia
+- Added file upload fallback for devices without camera access
+- Shows preview after capture/upload with Retake and Continue buttons
+- Continue button navigates to /camera/analyze with image data via route state
+- Camera uses facingMode: 'environment' for rear camera on mobile
+- Created Analyze placeholder page and added route
+- Build and typecheck passing
+- Files changed: web/src/pages/Camera.tsx, web/src/pages/Analyze.tsx (new), web/src/App.tsx
+- **Learnings for future iterations:**
+  - Camera stream is cleaned up in useEffect return to prevent memory leaks
+  - Image captured to canvas then converted to Blob and File for upload
+  - File input hidden and triggered via button click for better UX
+  - Route state used to pass imageFile and imagePreview to analyze page
+  - Video element uses playsInline for iOS compatibility
+  - getUserMedia wrapped in try-catch for permission handling
+---
