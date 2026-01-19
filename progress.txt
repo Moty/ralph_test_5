@@ -196,3 +196,21 @@ Started: Sun Jan 18 17:35:36 PST 2026
   - Handles missing meal gracefully with message and back link
   - Empty items array shows "No items detected" message
 ---
+
+## 2026-01-19T01:58:00.000Z - US-012
+- Implemented Settings page with theme toggle functionality
+- Added System, Light, and Dark theme options with radio buttons
+- Theme selection persisted in localStorage under 'theme' key
+- System theme respects prefers-color-scheme media query
+- Theme applied via .dark-theme class on document root
+- Added missing CSS variables: --color-surface-*, --color-error, --color-success, --border-radius-*
+- Updated theme.css to support both [data-theme="dark"] and .dark-theme selectors
+- Build and typecheck passing
+- Files changed: web/src/pages/Settings.tsx, web/src/styles/theme.css
+- **Learnings for future iterations:**
+  - Theme stored in localStorage and loaded on component mount
+  - applyTheme() checks system preference when theme is 'system'
+  - Radio buttons styled with highlighted background when selected
+  - Theme applied to document.documentElement (root) for global CSS variable override
+  - Dark theme uses rich charcoal/navy color scheme from iOS version
+---

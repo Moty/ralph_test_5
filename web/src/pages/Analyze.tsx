@@ -23,7 +23,8 @@ export default function Analyze() {
     setError(null);
 
     try {
-      const data = await mealApi.analyze(imageFile);
+      const selectedModel = localStorage.getItem('selectedModel') || undefined;
+      const data = await mealApi.analyze(imageFile, selectedModel);
       setResult(data);
     } catch (err) {
       const apiError = err as ApiError;
