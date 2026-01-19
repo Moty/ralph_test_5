@@ -1,73 +1,166 @@
-# React + TypeScript + Vite
+# NutritionAI Web App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Mobile-first React web application for NutritionAI - photo-based nutrition analysis.
 
-Currently, two official plugins are available:
+## Quick Start
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### Prerequisites
+- Node.js 18+
+- Backend server running on port 3000 (see `/backend`)
 
-## React Compiler
+### Development
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+# Install dependencies
+npm install
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Start development server
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Open http://localhost:5173 in your browser.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Environment Variables
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Create a `.env` file:
+```env
+VITE_API_BASE_URL=http://localhost:3000
 ```
+
+For production, create `.env.production`:
+```env
+VITE_API_BASE_URL=https://your-backend-url.com
+VITE_SHOW_API_OVERRIDE=false
+```
+
+## Features
+
+### Authentication
+- **Login/Register**: Email and password authentication with JWT tokens
+- **Guest Mode**: Local-only usage without account creation
+- **Persistent Sessions**: Token stored in localStorage, auto-logout on 401
+
+### Home Dashboard
+- Today/Week/All Time nutrition statistics
+- Quick capture buttons to jump to camera
+- Loading and error states with retry
+- Guest mode info card
+
+### Camera Capture
+- Live camera preview using getUserMedia API
+- File upload fallback when camera unavailable
+- Preview with retake/continue actions
+- Automatic image compression
+
+### Meal Analysis
+- Submit photos to backend AI for nutrition analysis
+- Loading indicator during analysis
+- Results view with totals and individual food items
+- Confidence scoring for each detected food
+
+### Meal History
+- Chronological list of past analyses
+- Thumbnails with fallback icons
+- Click to view full nutrition details
+- Empty state for new users
+
+### Settings
+- System/Light/Dark theme toggle
+- AI model selector (7 Gemini models)
+- Logout functionality
+- Backend URL override (development only)
+
+## Testing
+
+```bash
+# Run tests
+npm test
+
+# Run tests with UI
+npm test:ui
+```
+
+## Build for Production
+
+```bash
+# Build (runs typecheck + vite build)
+npm run build
+
+# Preview production build locally
+npm run preview
+```
+
+The build output is in `dist/` directory.
+
+## Deploy to Firebase Hosting
+
+### First-time Setup
+
+1. Install Firebase CLI:
+   ```bash
+   npm install -g firebase-tools
+   ```
+
+2. Login to Firebase:
+   ```bash
+   firebase login
+   ```
+
+### Deploy
+
+```bash
+# Build the app
+npm run build
+
+# Deploy from project root
+cd ..
+firebase deploy --only hosting
+```
+
+Your app will be available at:
+- https://nutritionai2026.web.app
+- https://nutritionai2026.firebaseapp.com
+
+See [../DEPLOYMENT.md](../DEPLOYMENT.md) for detailed deployment instructions.
+
+## Project Structure
+
+```
+src/
+├── components/     # Reusable UI components
+│   └── ui/         # Button, Card, SectionHeader
+├── contexts/       # React contexts (AuthContext)
+├── pages/          # Route components
+│   ├── Home.tsx
+│   ├── Camera.tsx
+│   ├── Analyze.tsx
+│   ├── History.tsx
+│   ├── MealDetail.tsx
+│   ├── Settings.tsx
+│   └── Login.tsx
+├── services/       # API client
+├── styles/         # CSS theme and base styles
+├── test/           # Test utilities
+├── App.tsx         # Main app with routing
+└── main.tsx        # Entry point
+```
+
+## Tech Stack
+
+- **React 19** - UI framework
+- **TypeScript** - Type safety
+- **Vite** - Build tool and dev server
+- **React Router 7** - Client-side routing
+- **Vitest** - Testing framework
+- **CSS Variables** - iOS-inspired theming
+
+## Available Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Build for production |
+| `npm run preview` | Preview production build |
+| `npm run lint` | Run ESLint |
+| `npm test` | Run tests |
+| `npm run test:ui` | Run tests with UI |

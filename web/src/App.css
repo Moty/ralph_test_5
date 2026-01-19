@@ -33,5 +33,11 @@ nav a:hover {
 main {
   flex: 1;
   padding: var(--spacing-lg) 0;
+  padding-top: calc(var(--spacing-lg) + 60px);
+}
+
+/* Compensate for sticky nav height */
+nav {
+  height: 60px;
 }
 

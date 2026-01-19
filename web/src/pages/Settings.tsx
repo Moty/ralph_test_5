@@ -17,7 +17,7 @@ const AVAILABLE_MODELS = [
 
 export default function Settings() {
   const navigate = useNavigate();
-  const { logout, isAuthenticated } = useAuth();
+  const { logout, exitGuestMode, isAuthenticated, isGuest } = useAuth();
   const [theme, setTheme] = useState<Theme>('system');
   const [selectedModel, setSelectedModel] = useState<string>(AVAILABLE_MODELS[0]);
   const [showApiOverride, setShowApiOverride] = useState(false);
@@ -77,6 +77,11 @@ export default function Settings() {
 
   const handleLogout = () => {
     logout();
+    navigate('/login');
+  };
+
+  const handleExitGuestMode = () => {
+    exitGuestMode();
     navigate('/login');
   };
 
@@ -176,6 +181,20 @@ export default function Settings() {
           <Card style={{ padding: 'var(--spacing-md)' }}>
             <Button variant="secondary" fullWidth onClick={handleLogout}>
               Sign Out
+            </Button>
+          </Card>
+        </>
+      )}
+
+      {isGuest && (
+        <>
+          <SectionHeader>Account</SectionHeader>
+          <Card style={{ padding: 'var(--spacing-md)' }}>
+            <p style={{ margin: '0 0 var(--spacing-md) 0', opacity: 0.7, fontSize: 'var(--font-size-sm)' }}>
+              You're using guest mode. Sign in or create an account to sync your data across devices.
+            </p>
+            <Button variant="primary" fullWidth onClick={handleExitGuestMode}>
+              Sign In or Register
             </Button>
           </Card>
         </>

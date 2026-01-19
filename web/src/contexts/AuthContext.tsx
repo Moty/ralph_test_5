@@ -11,9 +11,10 @@ interface AuthState {
 
 interface AuthContextValue extends AuthState {
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
   enterGuestMode: () => void;
+  exitGuestMode: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -57,8 +58,8 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
     });
   };
 
-  const register = async (email: string, password: string) => {
-    const response = await authApi.register({ email, password });
+  const register = async (email: string, password: string, name: string) => {
+    const response = await authApi.register({ email, password, name });
     const { token } = response;
     
     localStorage.setItem(TOKEN_KEY, token);
@@ -96,6 +97,18 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
     });
   };
 
+  const exitGuestMode = () => {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(GUEST_MODE_KEY);
+    
+    setState({
+      token: null,
+      isAuthenticated: false,
+      isGuest: false,
+      isLoading: false,
+    });
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -104,6 +117,7 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
         register,
         logout,
         enterGuestMode,
+        exitGuestMode,
       }}
     >
       {children}

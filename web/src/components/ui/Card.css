@@ -6,12 +6,40 @@
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.card.gradient-card-1,
-.card.gradient-card-2,
-.card.gradient-card-3,
-.card.gradient-card-4 {
+.card.gradient-card-1 {
+  background: linear-gradient(135deg, var(--color-card-gradient-1-start), var(--color-card-gradient-1-end));
   color: white;
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.card.gradient-card-2 {
+  background: linear-gradient(135deg, var(--color-card-gradient-2-start), var(--color-card-gradient-2-end));
+  color: white;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.card.gradient-card-3 {
+  background: linear-gradient(135deg, var(--color-card-gradient-3-start), var(--color-card-gradient-3-end));
+  color: white;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.card.gradient-card-4 {
+  background: linear-gradient(135deg, var(--color-card-gradient-4-start), var(--color-card-gradient-4-end));
+  color: white;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.card h3 {
+  margin: 0 0 var(--spacing-xs) 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  opacity: 0.9;
+  color: inherit;
+}
+
+.card p {
+  color: inherit;
 }
 
 .card:active {

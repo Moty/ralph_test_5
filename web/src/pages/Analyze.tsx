@@ -86,25 +86,26 @@ export default function Analyze() {
         </div>
 
         <SectionHeader>Items</SectionHeader>
-        {result.items.map((item, idx) => (
+        {result.foods.map((item, idx) => (
           <Card key={idx} style={{ marginBottom: 'var(--spacing-md)', padding: 'var(--spacing-md)' }}>
             <h3 style={{ marginTop: 0, marginBottom: 'var(--spacing-sm)' }}>{item.name}</h3>
+            <p style={{ margin: 0, marginBottom: 'var(--spacing-sm)', fontSize: 'var(--font-size-sm)', opacity: 0.7 }}>{item.portion}</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--spacing-sm)', fontSize: 'var(--font-size-sm)' }}>
               <div>
                 <div style={{ opacity: 0.6 }}>Cal</div>
-                <div style={{ fontWeight: 600 }}>{Math.round(item.calories)}</div>
+                <div style={{ fontWeight: 600 }}>{Math.round(item.nutrition.calories)}</div>
               </div>
               <div>
                 <div style={{ opacity: 0.6 }}>Protein</div>
-                <div style={{ fontWeight: 600 }}>{Math.round(item.protein)}g</div>
+                <div style={{ fontWeight: 600 }}>{Math.round(item.nutrition.protein)}g</div>
               </div>
               <div>
                 <div style={{ opacity: 0.6 }}>Carbs</div>
-                <div style={{ fontWeight: 600 }}>{Math.round(item.carbs)}g</div>
+                <div style={{ fontWeight: 600 }}>{Math.round(item.nutrition.carbs)}g</div>
               </div>
               <div>
                 <div style={{ opacity: 0.6 }}>Fat</div>
-                <div style={{ fontWeight: 600 }}>{Math.round(item.fat)}g</div>
+                <div style={{ fontWeight: 600 }}>{Math.round(item.nutrition.fat)}g</div>
               </div>
             </div>
           </Card>

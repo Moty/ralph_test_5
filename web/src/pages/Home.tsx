@@ -74,19 +74,19 @@ export default function Home() {
       <div style={{ display: 'grid', gap: 'var(--spacing-md)', marginBottom: 'var(--spacing-xl)' }}>
         <Card gradient={1}>
           <h3>Calories</h3>
-          <p style={{ fontSize: 'var(--font-size-3xl)', margin: 0 }}>{stats?.today.calories ?? 0}</p>
+          <p style={{ fontSize: 'var(--font-size-3xl)', margin: 0 }}>{stats?.today.totalCalories ?? 0}</p>
         </Card>
         <Card gradient={2}>
           <h3>Protein</h3>
-          <p style={{ fontSize: 'var(--font-size-3xl)', margin: 0 }}>{stats?.today.protein ?? 0}g</p>
+          <p style={{ fontSize: 'var(--font-size-3xl)', margin: 0 }}>{stats?.today.totalProtein ?? 0}g</p>
         </Card>
         <Card gradient={3}>
           <h3>Carbs</h3>
-          <p style={{ fontSize: 'var(--font-size-3xl)', margin: 0 }}>{stats?.today.carbs ?? 0}g</p>
+          <p style={{ fontSize: 'var(--font-size-3xl)', margin: 0 }}>{stats?.today.totalCarbs ?? 0}g</p>
         </Card>
         <Card gradient={4}>
           <h3>Fat</h3>
-          <p style={{ fontSize: 'var(--font-size-3xl)', margin: 0 }}>{stats?.today.fat ?? 0}g</p>
+          <p style={{ fontSize: 'var(--font-size-3xl)', margin: 0 }}>{stats?.today.totalFat ?? 0}g</p>
         </Card>
       </div>
 
@@ -94,19 +94,19 @@ export default function Home() {
       <div style={{ display: 'grid', gap: 'var(--spacing-md)', marginBottom: 'var(--spacing-xl)' }}>
         <Card gradient={1}>
           <h3>Calories</h3>
-          <p style={{ fontSize: 'var(--font-size-3xl)', margin: 0 }}>{stats?.week.calories ?? 0}</p>
+          <p style={{ fontSize: 'var(--font-size-3xl)', margin: 0 }}>{stats?.week.totalCalories ?? 0}</p>
         </Card>
         <Card gradient={2}>
           <h3>Protein</h3>
-          <p style={{ fontSize: 'var(--font-size-3xl)', margin: 0 }}>{stats?.week.protein ?? 0}g</p>
+          <p style={{ fontSize: 'var(--font-size-3xl)', margin: 0 }}>{stats?.week.totalProtein ?? 0}g</p>
         </Card>
         <Card gradient={3}>
           <h3>Carbs</h3>
-          <p style={{ fontSize: 'var(--font-size-3xl)', margin: 0 }}>{stats?.week.carbs ?? 0}g</p>
+          <p style={{ fontSize: 'var(--font-size-3xl)', margin: 0 }}>{stats?.week.totalCarbs ?? 0}g</p>
         </Card>
         <Card gradient={4}>
           <h3>Fat</h3>
-          <p style={{ fontSize: 'var(--font-size-3xl)', margin: 0 }}>{stats?.week.fat ?? 0}g</p>
+          <p style={{ fontSize: 'var(--font-size-3xl)', margin: 0 }}>{stats?.week.totalFat ?? 0}g</p>
         </Card>
       </div>
 
@@ -114,11 +114,11 @@ export default function Home() {
       <div style={{ display: 'grid', gap: 'var(--spacing-md)', marginBottom: 'var(--spacing-xl)' }}>
         <Card gradient={1}>
           <h3>Total Meals</h3>
-          <p style={{ fontSize: 'var(--font-size-3xl)', margin: 0 }}>{stats?.allTime.calories ?? 0}</p>
+          <p style={{ fontSize: 'var(--font-size-3xl)', margin: 0 }}>{stats?.allTime.count ?? 0}</p>
         </Card>
         <Card gradient={2}>
           <h3>Avg Calories</h3>
-          <p style={{ fontSize: 'var(--font-size-3xl)', margin: 0 }}>{stats?.allTime.protein ?? 0}</p>
+          <p style={{ fontSize: 'var(--font-size-3xl)', margin: 0 }}>{Math.round(stats?.allTime.avgCalories ?? 0)}</p>
         </Card>
       </div>
 

@@ -107,6 +107,7 @@ export function setApiUnauthorizedHandler(handler: () => void) {
 export interface RegisterRequest {
   email: string;
   password: string;
+  name: string;
 }
 
 export interface LoginRequest {
@@ -121,22 +122,28 @@ export interface AuthResponse {
 
 export interface UserStats {
   today: {
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
+    count: number;
+    avgCalories: number;
+    totalCalories: number;
+    totalProtein: number;
+    totalCarbs: number;
+    totalFat: number;
   };
   week: {
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
+    count: number;
+    avgCalories: number;
+    totalCalories: number;
+    totalProtein: number;
+    totalCarbs: number;
+    totalFat: number;
   };
   allTime: {
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
+    count: number;
+    avgCalories: number;
+    totalCalories: number;
+    totalProtein: number;
+    totalCarbs: number;
+    totalFat: number;
   };
 }
 
@@ -148,10 +155,22 @@ export interface MealItem {
   fat: number;
 }
 
+export interface FoodItem {
+  name: string;
+  portion: string;
+  nutrition: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+  confidence: number;
+}
+
 export interface AnalysisResult {
-  mealId: string;
+  id?: string;
   timestamp: string;
-  items: MealItem[];
+  foods: FoodItem[];
   totals: {
     calories: number;
     protein: number;
@@ -162,16 +181,31 @@ export interface AnalysisResult {
 
 export interface Meal {
   id: string;
-  userId: string;
   timestamp: string;
+  thumbnail?: string | null;
   imageUrl?: string;
-  items: MealItem[];
+  foods?: Array<{
+    name: string;
+    portion: string;
+    nutrition: {
+      calories: number;
+      protein: number;
+      carbs: number;
+      fat: number;
+    };
+    confidence: number;
+  }>;
+  items?: MealItem[];
   totals: {
     calories: number;
     protein: number;
     carbs: number;
     fat: number;
   };
+}
+
+interface MealsResponse {
+  meals: Meal[];
 }
 
 export const authApi = {
@@ -197,8 +231,10 @@ export const mealApi = {
     return api.postFormData<AnalysisResult>('/api/analyze', formData);
   },
   
-  getMeals: (): Promise<Meal[]> => 
-    api.get<Meal[]>('/api/meals'),
+  getMeals: async (): Promise<Meal[]> => {
+    const response = await api.get<MealsResponse>('/api/meals');
+    return response.meals || [];
+  },
 };
 
 export type { ApiError };

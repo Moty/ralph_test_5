@@ -115,9 +115,9 @@ export default function History() {
                     overflow: 'hidden'
                   }}
                 >
-                  {meal.imageUrl ? (
+                  {(meal.thumbnail || meal.imageUrl) ? (
                     <img 
-                      src={meal.imageUrl} 
+                      src={meal.thumbnail || meal.imageUrl} 
                       alt="Meal" 
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
@@ -147,9 +147,9 @@ export default function History() {
                       <div style={{ fontWeight: 600 }}>{Math.round(meal.totals.fat)}g</div>
                     </div>
                   </div>
-                  {meal.items.length > 0 && (
+                  {((meal.foods && meal.foods.length > 0) || (meal.items && meal.items.length > 0)) && (
                     <div style={{ marginTop: 'var(--spacing-xs)', fontSize: 'var(--font-size-xs)', opacity: 0.6 }}>
-                      {meal.items.map(item => item.name).join(', ')}
+                      {(meal.foods || meal.items || []).map(item => item.name).join(', ')}
                     </div>
                   )}
                 </div>

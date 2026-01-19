@@ -1,6 +1,55 @@
 # NutritionAI
 
-AI-Powered Nutrition Analyzer Mobile App - iOS app with photo-based food nutrition analysis
+AI-Powered Nutrition Analyzer with iOS and Web apps featuring photo-based food nutrition analysis.
+
+## Quick Start - Running the Web App
+
+### Prerequisites
+- Node.js 18+
+- Backend server running (see Backend section below)
+
+### 1. Start the Backend Server
+```bash
+cd backend
+npm install
+npm run dev
+```
+The server will start on port 3000.
+
+### 2. Run the Web App Locally
+```bash
+cd web
+npm install
+npm run dev
+```
+Open http://localhost:5173 in your browser.
+
+### 3. Test the Web App
+1. **Register/Login**: Create an account or use guest mode
+2. **Home Dashboard**: View your nutrition stats (Today/Week/All Time)
+3. **Camera**: Capture or upload a meal photo
+4. **Analyze**: Submit photo and view nutrition breakdown
+5. **History**: View your previously analyzed meals
+6. **Settings**: Toggle theme, change AI model, or logout
+
+### Deploy to Firebase Hosting
+```bash
+# Build the web app
+cd web
+npm run build
+
+# Deploy to Firebase (from project root)
+cd ..
+firebase deploy --only hosting
+```
+
+Your app will be live at:
+- https://nutritionai2026.web.app
+- https://nutritionai2026.firebaseapp.com
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions.
+
+---
 
 ## Quick Start - Running the iOS App
 
@@ -68,13 +117,13 @@ The app defaults to `192.168.50.48:3000`. If your Mac's IP is different:
 
 ## Project Structure
 
+- **web/** - React + Vite + TypeScript web application (Firebase Hosting)
 - **NutritionAI/** - iOS Swift Package + Wrapper App (USE THIS)
   - `Sources/NutritionAI/` - Main package source code
   - `NutritionAIApp/` - Wrapper Xcode app project
   - `NutritionAIApp.xcodeproj` - Open this project!
 - **NutritionAIApp/** - Old standalone project (DEPRECATED - do not use)
 - **backend/** - Node.js/Fastify API server for nutrition analysis
-- **web/** - React + Vite + TypeScript web application
 
 ## iOS App
 

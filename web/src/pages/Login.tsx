@@ -179,6 +179,7 @@ export default function Login() {
 }
 
 function Register({ onBack }: { onBack: () => void }) {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -186,6 +187,12 @@ function Register({ onBack }: { onBack: () => void }) {
   const [errorMessage, setErrorMessage] = useState('');
   const { register } = useAuth();
   const navigate = useNavigate();
+
+  const validateName = (name: string): string => {
+    if (!name) return 'Name is required';
+    if (name.length < 2) return 'Name must be at least 2 characters';
+    return '';
+  };
 
   const validateEmail = (email: string): string => {
     if (!email) return 'Email is required';
@@ -202,6 +209,12 @@ function Register({ onBack }: { onBack: () => void }) {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
+
+    const nameError = validateName(name);
+    if (nameError) {
+      setErrorMessage(nameError);
+      return;
+    }
 
     const emailError = validateEmail(email);
     if (emailError) {
@@ -222,7 +235,7 @@ function Register({ onBack }: { onBack: () => void }) {
 
     setIsLoading(true);
     try {
-      await register(email, password);
+      await register(email, password, name);
       navigate('/');
     } catch (error: any) {
       setErrorMessage(error.message || 'Registration failed. Please try again.');
@@ -259,6 +272,21 @@ function Register({ onBack }: { onBack: () => void }) {
         <div className="login-card register-card">
           <form onSubmit={handleSubmit}>
             <div className="login-form">
+              <div className="login-input-group">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="2"/>
+                  <path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Full Name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  disabled={isLoading}
+                  autoComplete="name"
+                />
+              </div>
+
               <div className="login-input-group">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                   <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="currentColor" strokeWidth="2"/>
