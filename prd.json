@@ -1,240 +1,297 @@
 {
   "project": "NutritionAI",
-  "branchName": "ralph/user-auth-dashboard",
-  "description": "User Management and Home Dashboard - Add user authentication, account management, and personalized home dashboard",
+  "branchName": "ralph/nutritionai-web-app",
+  "description": "NutritionAI Web App - Mobile-first web experience mirroring core iOS flows hosted on Firebase",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Add User database model and authentication schema",
-      "description": "As a developer, I need to store user accounts and link meal analyses to users.",
+      "title": "Scaffold React + Vite web app",
+      "description": "As a developer, I want a React + Vite + TypeScript web app scaffolded with routing so that we can build the NutritionAI web experience.",
       "acceptanceCriteria": [
-        "Add User model to Prisma schema with fields: id, email (unique), passwordHash, name, createdAt",
-        "Add userId field to MealAnalysis (nullable for backward compatibility)",
-        "Add index on MealAnalysis.userId for performance",
-        "Generate and run Prisma migration successfully",
+        "Create a React + Vite + TypeScript app under web/ with npm scripts",
+        "Add routes for Home, Camera, History, Settings, and Auth with placeholder screens",
+        "Support VITE_API_BASE_URL in environment config",
+        "web app builds via npm run build",
+        "Verify in browser using dev-browser skill",
         "Typecheck passes"
       ],
       "priority": 1,
+      "blockedBy": [],
       "passes": true,
       "notes": ""
     },
     {
       "id": "US-002",
-      "title": "Implement JWT authentication service",
-      "description": "As a backend developer, I need JWT token generation and validation for secure authentication.",
+      "title": "Add iOS-inspired theme tokens and base UI",
+      "description": "As a user, I want the web app to use the iOS color and typography system so that it feels like the NutritionAI app.",
       "acceptanceCriteria": [
-        "Create auth service with generateToken and verifyToken functions",
-        "Tokens include userId, email in payload",
-        "Tokens expire after 30 days",
-        "Use environment variable for JWT secret",
-        "Hash passwords using bcrypt",
-        "Add bcryptjs and jsonwebtoken dependencies",
+        "Translate AppTheme.swift colors and gradients into CSS variables in web/src/styles",
+        "Apply mobile-first base typography and spacing to the app shell",
+        "Create shared UI primitives (card, button, section header) aligned to the theme",
+        "Verify in browser using dev-browser skill",
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": true,
+      "blockedBy": [
+        "US-001"
+      ],
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-003",
-      "title": "Create authentication middleware",
-      "description": "As a backend developer, I need middleware to protect authenticated routes.",
+      "title": "Build API client with auth headers",
+      "description": "As a developer, I want a typed API client that attaches JWTs so that the web app can call existing backend endpoints securely.",
       "acceptanceCriteria": [
-        "Create auth middleware that validates JWT from Authorization header",
-        "Attach user object to request context",
-        "Return 401 for missing/invalid tokens",
-        "Return 403 for expired tokens",
+        "Create web/src/services/api.ts with base URL from VITE_API_BASE_URL",
+        "Implement GET/POST helpers that surface backend error messages",
+        "Attach Authorization: Bearer <token> when a token exists in localStorage",
+        "Expose functions for /api/auth/register, /api/auth/login, /api/user/stats, /api/analyze, /api/meals",
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": true,
+      "blockedBy": [
+        "US-001"
+      ],
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-004",
-      "title": "Add auth endpoints (register, login)",
-      "description": "As a user, I want to create an account and login to access my personalized data.",
+      "title": "Implement auth session state",
+      "description": "As a user, I want my login session to persist so that I stay signed in across reloads.",
       "acceptanceCriteria": [
-        "POST /api/auth/register - creates user, returns JWT token",
-        "POST /api/auth/login - validates credentials, returns JWT token",
-        "Validate email format and password strength (min 8 chars)",
-        "Return 400 for duplicate email on registration",
-        "Return 401 for invalid credentials on login",
+        "Create auth state module/context that stores token and guest/authenticated state",
+        "Load token from localStorage on startup and expose isAuthenticated and isGuest flags",
+        "Provide login, register, and logout actions that update state and storage",
+        "Handle 401 responses by clearing session and routing to Login",
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": true,
+      "blockedBy": [
+        "US-003"
+      ],
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-005",
-      "title": "Add user stats endpoint",
-      "description": "As a user, I want to see my meal statistics on the home dashboard.",
+      "title": "Build login, registration, and guest entry screens",
+      "description": "As a new user, I want to register, sign in, or continue as a guest so that I can access the app.",
       "acceptanceCriteria": [
-        "GET /api/user/stats - returns meal count, avg calories, totals",
-        "Requires authentication (use auth middleware)",
-        "Calculate stats from user's MealAnalysis records",
-        "Return stats for: today, this week, all time",
+        "Create Login and Register screens matching iOS layout (gradient header, card form)",
+        "Display inline validation for email, password length, and password confirmation",
+        "Add guest mode entry with a local-only data disclaimer",
+        "Successful login/register or guest entry routes to Home",
+        "Verify in browser using dev-browser skill",
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": true,
+      "blockedBy": [
+        "US-002",
+        "US-004"
+      ],
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-006",
-      "title": "Protect analyze endpoint with authentication",
-      "description": "As a developer, I need to associate meal analyses with the authenticated user.",
+      "title": "Build Home dashboard UI layout",
+      "description": "As a user, I want a home dashboard layout with stats cards and quick capture actions so that I can navigate core flows.",
       "acceptanceCriteria": [
-        "Add auth middleware to POST /api/analyze route",
-        "Store userId when creating MealAnalysis",
-        "Return 401 if not authenticated",
+        "Implement Home screen layout with Today/Week/All Time stat sections",
+        "Add Quick Capture buttons that navigate to the Camera route",
+        "Show a guest-mode info card when in guest state",
+        "Use shared theme components for cards and buttons",
+        "Verify in browser using dev-browser skill",
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": true,
+      "blockedBy": [
+        "US-002",
+        "US-004"
+      ],
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-007",
-      "title": "Create User and UserStats iOS models",
-      "description": "As an iOS developer, I need Swift models for user data.",
+      "title": "Wire Home dashboard to stats API",
+      "description": "As a logged-in user, I want my stats loaded on the Home dashboard so that I can see nutrition progress.",
       "acceptanceCriteria": [
-        "Create User model matching backend (id, email, name)",
-        "Create UserStats model (todayMeals, weekMeals, avgCalories, etc.)",
-        "Both models conform to Codable",
-        "Compile and typecheck passes"
+        "Fetch /api/user/stats and render Today/Week/All Time values",
+        "Show loading and error states with retry actions",
+        "Skip stats fetch and show guest-mode card when in guest state",
+        "Add pull-to-refresh or refresh button on mobile",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
       ],
       "priority": 7,
-      "passes": true,
+      "blockedBy": [
+        "US-003",
+        "US-004",
+        "US-006"
+      ],
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-008",
-      "title": "Create iOS AuthService for state management",
-      "description": "As an iOS developer, I need centralized authentication state management.",
+      "title": "Implement camera capture UI",
+      "description": "As a user, I want to capture or upload a meal photo so that I can analyze nutrition.",
       "acceptanceCriteria": [
-        "Create AuthService with @Published isAuthenticated property",
-        "Store JWT token in iOS Keychain securely",
-        "Implement login, register, logout functions",
-        "Auto-login on app launch if valid token exists",
-        "Clear token on logout",
-        "Compile and typecheck passes"
+        "Use getUserMedia to show live camera preview on supported devices",
+        "Provide file upload fallback when camera access is unavailable",
+        "After capture/upload, show a preview with Retake and Continue actions",
+        "Continue action navigates to an analyze step with the selected image",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
       ],
       "priority": 8,
-      "passes": true,
+      "blockedBy": [
+        "US-002"
+      ],
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-009",
-      "title": "Update APIService with authentication",
-      "description": "As a developer, I need API calls to include authentication headers.",
+      "title": "Submit meal image for analysis and show results",
+      "description": "As a user, I want to submit my meal photo and see nutrition results so that I can review macros.",
       "acceptanceCriteria": [
-        "Add Authorization header with Bearer token to all requests",
-        "Add register() and login() API methods",
-        "Add fetchUserStats() API method",
-        "Handle 401 responses by triggering logout",
-        "Existing API methods still work",
-        "Compile and typecheck passes"
+        "Send the selected image to /api/analyze as multipart/form-data using the API client",
+        "Display loading state and backend error message on failure",
+        "Render results view with totals and item breakdown matching iOS layout",
+        "Provide navigation back to Home or History after viewing results",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
       ],
       "priority": 9,
-      "passes": true,
+      "blockedBy": [
+        "US-003",
+        "US-008",
+        "US-002"
+      ],
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-010",
-      "title": "Create Login and Register views",
-      "description": "As a user, I want to login or create an account from the app.",
+      "title": "Render meal history list",
+      "description": "As a user, I want to see my meal history list so that I can review past analyses.",
       "acceptanceCriteria": [
-        "LoginView with email and password fields",
-        "RegisterView with email, name, password, confirm password fields",
-        "Both views show loading state during API calls",
-        "Show error messages for failed auth",
-        "Navigate to main app on successful auth",
-        "Link between Login and Register views",
-        "Compile and typecheck passes"
+        "Fetch /api/meals and render the list with most recent first",
+        "Show thumbnails when available and placeholders when missing",
+        "Guest mode shows local-only history or an empty state message",
+        "Tapping a list item opens the detail route",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
       ],
       "priority": 10,
-      "passes": true,
+      "blockedBy": [
+        "US-003",
+        "US-004",
+        "US-002"
+      ],
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-011",
-      "title": "Create StatsCard component for dashboard",
-      "description": "As a user, I want to see my nutrition stats in visually clear cards.",
+      "title": "Add meal history detail view",
+      "description": "As a user, I want to open a meal detail view so that I can see full nutrition breakdown.",
       "acceptanceCriteria": [
-        "Reusable StatsCard component with title, value, subtitle",
-        "Support different stat types (count, calories, macros)",
-        "Clean, card-based design with system colors",
-        "Responsive layout in grid",
-        "Compile and typecheck passes"
+        "Detail view shows meal photo, totals, and item breakdown for the selected entry",
+        "Detail view is reachable from the history list via route or modal",
+        "Provide back navigation to the history list",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
       ],
       "priority": 11,
-      "passes": true,
+      "blockedBy": [
+        "US-010",
+        "US-002"
+      ],
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-012",
-      "title": "Create QuickCaptureTile component",
-      "description": "As a user, I want quick-access tiles to capture full meals or partial meals.",
+      "title": "Create settings page with theme toggle",
+      "description": "As a user, I want to switch between light, dark, and system themes so that the app matches my preference.",
       "acceptanceCriteria": [
-        "QuickCaptureTile component with icon, label, and action",
-        "Tappable tile that triggers camera or specific capture flow",
-        "Support for Full Meal, Snack, Quick Add options",
-        "Visual feedback on tap",
-        "Compile and typecheck passes"
+        "Settings screen layout mirrors iOS section styling",
+        "Theme toggle options include System, Light, and Dark",
+        "Persist theme selection in localStorage and apply at app root",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
       ],
       "priority": 12,
-      "passes": true,
+      "blockedBy": [
+        "US-002"
+      ],
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-013",
-      "title": "Create HomeView dashboard",
-      "description": "As a user, I want a home dashboard showing my stats and quick meal capture options.",
+      "title": "Extend settings with model selector and logout",
+      "description": "As a user, I want to choose the AI model and sign out so that I can control analysis and my account.",
       "acceptanceCriteria": [
-        "Display welcome message with user's name",
-        "Show stats grid with today/week/total meals and calories",
-        "Show quick capture tiles for Full Meal, Snack, Quick Add",
-        "Refresh stats when view appears",
-        "Show loading state while fetching stats",
-        "Show empty state for new users",
-        "Compile and typecheck passes"
+        "Add AI model selector whose options match the iOS SettingsView model list",
+        "Persist selected model locally and use it when submitting /api/analyze requests",
+        "Add logout action that clears auth token and returns to Login",
+        "Expose backend URL override input only when VITE_SHOW_API_OVERRIDE=true",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
       ],
       "priority": 13,
-      "passes": true,
+      "blockedBy": [
+        "US-003",
+        "US-004",
+        "US-009",
+        "US-012"
+      ],
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-014",
-      "title": "Add HomeView to TabView and update app flow",
-      "description": "As a user, I want the Home tab to be the first tab when I open the app.",
+      "title": "Configure Firebase Hosting and backend CORS",
+      "description": "As a developer, I want Firebase Hosting configured so that the web app can be deployed and access the backend.",
       "acceptanceCriteria": [
-        "Add HomeView as first tab in TabView",
-        "Show login screen if not authenticated",
-        "Show main TabView with Home tab if authenticated",
-        "Home tab uses house.fill SF Symbol",
-        "Existing tabs (Camera, History, Settings) still work",
-        "Tab order: Home, Camera, History, Settings",
-        "Compile and typecheck passes"
+        "Add firebase.json and .firebaserc configured for project nutritionai2026 with web build output",
+        "Document deployment steps and required env vars for the web app",
+        "Update backend CORS allowlist to include the Firebase Hosting domain",
+        "Typecheck passes"
       ],
       "priority": 14,
-      "passes": true,
+      "blockedBy": [
+        "US-001"
+      ],
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-015",
-      "title": "Add logout functionality to Settings",
-      "description": "As a user, I want to logout from my account in the Settings tab.",
+      "title": "Add web app tests for critical flows",
+      "description": "As a developer, I want basic tests for API client, auth state, and routing so that core flows are protected.",
       "acceptanceCriteria": [
-        "Add Logout button to SettingsView",
-        "Tapping logout clears auth token and returns to login",
-        "Show confirmation dialog before logout",
-        "Existing settings functionality still works",
-        "Compile and typecheck passes"
+        "Add unit tests for API client request/response handling and auth state persistence",
+        "Add smoke tests covering Login, Home, History, and Settings routes",
+        "Tests pass",
+        "Typecheck passes"
       ],
       "priority": 15,
-      "passes": true,
+      "blockedBy": [
+        "US-003",
+        "US-004",
+        "US-005",
+        "US-006",
+        "US-010",
+        "US-012"
+      ],
+      "passes": false,
       "notes": ""
     }
   ]

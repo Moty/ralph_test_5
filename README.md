@@ -74,6 +74,7 @@ The app defaults to `192.168.50.48:3000`. If your Mac's IP is different:
   - `NutritionAIApp.xcodeproj` - Open this project!
 - **NutritionAIApp/** - Old standalone project (DEPRECATED - do not use)
 - **backend/** - Node.js/Fastify API server for nutrition analysis
+- **web/** - React + Vite + TypeScript web application
 
 ## iOS App
 
@@ -383,6 +384,41 @@ Analyze food image and return nutrition data (requires authentication).
   - 429 status code when limit exceeded
   - Retry-After header in rate limit responses
   - Rate limit headers (x-ratelimit-limit, x-ratelimit-remaining, x-ratelimit-reset)
+
+## Web App
+
+### Requirements
+- Node.js 18+
+- npm or yarn
+
+### Setup
+```bash
+cd web
+npm install
+```
+
+### Environment Variables
+Create a `.env` file in the web directory:
+```
+VITE_API_BASE_URL=http://localhost:3000
+```
+
+### Development
+```bash
+npm run dev     # Start dev server on http://localhost:5173
+npm run build   # Build for production
+npm run preview # Preview production build
+```
+
+### Features
+- React + Vite + TypeScript web application
+- **Routing** with react-router-dom
+  - Home - Dashboard placeholder
+  - Camera - Camera capture placeholder
+  - History - Meal history placeholder
+  - Settings - Settings placeholder
+  - Login - Login/Register placeholder
+- Environment-based backend API configuration
 
 ## Development
 
