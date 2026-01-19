@@ -157,3 +157,23 @@ Started: Sun Jan 18 17:35:36 PST 2026
   - Image shown at reduced height (30vh) in results, larger (50vh) in input view
   - Navigation provides clear paths to Home and History after analysis
 ---
+
+## 2026-01-19T01:56:00.000Z - US-010
+- Implemented meal history list fetching /api/meals
+- Shows thumbnails in 80x80 rounded squares, placeholder emoji when missing
+- Guest mode displays message that history is not available
+- Empty state shows "No meals yet" with button to capture first meal
+- Each meal card is clickable and navigates to /history/:id with meal state
+- Cards show date, totals grid, and item names preview
+- Added onClick prop to Card component
+- Build and typecheck passing
+- Files changed: web/src/pages/History.tsx, web/src/components/ui/Card.tsx
+- **Learnings for future iterations:**
+  - Meal list sorted most recent first by backend
+  - Date formatting uses toLocaleDateString with short month format
+  - Image thumbnails use object-fit: cover for consistent display
+  - Guest mode check prevents API call similar to Home stats
+  - Card onClick handler navigates with meal data in route state
+  - Empty/loading/error states handled with conditional rendering
+  - Refresh button in header matches Home dashboard pattern
+---

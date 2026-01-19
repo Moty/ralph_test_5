@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import Camera from './pages/Camera';
 import Analyze from './pages/Analyze';
 import History from './pages/History';
+import MealDetail from './pages/MealDetail';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -56,6 +57,9 @@ function AppContent() {
           } />
           <Route path="/history" element={
             requiresAuth ? <Navigate to="/login" replace /> : <History />
+          } />
+          <Route path="/history/:id" element={
+            requiresAuth ? <Navigate to="/login" replace /> : <MealDetail />
           } />
           <Route path="/settings" element={
             requiresAuth ? <Navigate to="/login" replace /> : <Settings />
