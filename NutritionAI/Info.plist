@@ -2,7 +2,25 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+	<string>NutritionAI</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.imoshin.nutritionai</string>
+	<key>CFBundleName</key>
+	<string>NutritionAI</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.healthcare-fitness</string>
 	<key>NSCameraUsageDescription</key>
-	<string>NutritionAI needs camera access to analyze food photos for nutritional information.</string>
+	<string>NutritionAI needs camera access to capture photos of your meals for AI-powered nutrition analysis. Your photos are processed securely to identify foods and calculate nutritional information.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>NutritionAI needs photo library access to select existing meal photos for nutrition analysis.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>

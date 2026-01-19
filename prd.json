@@ -1,302 +1,296 @@
 {
   "project": "NutritionAI",
-  "branchName": "ralph/nutrition-analyzer-app",
-  "description": "AI-Powered Nutrition Analyzer Mobile App - iOS app with photo-based food nutrition analysis",
+  "branchName": "ralph/nutritionai-web-app",
+  "description": "NutritionAI Web App - Mobile-first web experience mirroring core iOS flows hosted on Firebase",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Initialize iOS project with SwiftUI",
-      "description": "As a developer, I need the iOS project scaffolded with SwiftUI and camera capabilities.",
+      "title": "Scaffold React + Vite web app",
+      "description": "As a developer, I want a React + Vite + TypeScript web app scaffolded with routing so that we can build the NutritionAI web experience.",
       "acceptanceCriteria": [
-        "Create new iOS project with SwiftUI app template",
-        "Set minimum iOS deployment target to 16.0",
-        "Add Info.plist entry: NSCameraUsageDescription",
-        "Configure basic navigation structure with ContentView",
-        "Project builds successfully without errors",
+        "Create a React + Vite + TypeScript app under web/ with npm scripts",
+        "Add routes for Home, Camera, History, Settings, and Auth with placeholder screens",
+        "Support VITE_API_BASE_URL in environment config",
+        "web app builds via npm run build",
+        "Verify in browser using dev-browser skill",
         "Typecheck passes"
       ],
       "priority": 1,
+      "blockedBy": [],
       "passes": true,
       "notes": ""
     },
     {
       "id": "US-002",
-      "title": "Initialize Node.js backend with Fastify",
-      "description": "As a developer, I need the backend API initialized with TypeScript and Fastify.",
+      "title": "Add iOS-inspired theme tokens and base UI",
+      "description": "As a user, I want the web app to use the iOS color and typography system so that it feels like the NutritionAI app.",
       "acceptanceCriteria": [
-        "Initialize Node.js project with TypeScript configuration",
-        "Install dependencies: fastify, @fastify/cors, dotenv",
-        "Create basic server with GET /health endpoint",
-        "Configure CORS to allow mobile app requests",
-        "Server starts successfully on port from environment variable",
+        "Translate AppTheme.swift colors and gradients into CSS variables in web/src/styles",
+        "Apply mobile-first base typography and spacing to the app shell",
+        "Create shared UI primitives (card, button, section header) aligned to the theme",
+        "Verify in browser using dev-browser skill",
         "Typecheck passes"
       ],
       "priority": 2,
+      "blockedBy": [
+        "US-001"
+      ],
       "passes": true,
       "notes": ""
     },
     {
       "id": "US-003",
-      "title": "Set up Prisma database schema",
-      "description": "As a developer, I need the database schema for storing meal analysis records.",
+      "title": "Build API client with auth headers",
+      "description": "As a developer, I want a typed API client that attaches JWTs so that the web app can call existing backend endpoints securely.",
       "acceptanceCriteria": [
-        "Install and initialize Prisma with PostgreSQL",
-        "Create MealAnalysis model with fields: id, userId, imageUrl, nutritionData (JSON), createdAt",
-        "Define NutritionData type with calories, protein, carbs, fat fields",
-        "Generate Prisma client",
-        "Run initial migration successfully",
+        "Create web/src/services/api.ts with base URL from VITE_API_BASE_URL",
+        "Implement GET/POST helpers that surface backend error messages",
+        "Attach Authorization: Bearer <token> when a token exists in localStorage",
+        "Expose functions for /api/auth/register, /api/auth/login, /api/user/stats, /api/analyze, /api/meals",
         "Typecheck passes"
       ],
       "priority": 3,
+      "blockedBy": [
+        "US-001"
+      ],
       "passes": true,
       "notes": ""
     },
     {
       "id": "US-004",
-      "title": "Create nutrition data models in Swift",
-      "description": "As a developer, I need structured Swift models for nutrition data.",
+      "title": "Implement auth session state",
+      "description": "As a user, I want my login session to persist so that I stay signed in across reloads.",
       "acceptanceCriteria": [
-        "Create NutritionData struct with: calories, protein, carbs, fat (all Double)",
-        "Create FoodItem struct with: name, portion, confidence (0-1)",
-        "Create MealAnalysis struct combining foods array, totals, timestamp",
-        "All structs conform to Codable protocol",
-        "Add computed property for macro percentages on NutritionData",
+        "Create auth state module/context that stores token and guest/authenticated state",
+        "Load token from localStorage on startup and expose isAuthenticated and isGuest flags",
+        "Provide login, register, and logout actions that update state and storage",
+        "Handle 401 responses by clearing session and routing to Login",
         "Typecheck passes"
       ],
       "priority": 4,
+      "blockedBy": [
+        "US-003"
+      ],
       "passes": true,
       "notes": ""
     },
     {
       "id": "US-005",
-      "title": "Implement camera capture view",
-      "description": "As a user, I want to take a picture of my food using the device camera.",
+      "title": "Build login, registration, and guest entry screens",
+      "description": "As a new user, I want to register, sign in, or continue as a guest so that I can access the app.",
       "acceptanceCriteria": [
-        "Create CameraView with AVFoundation camera preview",
-        "Show capture button that takes photo on tap",
-        "Request camera permission on first use",
-        "Display captured photo in preview",
-        "Add retake and confirm buttons after capture",
-        "Compress image to under 2MB",
+        "Create Login and Register screens matching iOS layout (gradient header, card form)",
+        "Display inline validation for email, password length, and password confirmation",
+        "Add guest mode entry with a local-only data disclaimer",
+        "Successful login/register or guest entry routes to Home",
+        "Verify in browser using dev-browser skill",
         "Typecheck passes"
       ],
       "priority": 5,
+      "blockedBy": [
+        "US-002",
+        "US-004"
+      ],
       "passes": true,
       "notes": ""
     },
     {
       "id": "US-006",
-      "title": "Install and configure Gemini SDK",
-      "description": "As a developer, I need Gemini AI SDK integrated in the backend.",
+      "title": "Build Home dashboard UI layout",
+      "description": "As a user, I want a home dashboard layout with stats cards and quick capture actions so that I can navigate core flows.",
       "acceptanceCriteria": [
-        "Install @google/generative-ai package",
-        "Configure Gemini API key from environment variable",
-        "Create gemini.ts service with initializeModel() function",
-        "Add basic error handling for API initialization",
-        "Environment variable validation on server start",
+        "Implement Home screen layout with Today/Week/All Time stat sections",
+        "Add Quick Capture buttons that navigate to the Camera route",
+        "Show a guest-mode info card when in guest state",
+        "Use shared theme components for cards and buttons",
+        "Verify in browser using dev-browser skill",
         "Typecheck passes"
       ],
       "priority": 6,
+      "blockedBy": [
+        "US-002",
+        "US-004"
+      ],
       "passes": true,
       "notes": ""
     },
     {
       "id": "US-007",
-      "title": "Create Gemini nutrition analysis prompt",
-      "description": "As a developer, I need an optimized prompt for extracting nutrition data from food images.",
+      "title": "Wire Home dashboard to stats API",
+      "description": "As a logged-in user, I want my stats loaded on the Home dashboard so that I can see nutrition progress.",
       "acceptanceCriteria": [
-        "Create prompt template that requests food identification",
-        "Prompt asks for portion size estimation in common units",
-        "Prompt requests macro breakdown: calories, protein, carbs, fat per item and total",
-        "Specify JSON output format matching NutritionData schema",
-        "Include confidence scoring for each food item",
-        "Document prompt in code comments",
+        "Fetch /api/user/stats and render Today/Week/All Time values",
+        "Show loading and error states with retry actions",
+        "Skip stats fetch and show guest-mode card when in guest state",
+        "Add pull-to-refresh or refresh button on mobile",
+        "Verify in browser using dev-browser skill",
         "Typecheck passes"
       ],
       "priority": 7,
+      "blockedBy": [
+        "US-003",
+        "US-004",
+        "US-006"
+      ],
       "passes": true,
       "notes": ""
     },
     {
       "id": "US-008",
-      "title": "Implement POST /api/analyze endpoint",
-      "description": "As a backend developer, I need an endpoint that accepts images and returns nutrition analysis.",
+      "title": "Implement camera capture UI",
+      "description": "As a user, I want to capture or upload a meal photo so that I can analyze nutrition.",
       "acceptanceCriteria": [
-        "Create POST /api/analyze route accepting multipart/form-data",
-        "Validate image format (JPG/PNG) and size (max 5MB)",
-        "Send image to Gemini with nutrition prompt",
-        "Parse Gemini response into structured JSON",
-        "Return 200 with nutrition data or 400/500 with error message",
-        "Add timeout handling (30 seconds max)",
-        "Typecheck passes",
-        "Tests pass"
+        "Use getUserMedia to show live camera preview on supported devices",
+        "Provide file upload fallback when camera access is unavailable",
+        "After capture/upload, show a preview with Retake and Continue actions",
+        "Continue action navigates to an analyze step with the selected image",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
       ],
       "priority": 8,
+      "blockedBy": [
+        "US-002"
+      ],
       "passes": true,
       "notes": ""
     },
     {
       "id": "US-009",
-      "title": "Create API service in iOS app",
-      "description": "As a developer, I need a service to communicate with the backend API.",
+      "title": "Submit meal image for analysis and show results",
+      "description": "As a user, I want to submit my meal photo and see nutrition results so that I can review macros.",
       "acceptanceCriteria": [
-        "Create APIService class with async/await methods",
-        "Implement analyzeImage() method that sends image to POST /api/analyze",
-        "Use URLSession with multipart/form-data encoding",
-        "Decode response into MealAnalysis model",
-        "Handle network errors and timeouts gracefully",
-        "Add unit tests for success and error cases",
+        "Send the selected image to /api/analyze as multipart/form-data using the API client",
+        "Display loading state and backend error message on failure",
+        "Render results view with totals and item breakdown matching iOS layout",
+        "Provide navigation back to Home or History after viewing results",
+        "Verify in browser using dev-browser skill",
         "Typecheck passes"
       ],
       "priority": 9,
+      "blockedBy": [
+        "US-003",
+        "US-008",
+        "US-002"
+      ],
       "passes": true,
       "notes": ""
     },
     {
       "id": "US-010",
-      "title": "Build nutrition results view",
-      "description": "As a user, I want to see the nutritional breakdown of my food after capture.",
+      "title": "Render meal history list",
+      "description": "As a user, I want to see my meal history list so that I can review past analyses.",
       "acceptanceCriteria": [
-        "Create NutritionResultView displaying total calories, protein, carbs, fat",
-        "Show list of identified food items with individual nutrition",
-        "Display portion sizes in readable format",
-        "Add loading indicator during API call",
-        "Show error message if analysis fails",
-        "Add dismiss/back button to return to camera",
+        "Fetch /api/meals and render the list with most recent first",
+        "Show thumbnails when available and placeholders when missing",
+        "Guest mode shows local-only history or an empty state message",
+        "Tapping a list item opens the detail route",
+        "Verify in browser using dev-browser skill",
         "Typecheck passes"
       ],
       "priority": 10,
+      "blockedBy": [
+        "US-003",
+        "US-004",
+        "US-002"
+      ],
       "passes": true,
       "notes": ""
     },
     {
       "id": "US-011",
-      "title": "Add local storage for meal history",
-      "description": "As a user, I want my analyzed meals saved locally so I can review them.",
+      "title": "Add meal history detail view",
+      "description": "As a user, I want to open a meal detail view so that I can see full nutrition breakdown.",
       "acceptanceCriteria": [
-        "Create StorageService using SwiftData or Core Data",
-        "Save successful analyses with timestamp and thumbnail",
-        "Implement fetch methods for retrieving history",
-        "Auto-prune history to keep maximum 100 entries",
-        "Data persists across app restarts",
-        "Add unit tests for save and retrieve operations",
+        "Detail view shows meal photo, totals, and item breakdown for the selected entry",
+        "Detail view is reachable from the history list via route or modal",
+        "Provide back navigation to the history list",
+        "Verify in browser using dev-browser skill",
         "Typecheck passes"
       ],
       "priority": 11,
+      "blockedBy": [
+        "US-010",
+        "US-002"
+      ],
       "passes": true,
       "notes": ""
     },
     {
       "id": "US-012",
-      "title": "Save analyses to backend database",
-      "description": "As a developer, I need meal analyses stored in PostgreSQL for history sync.",
+      "title": "Create settings page with theme toggle",
+      "description": "As a user, I want to switch between light, dark, and system themes so that the app matches my preference.",
       "acceptanceCriteria": [
-        "Extend POST /api/analyze to save analysis to database via Prisma",
-        "Store userId (placeholder for now), imageUrl, nutritionData JSON, timestamp",
-        "Return analysis ID in API response",
-        "Add database error handling",
-        "Verify data persists in PostgreSQL",
-        "Typecheck passes",
-        "Tests pass"
+        "Settings screen layout mirrors iOS section styling",
+        "Theme toggle options include System, Light, and Dark",
+        "Persist theme selection in localStorage and apply at app root",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
       ],
       "priority": 12,
+      "blockedBy": [
+        "US-002"
+      ],
       "passes": true,
       "notes": ""
     },
     {
       "id": "US-013",
-      "title": "Create history list view",
-      "description": "As a user, I want to view a list of my previously analyzed meals.",
+      "title": "Extend settings with model selector and logout",
+      "description": "As a user, I want to choose the AI model and sign out so that I can control analysis and my account.",
       "acceptanceCriteria": [
-        "Create HistoryView showing meals in reverse chronological order",
-        "Each list item displays: thumbnail, total calories, date",
-        "Tapping item navigates to full nutrition details",
-        "Show empty state when no history exists",
-        "Implement smooth scrolling with lazy loading",
+        "Add AI model selector whose options match the iOS SettingsView model list",
+        "Persist selected model locally and use it when submitting /api/analyze requests",
+        "Add logout action that clears auth token and returns to Login",
+        "Expose backend URL override input only when VITE_SHOW_API_OVERRIDE=true",
+        "Verify in browser using dev-browser skill",
         "Typecheck passes"
       ],
       "priority": 13,
+      "blockedBy": [
+        "US-003",
+        "US-004",
+        "US-009",
+        "US-012"
+      ],
       "passes": true,
       "notes": ""
     },
     {
       "id": "US-014",
-      "title": "Add error handling for camera permissions",
-      "description": "As a user, I want clear guidance when camera access is denied.",
+      "title": "Configure Firebase Hosting and backend CORS",
+      "description": "As a developer, I want Firebase Hosting configured so that the web app can be deployed and access the backend.",
       "acceptanceCriteria": [
-        "Show alert when camera permission is denied",
-        "Alert includes button to open Settings app",
-        "Display permission status in camera view",
-        "Handle permission request on first app launch",
-        "No app crash when permission denied",
+        "Add firebase.json and .firebaserc configured for project nutritionai2026 with web build output",
+        "Document deployment steps and required env vars for the web app",
+        "Update backend CORS allowlist to include the Firebase Hosting domain",
         "Typecheck passes"
       ],
       "priority": 14,
+      "blockedBy": [
+        "US-001"
+      ],
       "passes": true,
       "notes": ""
     },
     {
       "id": "US-015",
-      "title": "Add network error handling",
-      "description": "As a user, I want clear feedback when network requests fail.",
+      "title": "Add web app tests for critical flows",
+      "description": "As a developer, I want basic tests for API client, auth state, and routing so that core flows are protected.",
       "acceptanceCriteria": [
-        "Show offline message when no internet connection",
-        "Display retry button on API timeout",
-        "Show user-friendly error for server errors (don't expose internals)",
-        "Handle invalid image response from Gemini gracefully",
-        "Log all errors for debugging without crashing app",
+        "Add unit tests for API client request/response handling and auth state persistence",
+        "Add smoke tests covering Login, Home, History, and Settings routes",
+        "Tests pass",
         "Typecheck passes"
       ],
       "priority": 15,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-016",
-      "title": "Add Dark Mode support",
-      "description": "As a user, I want the app to respect my iOS Dark Mode preference.",
-      "acceptanceCriteria": [
-        "All views use SwiftUI adaptive colors",
-        "Camera view works in both light and dark modes",
-        "Text remains readable in both modes",
-        "Images and cards have appropriate backgrounds",
-        "Test manually in both modes",
-        "Typecheck passes"
+      "blockedBy": [
+        "US-003",
+        "US-004",
+        "US-005",
+        "US-006",
+        "US-010",
+        "US-012"
       ],
-      "priority": 16,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-017",
-      "title": "Add navigation between camera and history",
-      "description": "As a user, I want to easily switch between camera and history views.",
-      "acceptanceCriteria": [
-        "Create TabView with Camera and History tabs",
-        "Tabs persist selection when switching",
-        "Tab icons clearly represent function",
-        "Smooth transitions between tabs",
-        "Camera resets when navigating away and back",
-        "Typecheck passes"
-      ],
-      "priority": 17,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-018",
-      "title": "Add backend rate limiting",
-      "description": "As a developer, I need to prevent API abuse with rate limiting.",
-      "acceptanceCriteria": [
-        "Install @fastify/rate-limit package",
-        "Configure rate limit: 100 requests per hour per IP",
-        "Return 429 status when limit exceeded",
-        "Include Retry-After header in response",
-        "Log rate limit violations",
-        "Typecheck passes",
-        "Tests pass"
-      ],
-      "priority": 18,
       "passes": true,
       "notes": ""
     }

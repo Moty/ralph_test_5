@@ -1,410 +1,251 @@
-# PRD: AI-Powered Nutrition Analyzer Mobile App
+# PRD: NutritionAI Web App (Firebase Hosted)
 
 ## Introduction
+Create a mobile-first web app that mirrors the existing NutritionAI iOS app's core functionality and visual style, hosted on Firebase (project: nutritionai2026). The web app will reuse the existing backend API (Fastify + Firestore/Postgres abstraction) for authentication, analysis, stats, and history, while providing a responsive UI that mimics the iOS experience.
 
-A mobile iOS application that enables users to instantly analyze the nutritional content of their meals through photo capture. Users simply take a picture of their food, and the app leverages Google's Gemini AI to identify the food items and calculate comprehensive nutritional information including macronutrients (protein, carbohydrates, fats) and other key dietary metrics.
-
-**Problem Statement:** Tracking nutrition manually is time-consuming and error-prone. Users need a quick, accurate way to understand what they're eating without manual data entry or food database searches.
+## Assumptions and Defaults (Clarifying Questions Answered)
+- Scope: New additive feature (a new web app) with no required changes to existing iOS app.
+- Areas touched: New web frontend only; backend changes limited to configuration (CORS allowlist and env updates) if needed.
+- Backward compatibility: Fully backward compatible; existing APIs remain unchanged.
+- Patterns: Follow existing backend API patterns; mirror iOS UI patterns and color system from `NutritionAI/Sources/NutritionAI/Theme/AppTheme.swift`.
+- Testing: Add tests for new web app code only; keep existing backend and iOS tests passing.
 
 ## Goals
+- Deliver a web app with feature parity for core iOS flows: auth, home stats, camera analyze, history, settings.
+- Provide a mobile-first, touch-friendly UI that closely mimics the iOS app visuals and IA.
+- Host the web app on Firebase Hosting under the nutritionai2026 project.
+- Reuse existing backend endpoints without breaking changes.
 
-- Enable users to capture and analyze food nutrition in under 10 seconds
-- Provide accurate macronutrient breakdowns (protein, carbs, fats) within ±15% margin
-- Deliver a native iOS experience with smooth camera integration
-- Create an intuitive, single-tap workflow from photo to nutrition data
-- Build a scalable foundation for future Android expansion
+## Integration Points
 
-## Technology Stack
+### Existing Components to Modify
+- `backend/src/server.ts` - Confirm/adjust CORS policy to allow the Firebase Hosting domain.
+- `backend/README.md` and `backend/FIREBASE_DEPLOYMENT.md` - Document web app base URL and deployment notes (if needed).
 
-### Mobile (iOS)
-- **Platform:** iOS 16.0+
-- **Language:** Swift 5.9+
-- **Framework:** SwiftUI
-- **Camera:** AVFoundation
-- **Image Processing:** CoreImage + Vision Framework
-- **Networking:** URLSession with async/await
-- **State Management:** SwiftUI @StateObject + @Observable
-- **Dependency Management:** Swift Package Manager
+### Existing Components to Reuse
+- Backend endpoints:
+  - `backend/src/routes/auth.ts` (POST `/api/auth/register`, `/api/auth/login`)
+  - `backend/src/routes/user.ts` (GET `/api/user/stats`)
+  - `backend/src/routes/analyze.ts` (POST `/api/analyze`)
+  - `backend/src/routes/meals.ts` (GET `/api/meals`, `/api/meals/:id`)
+- Backend services:
+  - `backend/src/services/database.ts` (Firestore/Postgres abstraction)
+  - `backend/src/services/firebase.ts` (Firebase initialization for Firestore)
+- iOS design references:
+  - `NutritionAI/Sources/NutritionAI/Theme/AppTheme.swift` (colors, gradients, glassmorphism)
+  - `NutritionAI/Sources/NutritionAI/Views/HomeView.swift` (layout, stats, quick capture)
+  - `NutritionAI/Sources/NutritionAI/Views/HistoryView.swift` (list + details)
+  - `NutritionAI/Sources/NutritionAI/Views/LoginView.swift` (login layout)
+  - `NutritionAI/Sources/NutritionAI/Views/SettingsView.swift` (settings sections)
 
-### Backend/AI
-- **AI Service:** Google Gemini Pro Vision API
-- **Backend:** Node.js 20 LTS + TypeScript
-- **Framework:** Fastify (lightweight API gateway)
-- **Database:** PostgreSQL 15 + Prisma ORM (for user history, analytics)
-- **Image Storage:** AWS S3 or Cloudflare R2
-- **API Authentication:** JWT tokens
+### New Files to Create
+- `web/` (new frontend app root)
+  - `web/package.json` - React + Vite + TypeScript app
+  - `web/src/App.tsx` - App shell and routing
+  - `web/src/routes/*` - Home, Camera, History, Settings, Login/Register
+  - `web/src/components/*` - shared UI (cards, tiles, headers)
+  - `web/src/services/api.ts` - API client for backend endpoints
+  - `web/src/services/auth.ts` - auth state + token storage
+  - `web/src/styles/*` - Tailwind or CSS variables matching iOS theme
+  - `web/index.html` - mobile viewport meta and app title
+- Firebase Hosting config at repo root or `web/`:
+  - `firebase.json`
+  - `.firebaserc`
 
-### Deployment
-- **Mobile:** Apple App Store (TestFlight for beta)
-- **Backend:** Docker containers on AWS ECS / Railway
-- **Database:** Managed PostgreSQL (AWS RDS / Supabase)
-- **CDN:** CloudFront / Cloudflare for image delivery
+### Database Changes
+- None. Web app uses existing API and database schema.
 
-**Rationale:** Swift/SwiftUI provides the best native iOS experience with excellent camera integration. Gemini Pro Vision is specifically designed for image understanding and can identify multiple food items with nutritional reasoning. Node.js backend serves as a lightweight proxy to manage API keys securely and log usage. PostgreSQL enables future features like meal history and trend analysis.
+## Compatibility
 
-## Project Structure
+### Backward Compatibility
+- No breaking changes to existing backend endpoints.
+- iOS app remains unaffected.
 
-### iOS App Structure
-```
-NutritionAI/
-├── NutritionAI/
-│   ├── App/
-│   │   └── NutritionAIApp.swift         # App entry point
-│   ├── Views/
-│   │   ├── CameraView.swift             # Camera capture UI
-│   │   ├── NutritionResultView.swift    # Results display
-│   │   ├── HistoryView.swift            # Past meals
-│   │   └── Components/                  # Reusable UI components
-│   ├── ViewModels/
-│   │   ├── CameraViewModel.swift
-│   │   └── NutritionViewModel.swift
-│   ├── Models/
-│   │   ├── NutritionData.swift          # Data models
-│   │   └── MealRecord.swift
-│   ├── Services/
-│   │   ├── CameraService.swift          # Camera handling
-│   │   ├── APIService.swift             # Backend communication
-│   │   └── StorageService.swift         # Local persistence
-│   └── Resources/
-│       └── Assets.xcassets
-├── NutritionAITests/
-└── NutritionAI.xcodeproj
-```
+### Migration Requirements
+- None.
 
-### Backend Structure
-```
-nutrition-api/
-├── src/
-│   ├── routes/
-│   │   └── analyze.ts           # POST /analyze endpoint
-│   ├── services/
-│   │   ├── gemini.ts            # Gemini API integration
-│   │   └── storage.ts           # S3/R2 image storage
-│   ├── schemas/
-│   │   └── nutrition.ts         # Zod validation schemas
-│   └── index.ts                 # Server entry
-├── prisma/
-│   └── schema.prisma            # Database schema
-├── tests/
-└── package.json
-```
+### Deprecations
+- None.
 
 ## User Stories
 
-### US-001: iOS Project Setup
-**Description:** As a developer, I need the iOS project scaffolded with SwiftUI and required dependencies.
+### US-001: Scaffold the web app
+**Description:** As a developer, I want a new web frontend that builds locally and is ready for Firebase Hosting.
 
 **Acceptance Criteria:**
-- [ ] Create new iOS project in Xcode with SwiftUI
-- [ ] Set minimum iOS deployment target to 16.0
-- [ ] Configure App capabilities (Camera access)
-- [ ] Add Info.plist entries for camera usage description
-- [ ] Set up basic SwiftUI navigation structure
-- [ ] Project builds successfully
-- [ ] No compiler warnings
-
-### US-002: Backend API Setup
-**Description:** As a developer, I need the backend API initialized with Fastify and Gemini integration.
-
-**Acceptance Criteria:**
-- [ ] Initialize Node.js project with TypeScript
-- [ ] Install Fastify, @google/generative-ai, Zod, Prisma
-- [ ] Configure environment variables for Gemini API key
-- [ ] Create basic server with health check endpoint
-- [ ] Set up CORS for mobile app requests
-- [ ] Server starts on configurable port
+- [ ] Create a React + Vite + TypeScript app under `web/`
+- [ ] Mobile-first layout with routing (Home, Camera, History, Settings, Auth)
+- [ ] Environment config supports `VITE_API_BASE_URL`
+- [ ] `npm run build` succeeds for the web app
 - [ ] Typecheck passes
 
-### US-003: Database Schema Setup
-**Description:** As a developer, I need the database schema for storing meal analysis history.
+**Integration Notes:**
+- Adds: `web/`
+- Uses: Firebase Hosting config files
+
+---
+
+### US-002: API client and auth state
+**Description:** As a user, I want to sign in and have my session persist so I can access my data.
 
 **Acceptance Criteria:**
-- [ ] Install and initialize Prisma
-- [ ] Create schema with MealAnalysis model (id, userId, imageUrl, nutritionData, timestamp)
-- [ ] Add NutritionData JSON schema (calories, protein, carbs, fat, servingSize)
-- [ ] Generate Prisma client
-- [ ] Run initial migration
+- [ ] API client supports `/api/auth/register`, `/api/auth/login`, `/api/user/stats`, `/api/analyze`, `/api/meals`
+- [ ] JWT token stored securely in browser storage and attached to requests
+- [ ] 401 responses clear session and return user to login
+- [ ] Error messages mirror backend error responses
 - [ ] Typecheck passes
 
-### US-004: Camera Capture
-**Description:** As a user, I want to take a picture of my food using the device camera.
+**Integration Notes:**
+- Uses: existing backend auth endpoints
+- Pattern: follow API error handling patterns from iOS `APIService.swift`
+
+---
+
+### US-003: Login, registration, and guest mode
+**Description:** As a new user, I want to register or try the app as a guest from a mobile-friendly UI.
 
 **Acceptance Criteria:**
-- [ ] Camera view displays on app launch or navigation
-- [ ] User can see live camera preview
-- [ ] Capture button triggers photo capture
-- [ ] Camera permission request shown if not granted
-- [ ] Captured image displayed in preview
-- [ ] Option to retake or confirm photo
-- [ ] Image compressed to reasonable size (< 2MB)
-- [ ] No memory leaks in camera session
+- [ ] Login and Register screens mirror iOS layout (gradient header, card form)
+- [ ] Guest mode available with clear disclaimer (local-only data)
+- [ ] Validation errors displayed inline
+- [ ] Works on small screens (<= 375px wide)
+- [ ] Verify in browser (mobile viewport)
 
-### US-005: Gemini Integration Endpoint
-**Description:** As a backend developer, I need an endpoint that sends images to Gemini for nutrition analysis.
+**Integration Notes:**
+- References: `NutritionAI/Sources/NutritionAI/Views/LoginView.swift`
+- Reuses: iOS color palette and gradient style
+
+---
+
+### US-004: Home dashboard with stats and quick capture
+**Description:** As a logged-in user, I want a home dashboard showing my stats and quick capture actions.
 
 **Acceptance Criteria:**
-- [ ] POST /api/analyze accepts base64 or multipart image
-- [ ] Image validated (format: JPG/PNG, size < 5MB)
-- [ ] Gemini Pro Vision API called with optimized prompt
-- [ ] Prompt requests: food identification, portion estimation, macro breakdown
-- [ ] Response parsed and structured as JSON
-- [ ] Error handling for API failures (retry logic)
-- [ ] Returns 200 with nutrition data or 4xx/5xx with error details
+- [ ] Fetch stats from `/api/user/stats` and display Today/Week/All Time cards
+- [ ] Quick capture button routes to Camera
+- [ ] Guest users see a guest-mode card and no stats fetch
+- [ ] Pull-to-refresh or refresh button supported on mobile
+- [ ] Verify in browser (mobile viewport)
+
+**Integration Notes:**
+- References: `NutritionAI/Sources/NutritionAI/Views/HomeView.swift`
+- Uses: stats card patterns from `StatsCard.swift`
+
+---
+
+### US-005: Camera capture and analyze flow
+**Description:** As a user, I want to capture or upload a meal photo and get nutrition results.
+
+**Acceptance Criteria:**
+- [ ] Support device camera via `getUserMedia` on mobile; fallback to file upload
+- [ ] Show preview with retake/confirm flow
+- [ ] Submit to `/api/analyze` as multipart/form-data
+- [ ] Show loading state and error messaging for failures
+- [ ] Display results matching iOS layout (totals + items)
+- [ ] Verify in browser (mobile viewport)
+
+**Integration Notes:**
+- Uses: `backend/src/routes/analyze.ts`
+- References: `NutritionAI/Sources/NutritionAI/Views/CameraView.swift` and `NutritionResultView.swift`
+
+---
+
+### US-006: History list and detail view
+**Description:** As a user, I want to view my meal history and open meal details.
+
+**Acceptance Criteria:**
+- [ ] Fetch history from `/api/meals` and render most recent first
+- [ ] Show thumbnails when available; show placeholders otherwise
+- [ ] Tap to open detail sheet/page with full nutrition breakdown
+- [ ] Guest users see local-only history or an empty state
+- [ ] Verify in browser (mobile viewport)
+
+**Integration Notes:**
+- Uses: `backend/src/routes/meals.ts`
+- References: `NutritionAI/Sources/NutritionAI/Views/HistoryView.swift`
+
+---
+
+### US-007: Settings (theme, AI model, account)
+**Description:** As a user, I want to adjust theme and model settings and manage my account.
+
+**Acceptance Criteria:**
+- [ ] Theme toggle (system/light/dark) stored locally
+- [ ] AI model selector matches iOS options (value sent in analyze request)
+- [ ] Logout clears token and user state
+- [ ] Optional admin-only backend URL override (if needed)
+- [ ] Verify in browser (mobile viewport)
+
+**Integration Notes:**
+- References: `NutritionAI/Sources/NutritionAI/Views/SettingsView.swift`
+- Uses: settings patterns and model list from iOS
+
+---
+
+### US-008: Firebase Hosting configuration
+**Description:** As a developer, I want a repeatable deployment to Firebase Hosting.
+
+**Acceptance Criteria:**
+- [ ] `firebase.json` and `.firebaserc` configured for project `nutritionai2026`
+- [ ] Build output deployed to Firebase Hosting
+- [ ] Deployment docs specify required env vars and base URL setup
+- [ ] CORS in backend allows the hosting domain
+
+**Integration Notes:**
+- Uses: Firebase project `nutritionai2026`
+- References: `backend/FIREBASE_DEPLOYMENT.md`
+
+---
+
+### US-009: Web app testing and QA
+**Description:** As a developer, I want basic tests for critical web flows.
+
+**Acceptance Criteria:**
+- [ ] Unit tests for API client and auth state
+- [ ] Smoke tests for routing and key screens
 - [ ] Typecheck passes
-- [ ] Tests pass
 
-### US-006: Display Nutrition Results
-**Description:** As a user, I want to see the nutritional breakdown of my food immediately after capture.
-
-**Acceptance Criteria:**
-- [ ] Loading indicator shown during API call
-- [ ] Nutrition results displayed in clear, readable format
-- [ ] Shows: total calories, protein (g), carbs (g), fat (g)
-- [ ] Displays identified food items as list
-- [ ] Shows estimated portion/serving size
-- [ ] Error message shown if analysis fails
-- [ ] User can dismiss and return to camera
-- [ ] Smooth transition animation
-
-### US-007: API Communication Layer
-**Description:** As a developer, I need a service to handle API requests from the iOS app.
-
-**Acceptance Criteria:**
-- [ ] APIService struct with async/await methods
-- [ ] analyzeImage() method sends image to backend
-- [ ] Proper error handling and typing
-- [ ] Network reachability check
-- [ ] Timeout handling (30 second max)
-- [ ] Decodable response models
-- [ ] Unit tests for happy path and error cases
-- [ ] No compiler warnings
-
-### US-008: Save Analysis History
-**Description:** As a user, I want my analyzed meals saved so I can review them later.
-
-**Acceptance Criteria:**
-- [ ] Successful analyses saved to local Core Data/SwiftData
-- [ ] Backend stores analysis with timestamp in PostgreSQL
-- [ ] Each record includes: image thumbnail, nutrition data, date/time
-- [ ] History persists across app restarts
-- [ ] Maximum 100 local entries (auto-prune oldest)
-- [ ] Tests verify storage and retrieval
-
-### US-009: History View
-**Description:** As a user, I want to view a list of my previously analyzed meals.
-
-**Acceptance Criteria:**
-- [ ] History accessible via tab or navigation
-- [ ] List shows meals in reverse chronological order
-- [ ] Each item displays: thumbnail, total calories, date
-- [ ] Tapping item shows full nutrition details
-- [ ] Empty state shown when no history
-- [ ] Pull-to-refresh updates from backend
-- [ ] Smooth scrolling performance
-
-### US-010: Nutrition Data Model
-**Description:** As a developer, I need structured models for nutrition data.
-
-**Acceptance Criteria:**
-- [ ] NutritionData struct with: calories, protein, carbs, fat, fiber, sugar
-- [ ] FoodItem model with: name, portion, confidence score
-- [ ] MealAnalysis model combining image, foods, nutrition, timestamp
-- [ ] All models Codable for JSON serialization
-- [ ] Computed properties for macro percentages
-- [ ] Unit tests for model logic
-- [ ] No compiler warnings
-
-### US-011: Error Handling & Edge Cases
-**Description:** As a user, I want clear feedback when things go wrong.
-
-**Acceptance Criteria:**
-- [ ] Camera permission denied: show alert with settings link
-- [ ] No internet: show offline message
-- [ ] API timeout: show retry option
-- [ ] Invalid image (no food detected): friendly message
-- [ ] Backend error: generic error message (don't expose internals)
-- [ ] All errors logged for debugging
-- [ ] App doesn't crash on any error scenario
-
-### US-012: Gemini Prompt Engineering
-**Description:** As a developer, I need an optimized prompt for accurate nutrition extraction.
-
-**Acceptance Criteria:**
-- [ ] Prompt instructs Gemini to identify all visible food items
-- [ ] Requests portion size estimation
-- [ ] Asks for macro breakdown per item and total
-- [ ] Specifies JSON output format
-- [ ] Includes confidence scoring
-- [ ] Tested with 10+ sample food images
-- [ ] Average accuracy validated against known nutritional data
-- [ ] Documentation of prompt template
+**Integration Notes:**
+- New web-only tests (no changes to backend tests)
 
 ## Functional Requirements
+1. Web app must support login, registration, and guest mode.
+2. Web app must call existing backend endpoints with JWT auth.
+3. Camera capture must support mobile browsers and fallback to upload.
+4. History must show meals for authenticated users and local-only data for guests.
+5. Settings must include theme toggle and AI model selection.
+6. UI should follow iOS theme: gradients, glassmorphism, and typography hierarchy.
+7. Web app must be deployable to Firebase Hosting in the nutritionai2026 project.
 
-**Core Functionality:**
-- FR-1: App must request and handle camera permissions appropriately
-- FR-2: Camera must capture images at sufficient resolution for AI analysis (min 1080p)
-- FR-3: Images must be compressed before upload (target: 1-2MB)
-- FR-4: API must respond within 10 seconds for 95% of requests
-- FR-5: Nutrition data must include: calories, protein (g), carbs (g), fat (g)
-- FR-6: App must work in both portrait and landscape orientations
-- FR-7: All text must be readable with iOS Dynamic Type settings
-- FR-8: App must support iOS Dark Mode
-
-**Data Requirements:**
-- FR-9: Nutrition values rounded to 1 decimal place
-- FR-10: Food items listed with individual and combined totals
-- FR-11: Portion sizes displayed in common units (cups, oz, grams)
-- FR-12: Timestamps stored in UTC, displayed in user's timezone
-
-**Quality Requirements:**
-- FR-13: App must handle low-light images gracefully
-- FR-14: Multiple food items in one image must be separately identified
-- FR-15: API must return structured JSON with consistent schema
-- FR-16: Backend must rate-limit requests to prevent abuse (100 req/hour per user)
-
-## Non-Goals (Out of Scope for v1)
-
-- ❌ Android version (iOS only for v1)
-- ❌ User accounts and authentication (local storage only)
-- ❌ Social features (sharing, comparing with friends)
-- ❌ Barcode scanning
-- ❌ Manual food entry or database search
-- ❌ Meal planning or recommendations
-- ❌ Integration with health apps (Apple Health, MyFitnessPal)
-- ❌ Custom dietary goals or tracking over time
-- ❌ Offline AI processing (requires cloud API)
-- ❌ Video analysis or multiple photos per meal
-- ❌ Recipe generation or cooking instructions
-- ❌ Restaurant menu integration
-- ❌ Micronutrient analysis (vitamins, minerals) - macros only
+## Non-Goals
+- No changes to iOS app behavior or UI in this phase.
+- No new backend endpoints beyond existing API surface.
+- No advanced social sharing or diet tracking features.
+- No offline-first PWA or background sync (can be a future enhancement).
 
 ## Technical Considerations
-
-**Performance:**
-- Target: Camera to results in under 10 seconds
-- Image compression must not degrade AI accuracy
-- UI must remain responsive during API calls
-- Local database queries under 100ms
-
-**Security:**
-- API keys never embedded in iOS app binary
-- Backend validates all image uploads
-- Rate limiting to prevent API abuse
-- Images automatically deleted after 30 days
-- No PII collected without user consent
-
-**Scalability:**
-- Backend stateless for horizontal scaling
-- Database connection pooling configured
-- Image storage uses CDN for global access
-- Gemini API quota monitoring and alerts
-
-**Testing Strategy:**
-- Unit tests for ViewModels and Services (80% coverage target)
-- UI tests for critical flows (camera → results)
-- Integration tests for API endpoints
-- Manual QA with diverse food images
-- Beta testing via TestFlight with 20+ users
-
-**AI Considerations:**
-- Gemini prompt versioned and tested iteratively
-- Fallback handling if Gemini returns unexpected format
-- Confidence scores evaluated (reject if < 50%)
-- Edge cases: empty plates, unclear images, non-food items
+- Frontend stack: React + Vite + TypeScript, mobile-first CSS (Tailwind or CSS variables).
+- Token storage: localStorage (simple, consistent with current backend JWT flow).
+- Use `getUserMedia` with permission handling similar to iOS camera guidance.
+- Apply iOS design tokens by translating `AppTheme.swift` colors/gradients into CSS variables.
+- Ensure CORS allows Firebase Hosting origin; consider allowlist in production.
+- Use environment config for backend base URL, Firebase project, and API keys if needed.
 
 ## Success Metrics
-
-**Functional Success:**
-- ✅ 95% of food images return results within 10 seconds
-- ✅ 80% user satisfaction with accuracy (beta survey)
-- ✅ Zero crashes in production (Crashlytics monitoring)
-- ✅ App Store approval on first submission
-
-**Technical Success:**
-- ✅ All unit tests pass
-- ✅ No TypeScript/Swift compiler errors
-- ✅ 80%+ code coverage on critical paths
-- ✅ API P95 latency under 8 seconds
-
-**User Experience:**
-- ✅ Average time from app launch to results: < 15 seconds
-- ✅ Users can complete full flow without documentation
-- ✅ Accessibility score: A rating (Xcode Accessibility Inspector)
+- Web app provides parity for Home, Camera, History, Settings, and Auth flows.
+- Time-to-first-result (upload to nutrition result) under 10 seconds on average network.
+- 90% of sessions on mobile viewport complete at least one analyze flow without errors.
+- No regressions in backend API tests or iOS behavior.
 
 ## Open Questions
+- None (defaults applied as stated in Assumptions and Defaults).
 
-1. **Gemini API Quota:** What's the expected daily usage? Need to estimate costs and set appropriate limits.
-2. **Image Storage Duration:** Should we keep images for user history? Privacy implications?
-3. **Portion Size Accuracy:** How confident can Gemini be without reference objects? Consider allowing users to input plate size?
-4. **Multiple Foods:** Should we show per-item breakdowns or just totals in v1?
-5. **Offline Mode:** Should we show cached history when offline?
-6. **Subscription Model:** Will this be free in v1, or test monetization early?
-7. **Data Export:** Should users be able to export their history (CSV, PDF)?
-8. **Localization:** English-only for v1, or support multiple languages from start?
+---
 
-## Implementation Notes
-
-**Phase 1: Foundation (Week 1-2)**
-- US-001: iOS project setup
-- US-002: Backend API setup
-- US-003: Database schema
-
-**Phase 2: Core Features (Week 3-4)**
-- US-004: Camera capture
-- US-005: Gemini integration
-- US-012: Prompt engineering
-- US-007: API communication
-
-**Phase 3: UI & UX (Week 5-6)**
-- US-006: Display results
-- US-010: Data models
-- US-011: Error handling
-
-**Phase 4: History & Polish (Week 7-8)**
-- US-008: Save history
-- US-009: History view
-- Beta testing and refinements
-
-**Estimated Timeline:** 8 weeks to TestFlight beta
-
-## Appendix: Example API Response
-
-```json
-{
-  "success": true,
-  "analysis": {
-    "foods": [
-      {
-        "name": "Grilled Chicken Breast",
-        "portion": "6 oz (170g)",
-        "confidence": 0.92,
-        "nutrition": {
-          "calories": 280,
-          "protein": 53.0,
-          "carbs": 0.0,
-          "fat": 6.0
-        }
-      },
-      {
-        "name": "Steamed Broccoli",
-        "portion": "1 cup (91g)",
-        "confidence": 0.88,
-        "nutrition": {
-          "calories": 31,
-          "protein": 2.5,
-          "carbs": 6.0,
-          "fat": 0.3
-        }
-      }
-    ],
-    "totals": {
-      "calories": 311,
-      "protein": 55.5,
-      "carbs": 6.0,
-      "fat": 6.3
-    },
-    "timestamp": "2026-01-12T05:30:00Z"
-  }
-}
-```
+## Checklist
+- [ ] Reviewed existing codebase context
+- [ ] Documented Integration Points
+- [ ] Documented Compatibility considerations
+- [ ] Stories reference existing backend and iOS files
+- [ ] Non-goals prevent scope creep
+- [ ] Saved to `tasks/prd-draft.md`

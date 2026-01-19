@@ -1,14 +1,10 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { initializeModel, createNutritionPrompt } from '../services/gemini.js';
-import { PrismaClient } from '@prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
-import pg from 'pg';
 import { Buffer } from 'buffer';
-
-// Initialize PrismaClient with PostgreSQL adapter for Prisma 7
-const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+import { validateImage, ImageValidationError } from '../utils/imageValidation.js';
+import { optionalAuthMiddleware } from '../middleware/auth.js';
+import { getDb } from '../services/database.js';
+import sharp from 'sharp';
 
 interface AnalyzeResponse {
   id?: string;
@@ -29,10 +25,29 @@ interface AnalyzeResponse {
     carbs: number;
     fat: number;
   };
+  timestamp: string;
+}
+
+// Create a low-res thumbnail from the image buffer
+async function createThumbnail(buffer: Buffer, mimetype: string): Promise<string> {
+  try {
+    const thumbnailBuffer = await sharp(buffer)
+      .resize(200, 200, { fit: 'cover' })
+      .jpeg({ quality: 60 })
+      .toBuffer();
+    
+    return `data:image/jpeg;base64,${thumbnailBuffer.toString('base64')}`;
+  } catch (error) {
+    console.error('Failed to create thumbnail:', error);
+    return '';
+  }
 }
 
 export async function analyzeRoutes(server: FastifyInstance) {
-  server.post('/api/analyze', async (request: FastifyRequest, reply: FastifyReply) => {
+  const db = getDb();
+  
+  // Use optional auth - allows guests to analyze, but only saves to DB for authenticated users
+  server.post('/api/analyze', { preHandler: optionalAuthMiddleware }, async (request: FastifyRequest, reply: FastifyReply) => {
     const timeout = setTimeout(() => {
       if (!reply.sent) {
         reply.code(408).send({ error: 'Request timeout - analysis took too long' });
@@ -69,22 +84,15 @@ export async function analyzeRoutes(server: FastifyInstance) {
         return reply.code(400).send({ error: 'No image file provided' });
       }
 
-      // Validate file type
-      const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-      if (!allowedMimeTypes.includes(mimetype)) {
+      // Validate image
+      try {
+        validateImage(mimetype, buffer.length);
+      } catch (error) {
         clearTimeout(timeout);
-        return reply.code(400).send({ 
-          error: 'Invalid file format. Only JPG and PNG images are allowed' 
-        });
-      }
-
-      // Validate file size (max 5MB)
-      const maxSize = 5 * 1024 * 1024; // 5MB in bytes
-      if (buffer.length > maxSize) {
-        clearTimeout(timeout);
-        return reply.code(400).send({ 
-          error: 'File too large. Maximum size is 5MB' 
-        });
+        if (error instanceof ImageValidationError) {
+          return reply.code(400).send({ error: error.message });
+        }
+        throw error;
       }
 
       // Initialize Gemini model (use client-provided model if available)
@@ -127,19 +135,26 @@ export async function analyzeRoutes(server: FastifyInstance) {
         });
       }
 
-      // Save to database
+      // Only save to database for authenticated users (not guests)
       let savedAnalysis;
-      try {
-        savedAnalysis = await prisma.mealAnalysis.create({
-          data: {
-            userId: 'placeholder-user-id',
+      if (request.user) {
+        try {
+          // Create a thumbnail of the image for storage
+          const thumbnail = await createThumbnail(buffer!, mimetype);
+          
+          savedAnalysis = await db.createMealAnalysis({
+            userId: request.user.userId,
             imageUrl: '',
+            thumbnail: thumbnail,
             nutritionData: nutritionData as any,
-          },
-        });
-      } catch (dbError) {
-        server.log.error({ dbError }, 'Failed to save analysis to database');
-        // Continue and return the analysis even if database save fails
+          });
+          console.log('Meal saved to database for user:', request.user.userId);
+        } catch (dbError) {
+          server.log.error({ dbError }, 'Failed to save analysis to database');
+          // Continue and return the analysis even if database save fails
+        }
+      } else {
+        console.log('Guest user - analysis not saved to database');
       }
 
       // Add analysis ID to response if saved
@@ -158,6 +173,32 @@ export async function analyzeRoutes(server: FastifyInstance) {
       server.log.error(error);
       
       if (error instanceof Error) {
+        const errorMessage = error.message || '';
+        
+        // Check for quota exceeded
+        if (errorMessage.includes('429') || errorMessage.includes('quota') || errorMessage.includes('Too Many Requests')) {
+          return reply.code(429).send({ 
+            error: 'API quota exceeded. Please try a different AI model in Settings, or wait and try again later.',
+            code: 'QUOTA_EXCEEDED'
+          });
+        }
+        
+        // Check for model overload
+        if (errorMessage.includes('503') || errorMessage.includes('overloaded') || errorMessage.includes('Service Unavailable')) {
+          return reply.code(503).send({ 
+            error: 'AI model is temporarily overloaded. Please try again in a few seconds.',
+            code: 'MODEL_OVERLOADED'
+          });
+        }
+        
+        // Check for invalid API key
+        if (errorMessage.includes('401') || errorMessage.includes('API key')) {
+          return reply.code(500).send({ 
+            error: 'API configuration error. Please contact support.',
+            code: 'API_KEY_ERROR'
+          });
+        }
+        
         return reply.code(500).send({ 
           error: 'Analysis failed - please try again' 
         });

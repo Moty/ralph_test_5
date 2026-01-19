@@ -1,0 +1,276 @@
+# Ralph Progress Log
+Started: Sun Jan 18 17:35:36 PST 2026
+---
+
+## 2026-01-19T01:35:40.606Z - US-001
+- Implemented React + Vite + TypeScript web app under web/ directory
+- Added react-router-dom for routing with placeholder screens for Home, Camera, History, Settings, and Login
+- Created .env and .env.example files for VITE_API_BASE_URL configuration
+- Set up navigation with basic styling
+- Verified app builds successfully with npm run build
+- Typecheck passes
+- Files changed: web/ (all files in new directory)
+- **Learnings for future iterations:**
+  - Web app is scaffolded in web/ directory with standard Vite + React + TypeScript structure
+  - Routes are configured in App.tsx using react-router-dom
+  - Environment variables must be prefixed with VITE_ to be accessible in the app
+  - npm run build runs both typecheck (tsc -b) and production build
+---
+
+## 2026-01-19T01:40:39.459Z - US-002
+- Translated AppTheme.swift colors and gradients into CSS variables in web/src/styles/theme.css
+- Created mobile-first base styles in web/src/styles/base.css with typography, spacing, and utilities
+- Built shared UI primitives: Card, Button, SectionHeader components
+- Updated App.tsx and App.css to use new theme tokens
+- Demonstrated theme on Home page with gradient cards and buttons
+- Verified in browser at localhost:5173
+- Typecheck and build passing
+- Files changed: web/src/styles/theme.css, web/src/styles/base.css, web/src/components/ui/*.tsx, web/src/App.css, web/src/App.tsx, web/src/main.tsx, web/src/pages/Home.tsx
+- **Learnings for future iterations:**
+  - Theme uses CSS variables for all colors, spacing, typography
+  - All type-only imports must use 'import type' syntax due to verbatimModuleSyntax
+  - Gradient cards numbered 1-4 correspond to iOS cardGradients array
+  - UI components are in web/src/components/ui with co-located CSS files
+  - Dev server runs on port 5173
+---
+
+## 2026-01-19T01:44:45.000Z - US-003
+- Implemented typed API client in web/src/services/api.ts
+- Created ApiClient class with GET, POST, and postFormData methods
+- Implemented automatic Authorization header attachment from localStorage
+- Surfaced backend error messages through ApiError interface
+- Exposed authApi (register, login), userApi (getStats), and mealApi (analyze, getMeals) functions
+- Build and typecheck passing
+- Files changed: web/src/services/api.ts (new)
+- **Learnings for future iterations:**
+  - API client reads VITE_API_BASE_URL from environment, defaults to localhost:3001
+  - Auth token stored in localStorage under 'authToken' key
+  - FormData endpoints don't set Content-Type header (browser sets with boundary)
+  - Error handling extracts message from backend response.message or response.error
+  - All API methods are typed with TypeScript interfaces
+---
+
+## 2026-01-19T01:46:52.000Z - US-004
+- Implemented AuthContext with React Context API for auth state management
+- Created AuthProvider component that stores token and guest/authenticated state
+- Auth state loads from localStorage on app startup
+- Provided login, register, logout, and enterGuestMode actions
+- Updated API client to handle 401 responses via setApiUnauthorizedHandler
+- Integrated AuthProvider into App.tsx with automatic logout and redirect on 401
+- Build and typecheck passing
+- Files changed: web/src/contexts/AuthContext.tsx (new), web/src/services/api.ts, web/src/App.tsx
+- **Learnings for future iterations:**
+  - Auth token stored in localStorage under 'authToken' key
+  - Guest mode flag stored under 'guestMode' key
+  - AuthContext exposes isAuthenticated, isGuest, and isLoading flags
+  - 401 handling uses callback pattern to avoid circular dependencies
+  - Must use type-only imports for React types due to verbatimModuleSyntax
+  - AuthProvider wraps BrowserRouter, AppContent uses useNavigate for 401 redirects
+---
+
+## 2026-01-19T01:50:00.000Z - US-005
+- Implemented Login and Register screens matching iOS layout with gradient background
+- Created Login.tsx with embedded Register component for seamless switching
+- Added inline validation for email format, password length (min 8 chars), and password confirmation
+- Implemented guest mode entry button with local-only data disclaimer
+- Updated App.tsx routing to protect authenticated routes and redirect unauthenticated users to login
+- Successful login/register/guest mode navigates to Home
+- Created Login.css with iOS-inspired gradient animations and card styling
+- Build and typecheck passing
+- Files changed: web/src/pages/Login.tsx, web/src/pages/Login.css, web/src/App.tsx
+- **Learnings for future iterations:**
+  - Login page uses gradient animations matching iOS LoginView and RegisterView
+  - Register component is embedded in Login.tsx, toggled via state (no separate route)
+  - Auth routing uses Navigate component from react-router-dom for protected routes
+  - Validation happens inline before calling auth context methods
+  - Error messages from API are caught and displayed in the UI
+  - Guest mode disclaimer text matches iOS version
+  - Protected routes check isAuthenticated || isGuest flags
+---
+
+## 2026-01-19T01:52:00.000Z - US-006
+- Implemented Home dashboard UI layout with Today/Week/All Time stat sections
+- Added Quick Capture buttons that navigate to Camera route
+- Shows guest-mode info card when isGuest is true
+- Extended Card component to accept style prop for inline styling
+- Used shared theme components for cards, buttons, and section headers
+- Build passes successfully
+- Files changed: web/src/pages/Home.tsx, web/src/components/ui/Card.tsx
+- **Learnings for future iterations:**
+  - Home dashboard displays 3 time periods: Today, Week, All Time
+  - Guest mode card shown conditionally based on isGuest flag from AuthContext
+  - Card component now accepts optional style prop (CSSProperties)
+  - Quick Capture buttons navigate to /camera route using useNavigate
+  - Stats display placeholder 0 values (will be wired in US-007)
+---
+
+## 2026-01-19T01:53:00.000Z - US-007
+- Wired Home dashboard to fetch stats from /api/user/stats
+- Added loading state with spinner animation while fetching
+- Implemented error state with error message display and retry button
+- Added refresh button in header for authenticated users
+- Stats fetch is skipped when in guest mode
+- Stats display Today/Week/All Time values from API response
+- Build and typecheck passing
+- Files changed: web/src/pages/Home.tsx
+- **Learnings for future iterations:**
+  - Stats fetch uses useEffect with isGuest dependency to reload when auth state changes
+  - Error handling shows red error card with retry button
+  - Refresh button shows rotating icon during loading state
+  - Stats values use nullish coalescing (??) to display 0 when no data
+  - Guest mode bypasses API call entirely
+  - UserStats type has today/week/allTime structure from api.ts
+---
+
+## 2026-01-19T01:54:00.000Z - US-008
+- Implemented camera capture UI with live preview using getUserMedia
+- Added file upload fallback for devices without camera access
+- Shows preview after capture/upload with Retake and Continue buttons
+- Continue button navigates to /camera/analyze with image data via route state
+- Camera uses facingMode: 'environment' for rear camera on mobile
+- Created Analyze placeholder page and added route
+- Build and typecheck passing
+- Files changed: web/src/pages/Camera.tsx, web/src/pages/Analyze.tsx (new), web/src/App.tsx
+- **Learnings for future iterations:**
+  - Camera stream is cleaned up in useEffect return to prevent memory leaks
+  - Image captured to canvas then converted to Blob and File for upload
+  - File input hidden and triggered via button click for better UX
+  - Route state used to pass imageFile and imagePreview to analyze page
+  - Video element uses playsInline for iOS compatibility
+  - getUserMedia wrapped in try-catch for permission handling
+---
+
+## 2026-01-19T01:55:00.000Z - US-009
+- Implemented meal analysis submission to /api/analyze using mealApi.analyze
+- Added loading state showing "Analyzing your meal..." message
+- Error handling displays backend error message in red card
+- Results view shows totals in gradient cards and item breakdown list
+- Navigation buttons allow return to Home or History after viewing results
+- Image preview shown at top of analyze and results screens
+- Build and typecheck passing
+- Files changed: web/src/pages/Analyze.tsx
+- **Learnings for future iterations:**
+  - Analyze page uses useLocation to get imageFile and imagePreview from route state
+  - Results displayed conditionally based on result state (null = input form, data = results view)
+  - Macros rounded with Math.round() for display
+  - Item breakdown uses 4-column grid for compact display
+  - Image shown at reduced height (30vh) in results, larger (50vh) in input view
+  - Navigation provides clear paths to Home and History after analysis
+---
+
+## 2026-01-19T01:56:00.000Z - US-010
+- Implemented meal history list fetching /api/meals
+- Shows thumbnails in 80x80 rounded squares, placeholder emoji when missing
+- Guest mode displays message that history is not available
+- Empty state shows "No meals yet" with button to capture first meal
+- Each meal card is clickable and navigates to /history/:id with meal state
+- Cards show date, totals grid, and item names preview
+- Added onClick prop to Card component
+- Build and typecheck passing
+- Files changed: web/src/pages/History.tsx, web/src/components/ui/Card.tsx
+- **Learnings for future iterations:**
+  - Meal list sorted most recent first by backend
+  - Date formatting uses toLocaleDateString with short month format
+  - Image thumbnails use object-fit: cover for consistent display
+  - Guest mode check prevents API call similar to Home stats
+  - Card onClick handler navigates with meal data in route state
+  - Empty/loading/error states handled with conditional rendering
+  - Refresh button in header matches Home dashboard pattern
+---
+
+## 2026-01-19T01:57:00.000Z - US-011
+- Created MealDetail page component showing full meal breakdown
+- Displays meal photo at top if available
+- Shows formatted timestamp with full date format
+- Renders totals in gradient cards matching Home/Analyze layouts
+- Item breakdown displayed in same grid format as Analyze results
+- Back button navigates to history list
+- Route /history/:id receives meal data via location state
+- Build and typecheck passing
+- Files changed: web/src/pages/MealDetail.tsx (new), web/src/App.tsx
+- **Learnings for future iterations:**
+  - MealDetail receives meal data via location.state from History list
+  - Date formatting uses longer format than list view for detail context
+  - Layout matches Analyze results view for consistency
+  - Back button placed in header next to title
+  - Handles missing meal gracefully with message and back link
+  - Empty items array shows "No items detected" message
+---
+
+## 2026-01-19T01:58:00.000Z - US-012
+- Implemented Settings page with theme toggle functionality
+- Added System, Light, and Dark theme options with radio buttons
+- Theme selection persisted in localStorage under 'theme' key
+- System theme respects prefers-color-scheme media query
+- Theme applied via .dark-theme class on document root
+- Added missing CSS variables: --color-surface-*, --color-error, --color-success, --border-radius-*
+- Updated theme.css to support both [data-theme="dark"] and .dark-theme selectors
+- Build and typecheck passing
+- Files changed: web/src/pages/Settings.tsx, web/src/styles/theme.css
+- **Learnings for future iterations:**
+  - Theme stored in localStorage and loaded on component mount
+  - applyTheme() checks system preference when theme is 'system'
+  - Radio buttons styled with highlighted background when selected
+  - Theme applied to document.documentElement (root) for global CSS variable override
+  - Dark theme uses rich charcoal/navy color scheme from iOS version
+---
+
+## 2026-01-19T01:59:00.000Z - US-013
+- Added AI model selector dropdown with 7 models matching iOS SettingsView list
+- Model selection persisted in localStorage under 'selectedModel' key
+- Analyze page reads selected model and passes to mealApi.analyze()
+- Added logout button in Account section (only shown when isAuthenticated)
+- Logout clears auth state and navigates to /login
+- Backend URL override input shown only when VITE_SHOW_API_OVERRIDE=true
+- API override URL persisted in localStorage under 'apiBaseUrl' key
+- Build and typecheck passing
+- Files changed: web/src/pages/Settings.tsx, web/src/pages/Analyze.tsx
+- **Learnings for future iterations:**
+  - Model list matches iOS SettingsManager.availableModels exactly
+  - Default model is gemini-2.0-flash (unlimited RPD)
+  - Settings sections: Appearance, AI Model, Developer (conditional), Account
+  - Logout uses useAuth hook and useNavigate for redirect
+  - API override only enabled via environment variable for security
+  - Select dropdown styled with theme CSS variables
+---
+
+## 2026-01-19T02:00:00.000Z - US-014
+- Created firebase.json with hosting config pointing to web/dist
+- Created .firebaserc with project nutritionai2026
+- Added SPA rewrite rule for all routes to /index.html
+- Configured cache headers for static assets (1 year)
+- Created DEPLOYMENT.md with comprehensive deployment guide
+- Updated README.md with web app features list
+- Backend CORS already configured to accept all origins (origin: true)
+- Documented production CORS restriction recommendation in DEPLOYMENT.md
+- Build and typecheck passing
+- Files changed: firebase.json (new), .firebaserc (new), DEPLOYMENT.md (new), README.md
+- **Learnings for future iterations:**
+  - Firebase Hosting URLs: nutritionai2026.web.app and nutritionai2026.firebaseapp.com
+  - Web app requires VITE_API_BASE_URL in .env.production
+  - Backend CORS set to origin: true for dev, should restrict in production
+  - Firebase rewrites needed for SPA routing
+  - Deployment: npm run build in web/, then firebase deploy --only hosting
+---
+
+## 2026-01-19T02:01:00.000Z - US-015
+- Installed Vitest, @testing-library/react, @testing-library/jest-dom, jsdom
+- Created vite.config.ts test configuration with globals and jsdom environment
+- Added npm test and npm test:ui scripts
+- Created api.test.ts with unit tests for API client and auth state localStorage
+- Created routes.test.tsx with smoke tests for Home, History, Settings routes
+- Created vite-env.d.ts to define ImportMetaEnv types for VITE_* variables
+- Updated tsconfig.app.json to exclude src/test from build
+- All 11 tests passing
+- Build and typecheck passing
+- Files changed: web/package.json, web/vite.config.ts, web/tsconfig.json, web/tsconfig.app.json, web/tsconfig.test.json (new), web/src/vite-env.d.ts (new), web/src/test/setup.ts (new), web/src/test/api.test.ts (new), web/src/test/routes.test.tsx (new)
+- **Learnings for future iterations:**
+  - Vitest configured with globals: true for describe/it/expect without imports
+  - jsdom environment needed for React component testing
+  - @testing-library/react and @testing-library/jest-dom for DOM assertions
+  - Test files excluded from production build via tsconfig.app.json
+  - vite.config.ts uses vitest/config import instead of vite for test support
+  - localStorage mocked with simple in-memory store for tests
+  - API module mocked in route tests to prevent network calls
+  - AuthProvider wrapper required for components using useAuth hook
+---
