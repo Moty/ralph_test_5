@@ -6,6 +6,7 @@ import UIKit
 public struct HistoryView: View {
     @EnvironmentObject var authService: AuthService
     @ObservedObject var syncService = SyncService.shared
+    @Environment(\.colorScheme) private var colorScheme
     @State private var historyItems: [HistoryItem] = []
     @State private var error: String?
     @State private var selectedMeal: MealAnalysis?
@@ -23,7 +24,7 @@ public struct HistoryView: View {
     public var body: some View {
         NavigationView {
             ZStack {
-                AppGradients.background
+                AppGradients.adaptiveBackground(for: colorScheme)
                     .ignoresSafeArea()
                 
                 Group {
@@ -81,6 +82,17 @@ public struct HistoryView: View {
                 .font(.body)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Example")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                SampleHistoryCard()
+            }
+
+            Text("Tip: Capture a meal from the Camera tab")
+                .font(.caption)
+                .foregroundColor(.secondary)
         }
         .padding(40)
         .glassMorphism()
@@ -188,10 +200,11 @@ public struct HistoryView: View {
 
 struct NutritionDetailView: View {
     let mealAnalysis: MealAnalysis
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
         ZStack {
-            AppGradients.background
+            AppGradients.adaptiveBackground(for: colorScheme)
                 .ignoresSafeArea()
             
             ScrollView {
@@ -243,11 +256,7 @@ struct NutritionDetailView: View {
                         }
                     }
                     .padding(20)
-                    .background(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .fill(Color(.systemBackground))
-                            .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 4)
-                    )
+                    .glassMorphism(cornerRadius: 20)
                     
                     // Individual food items
                     VStack(alignment: .leading, spacing: 16) {
@@ -329,11 +338,7 @@ struct HistoryItemCard: View {
                 .foregroundStyle(AppGradients.primary)
         }
         .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color(.systemBackground))
-                .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 4)
-        )
+        .glassMorphism(cornerRadius: 18)
     }
     
     private func formatDate(_ date: Date) -> String {
@@ -341,5 +346,52 @@ struct HistoryItemCard: View {
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         return formatter.string(from: date)
+    }
+}
+
+struct SampleHistoryCard: View {
+    var body: some View {
+        HStack(spacing: 16) {
+            ZStack {
+                AppGradients.cardGradient(at: 0)
+                Image(systemName: "fork.knife")
+                    .font(.title2)
+                    .foregroundColor(.white)
+            }
+            .frame(width: 70, height: 70)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text("520")
+                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                    Text("cal")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+
+                Text("Sample meal • Today 12:30 PM")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+
+                HStack(spacing: 12) {
+                    Label("3 items", systemImage: "leaf.fill")
+                        .font(.caption)
+                        .foregroundColor(AppColors.primaryGradientStart)
+
+                    Label("32g protein", systemImage: "bolt.fill")
+                        .font(.caption)
+                        .foregroundColor(AppColors.protein)
+                }
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.right.circle.fill")
+                .font(.title3)
+                .foregroundStyle(AppGradients.primary)
+        }
+        .padding(16)
+        .glassMorphism(cornerRadius: 18)
     }
 }

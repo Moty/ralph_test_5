@@ -4,11 +4,13 @@ public struct SettingsView: View {
     @StateObject private var settings = SettingsManager.shared
     @StateObject private var syncService = SyncService.shared
     @StateObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject var authService: AuthService
     @State private var tempURL: String = ""
     @State private var showSaved = false
     @State private var showLogoutConfirm = false
     @State private var isSyncing = false
+    @State private var showAdvanced = false
     
     let apiService: APIService
     
@@ -27,120 +29,119 @@ public struct SettingsView: View {
     public var body: some View {
         NavigationView {
             ZStack {
-                AppGradients.background
+                AppGradients.adaptiveBackground(for: colorScheme)
                     .ignoresSafeArea()
                 
                 Form {
                     // Admin-only sections
                     if isAdmin {
                         Section {
-                            TextField("Backend URL", text: $tempURL)
-                                .autocapitalization(.none)
-                                .autocorrectionDisabled()
-                            
-                            Text("Current: \(settings.backendURL)")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        } header: {
-                            Label("Server Configuration", systemImage: "server.rack")
-                        } footer: {
-                            Text("Enter the backend server URL including port (e.g., http://192.168.1.100:3000)")
-                        }
-                        
-                        Section {
-                            Button(action: {
-                                if !tempURL.isEmpty {
-                                    settings.backendURL = tempURL
-                                    showSaved = true
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                        showSaved = false
+                            DisclosureGroup(isExpanded: $showAdvanced) {
+                                VStack(alignment: .leading, spacing: 16) {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("Backend URL")
+                                            .font(.subheadline)
+                                            .fontWeight(.semibold)
+                                        TextField("https://your-backend-url", text: $tempURL)
+                                            .autocapitalization(.none)
+                                            .autocorrectionDisabled()
+                                        Text("Current: \(settings.backendURL)")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
                                     }
+
+                                    Button(action: {
+                                        if !tempURL.isEmpty {
+                                            settings.backendURL = tempURL
+                                            showSaved = true
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                                showSaved = false
+                                            }
+                                        }
+                                    }) {
+                                        HStack {
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .foregroundStyle(AppGradients.primary)
+                                            Text("Save URL")
+                                        }
+                                    }
+                                    .disabled(tempURL.isEmpty)
+
+                                    if showSaved {
+                                        HStack {
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .foregroundColor(AppColors.primaryGradientStart)
+                                            Text("URL Saved")
+                                                .foregroundColor(AppColors.primaryGradientStart)
+                                        }
+                                    }
+
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Picker("AI Model", selection: $settings.geminiModel) {
+                                            ForEach(settings.availableModels, id: \.self) { model in
+                                                Text(model).tag(model)
+                                            }
+                                        }
+                                        .tint(AppColors.primaryGradientEnd)
+
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text("Recommendations:")
+                                                .font(.caption)
+                                                .fontWeight(.semibold)
+                                            Text("• gemini-2.0-flash: ⭐ Unlimited quota, fast")
+                                            Text("• gemini-2.0-flash-lite: Unlimited, fastest")
+                                            Text("• gemini-2.5-flash-lite: Unlimited, balanced")
+                                            Text("• gemini-3-flash: Newest model (10K/day)")
+                                            Text("• gemini-2.5-pro: Best accuracy (10K/day)")
+                                        }
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    }
+
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Button(action: {
+                                            settings.setLocalhost()
+                                            tempURL = settings.backendURL
+                                        }) {
+                                            HStack {
+                                                Image(systemName: "laptopcomputer")
+                                                    .foregroundStyle(AppGradients.primary)
+                                                Text("Use Localhost (Simulator)")
+                                            }
+                                        }
+
+                                        Button(action: {
+                                            settings.resetToDefault()
+                                            tempURL = settings.backendURL
+                                        }) {
+                                            HStack {
+                                                Image(systemName: "arrow.counterclockwise")
+                                                    .foregroundStyle(AppGradients.primary)
+                                                Text("Reset to Default")
+                                            }
+                                        }
+                                    }
+
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("Finding Your Mac's IP:")
+                                            .font(.subheadline)
+                                            .fontWeight(.semibold)
+
+                                        Text("1. Open Terminal on your Mac")
+                                        Text("2. Run: ifconfig | grep \"inet \"")
+                                        Text("3. Look for an address like 192.168.x.x")
+                                        Text("4. Use http://YOUR-IP:3000")
+                                    }
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
                                 }
-                            }) {
-                                HStack {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .foregroundStyle(AppGradients.primary)
-                                    Text("Save URL")
-                                }
+                                .padding(.vertical, 4)
+                            } label: {
+                                Label("Advanced Admin Tools", systemImage: "gearshape.2.fill")
                             }
-                            .disabled(tempURL.isEmpty)
-                            
-                            if showSaved {
-                                HStack {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .foregroundColor(AppColors.primaryGradientStart)
-                                    Text("URL Saved")
-                                        .foregroundColor(AppColors.primaryGradientStart)
-                                }
-                            }
+                        } footer: {
+                            Text("Admin-only configuration options.")
                         }
-                        
-                        Section {
-                            Picker("AI Model", selection: $settings.geminiModel) {
-                                ForEach(settings.availableModels, id: \.self) { model in
-                                    Text(model).tag(model)
-                                }
-                            }
-                            .tint(AppColors.primaryGradientEnd)
-                        
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Recommendations:")
-                                .font(.caption)
-                                .fontWeight(.semibold)
-                            Text("• gemini-2.0-flash: ⭐ Unlimited quota, fast")
-                            Text("• gemini-2.0-flash-lite: Unlimited, fastest")
-                            Text("• gemini-2.5-flash-lite: Unlimited, balanced")
-                            Text("• gemini-3-flash: Newest model (10K/day)")
-                            Text("• gemini-2.5-pro: Best accuracy (10K/day)")
-                        }
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    } header: {
-                        Label("AI Model Selection", systemImage: "brain")
-                    }
-                    
-                    Section {
-                        Button(action: {
-                            settings.setLocalhost()
-                            tempURL = settings.backendURL
-                        }) {
-                            HStack {
-                                Image(systemName: "laptopcomputer")
-                                    .foregroundStyle(AppGradients.primary)
-                                Text("Use Localhost (Simulator)")
-                            }
-                        }
-                        
-                        Button(action: {
-                            settings.resetToDefault()
-                            tempURL = settings.backendURL
-                        }) {
-                            HStack {
-                                Image(systemName: "arrow.counterclockwise")
-                                    .foregroundStyle(AppGradients.primary)
-                                Text("Reset to Default")
-                            }
-                        }
-                    } header: {
-                        Label("Quick Actions", systemImage: "bolt.fill")
-                    }
-                    
-                    Section {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Finding Your Mac's IP:")
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                            
-                            Text("1. Open Terminal on your Mac")
-                            Text("2. Run: ifconfig | grep \"inet \"")
-                            Text("3. Look for an address like 192.168.x.x")
-                            Text("4. Use http://YOUR-IP:3000")
-                        }
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    } header: {
-                        Text("Help")
-                    }
                     } // End of admin-only sections
                 
                 // Appearance Section - available to everyone

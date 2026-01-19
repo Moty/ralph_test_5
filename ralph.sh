@@ -1,51 +1,191 @@
 #!/bin/bash
 # Ralph Wiggum - Long-running AI agent loop (agent-agnostic)
-# Usage: ./ralph.sh [max_iterations] [--no-sleep-prevent] [--verbose] [--timeout SECONDS] [--no-timeout] [--greenfield] [--brownfield]
+# Usage: ./ralph.sh [max_iterations] [--no-sleep-prevent] [--verbose] [--timeout SECONDS] [--no-timeout] [--greenfield] [--brownfield] [--update] [--check-update]
 # Agent priority: GitHub Copilot CLI → Claude Code → Gemini → Codex
 
 set -e
 
 # ---- Configuration ------------------------------------------------
 
-MAX_ITERATIONS=${1:-10}
 PREVENT_SLEEP=true
 export VERBOSE=false
 AGENT_TIMEOUT=7200  # Default 2 hour timeout per agent iteration (0 = no timeout)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_TYPE=""  # greenfield, brownfield, or auto-detected
+DO_UPDATE=false
+CHECK_UPDATE_ONLY=false
+MAX_ITERATIONS=10
 
-# Check for flags
-for arg in "$@"; do
-  case "$arg" in
+# Check for flags first (before processing positional args)
+POSITIONAL_ARGS=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
     --no-sleep-prevent)
       PREVENT_SLEEP=false
+      shift
       ;;
     --verbose|-v)
       export VERBOSE=true
+      shift
       ;;
     --no-timeout)
       AGENT_TIMEOUT=0
+      shift
       ;;
     --timeout)
       shift
       AGENT_TIMEOUT="$1"
+      shift
       ;;
     --greenfield)
       PROJECT_TYPE="greenfield"
+      shift
       ;;
     --brownfield)
       PROJECT_TYPE="brownfield"
+      shift
+      ;;
+    --update)
+      DO_UPDATE=true
+      shift
+      ;;
+    --check-update)
+      CHECK_UPDATE_ONLY=true
+      shift
+      ;;
+    -*)
+      echo "Unknown option: $1"
+      exit 1
+      ;;
+    *)
+      POSITIONAL_ARGS+=("$1")
+      shift
       ;;
   esac
 done
+
+# Set MAX_ITERATIONS from positional arg if provided
+if [[ ${#POSITIONAL_ARGS[@]} -gt 0 ]]; then
+  MAX_ITERATIONS="${POSITIONAL_ARGS[0]}"
+fi
 
 PRD_FILE="$SCRIPT_DIR/prd.json"
 PROGRESS_FILE="$SCRIPT_DIR/progress.txt"
 ARCHIVE_DIR="$SCRIPT_DIR/archive"
 LAST_BRANCH_FILE="$SCRIPT_DIR/.last-branch"
 AGENT_CONFIG="$SCRIPT_DIR/agent.yaml"
+VERSION_FILE="$SCRIPT_DIR/.ralph-version"
 export LOG_FILE="$SCRIPT_DIR/ralph.log"
 START_TIME=$(date +%s)
+
+# ---- Self-Update Functions ----------------------------------------
+
+get_local_version() {
+  if [ -f "$VERSION_FILE" ]; then
+    grep '^version=' "$VERSION_FILE" 2>/dev/null | sed 's/version=//' || head -n 1 "$VERSION_FILE"
+  else
+    echo "unknown"
+  fi
+}
+
+get_source_repo() {
+  # First check the version file for stored source path
+  if [ -f "$VERSION_FILE" ]; then
+    local source_from_file=$(grep '^source=' "$VERSION_FILE" 2>/dev/null | sed 's/source=//')
+    if [ -n "$source_from_file" ] && [ -d "$source_from_file" ]; then
+      echo "$source_from_file"
+      return
+    fi
+  fi
+  
+  # Fallback: check if ralph-setup exists globally and extract source path
+  if command -v ralph-setup >/dev/null 2>&1; then
+    local setup_path=$(command -v ralph-setup)
+    if [ -f "$setup_path" ]; then
+      grep 'RALPH_SOURCE=' "$setup_path" 2>/dev/null | sed 's/.*RALPH_SOURCE="//' | sed 's/".*//' || echo ""
+    fi
+  fi
+}
+
+get_source_version() {
+  local source_repo="$1"
+  if [ -n "$source_repo" ] && [ -f "$source_repo/setup-ralph.sh" ]; then
+    grep '^RALPH_VERSION=' "$source_repo/setup-ralph.sh" 2>/dev/null | sed 's/RALPH_VERSION="//' | sed 's/".*//' || echo "unknown"
+  else
+    echo "unknown"
+  fi
+}
+
+check_for_updates() {
+  local local_ver=$(get_local_version)
+  local source_repo=$(get_source_repo)
+  local source_ver=$(get_source_version "$source_repo")
+  
+  echo "Local version:  $local_ver"
+  echo "Source version: $source_ver"
+  
+  if [ "$source_repo" != "" ]; then
+    echo "Source repo:    $source_repo"
+  else
+    echo "Source repo:    Not found (ralph-setup not installed globally)"
+  fi
+  
+  if [ "$local_ver" = "unknown" ] || [ "$source_ver" = "unknown" ]; then
+    echo ""
+    echo "Unable to compare versions."
+    return 1
+  fi
+  
+  if [ "$local_ver" != "$source_ver" ]; then
+    echo ""
+    echo "Update available! Run: ./ralph.sh --update"
+    return 0
+  else
+    echo ""
+    echo "You're up to date."
+    return 1
+  fi
+}
+
+run_self_update() {
+  local source_repo=$(get_source_repo)
+  
+  if [ -z "$source_repo" ]; then
+    echo "Error: Cannot find Ralph source repository."
+    echo "ralph-setup is not installed globally, or RALPH_SOURCE is not set."
+    echo ""
+    echo "Options:"
+    echo "  1. Install globally: cd /path/to/ralph && ./install.sh"
+    echo "  2. Update manually: /path/to/ralph/setup-ralph.sh --update ."
+    exit 1
+  fi
+  
+  if [ ! -f "$source_repo/setup-ralph.sh" ]; then
+    echo "Error: setup-ralph.sh not found in $source_repo"
+    echo "Make sure your Ralph source repository is up to date."
+    exit 1
+  fi
+  
+  echo "Updating Ralph from: $source_repo"
+  echo ""
+  
+  # Run the setup script in update mode
+  "$source_repo/setup-ralph.sh" --update "$SCRIPT_DIR"
+  
+  echo ""
+  echo "Update complete!"
+  exit 0
+}
+
+# Handle update commands before main execution
+if [ "$CHECK_UPDATE_ONLY" = true ]; then
+  check_for_updates
+  exit 0
+fi
+
+if [ "$DO_UPDATE" = true ]; then
+  run_self_update
+fi
 
 # ---- Load Common Library ------------------------------------------
 
@@ -60,6 +200,24 @@ else
   BLUE='\033[0;34m'
   CYAN='\033[0;36m'
   NC='\033[0m'
+fi
+
+# ---- Load Optional Context System Libraries -----------------------
+
+# Load context management library if present
+if [ -f "$SCRIPT_DIR/lib/context.sh" ]; then
+  source "$SCRIPT_DIR/lib/context.sh"
+  CONTEXT_SYSTEM_ENABLED=true
+else
+  CONTEXT_SYSTEM_ENABLED=false
+fi
+
+# Load compaction library if present
+if [ -f "$SCRIPT_DIR/lib/compaction.sh" ]; then
+  source "$SCRIPT_DIR/lib/compaction.sh"
+  COMPACTION_ENABLED=true
+else
+  COMPACTION_ENABLED=false
 fi
 
 # ---- Helper Functions ---------------------------------------------
@@ -92,11 +250,56 @@ get_elapsed_time() {
 
 get_current_story() {
   if [ -f "$PRD_FILE" ]; then
-    local story=$(jq -r '.userStories[] | select(.passes == false) | "\(.id): \(.title)"' "$PRD_FILE" 2>/dev/null | head -1)
-    if [ -n "$story" ]; then
-      echo "$story"
-    else
+    # Use context system if available
+    if [ "$CONTEXT_SYSTEM_ENABLED" = true ]; then
+      local ready_tasks=$(get_ready_tasks 2>/dev/null || echo "")
+      if [ -n "$ready_tasks" ]; then
+        echo "$ready_tasks" | head -n 1
+        return
+      fi
+    fi
+    
+    # Fallback to traditional PRD-based selection
+    # Get all incomplete stories
+    local incomplete_stories=$(jq -r '.userStories[] | select(.passes == false) | @json' "$PRD_FILE" 2>/dev/null)
+    
+    if [ -z "$incomplete_stories" ]; then
       echo "All stories complete"
+      return
+    fi
+    
+    # Find first ready story (incomplete with all dependencies met)
+    local ready_story=""
+    while IFS= read -r story_json; do
+      local story_id=$(echo "$story_json" | jq -r '.id')
+      local blockedBy=$(echo "$story_json" | jq -r '.blockedBy // empty | .[]' 2>/dev/null)
+      
+      # Check if all dependencies are complete
+      local is_ready=true
+      if [ -n "$blockedBy" ]; then
+        while IFS= read -r dep_id; do
+          if [ -n "$dep_id" ]; then
+            local dep_passes=$(jq -r ".userStories[] | select(.id == \"$dep_id\") | .passes" "$PRD_FILE" 2>/dev/null)
+            if [ "$dep_passes" != "true" ]; then
+              is_ready=false
+              break
+            fi
+          fi
+        done <<< "$blockedBy"
+      fi
+      
+      if [ "$is_ready" = true ]; then
+        ready_story=$(echo "$story_json" | jq -r '"\(.id): \(.title)"')
+        break
+      fi
+    done <<< "$incomplete_stories"
+    
+    if [ -n "$ready_story" ]; then
+      echo "$ready_story"
+    else
+      # No ready stories but incomplete stories exist - all are blocked
+      echo -e "${YELLOW}Warning: All incomplete stories are blocked by dependencies${NC}" >&2
+      echo "All stories blocked"
     fi
   else
     echo "No PRD found"
@@ -356,6 +559,7 @@ get_codex_approval_mode() { yq '.codex.approval-mode // "full-auto"' "$AGENT_CON
 get_codex_sandbox() { yq '.codex.sandbox // "full-access"' "$AGENT_CONFIG"; }
 get_copilot_tool_approval() { yq '.github-copilot.tool-approval // "allow-all"' "$AGENT_CONFIG"; }
 get_copilot_deny_tools() { yq '.github-copilot.deny-tools[]? // ""' "$AGENT_CONFIG"; }
+get_copilot_model() { yq '.github-copilot.model // "auto"' "$AGENT_CONFIG"; }
 get_gemini_model() { yq '.gemini.model // "gemini-2.5-pro"' "$AGENT_CONFIG"; }
 
 CLAUDE_CMD=""
@@ -423,18 +627,28 @@ run_agent() {
       ;;
     github-copilot)
       local TOOL_APPROVAL=$(get_copilot_tool_approval)
-      echo -e "→ Running ${CYAN}GitHub Copilot${NC} (tool-approval: $TOOL_APPROVAL, timeout: $TIMEOUT_DISPLAY)"
+      local COPILOT_MODEL=$(get_copilot_model)
+      local MODEL_DISPLAY="auto"
+      [ "$COPILOT_MODEL" != "auto" ] && MODEL_DISPLAY="$COPILOT_MODEL"
+      echo -e "→ Running ${CYAN}GitHub Copilot${NC} (model: $MODEL_DISPLAY, tool-approval: $TOOL_APPROVAL, timeout: $TIMEOUT_DISPLAY)"
       command -v copilot >/dev/null 2>&1 || { echo -e "${RED}Error: Copilot CLI not found${NC}"; return 1; }
 
-      # Build tool approval flags as an array for proper quoting
-      local TOOL_FLAGS=()
+      # Build flags as an array for proper quoting
+      local COPILOT_FLAGS=()
+      
+      # Add model flag if not auto
+      if [ -n "$COPILOT_MODEL" ] && [ "$COPILOT_MODEL" != "auto" ] && [ "$COPILOT_MODEL" != "null" ]; then
+        COPILOT_FLAGS+=("--model" "$COPILOT_MODEL")
+      fi
+      
+      # Add tool approval flags
       if [ "$TOOL_APPROVAL" = "allow-all" ]; then
-        TOOL_FLAGS+=("--allow-all-tools")
+        COPILOT_FLAGS+=("--allow-all-tools")
         # Add deny-tools if specified
         local DENY_TOOLS="$(get_copilot_deny_tools)"
         if [ -n "$DENY_TOOLS" ]; then
           while IFS= read -r tool; do
-            [ -n "$tool" ] && TOOL_FLAGS+=("--deny-tool" "$tool")
+            [ -n "$tool" ] && COPILOT_FLAGS+=("--deny-tool" "$tool")
           done <<< "$DENY_TOOLS"
         fi
       fi
@@ -444,9 +658,9 @@ run_agent() {
 
       # Run with timeout if run_with_timeout function exists and timeout > 0
       if type run_with_timeout >/dev/null 2>&1 && [ "$AGENT_TIMEOUT" -gt 0 ] 2>/dev/null; then
-        run_with_timeout "$AGENT_TIMEOUT" copilot -p "$PROMPT" "${TOOL_FLAGS[@]}"
+        run_with_timeout "$AGENT_TIMEOUT" copilot -p "$PROMPT" "${COPILOT_FLAGS[@]}"
       else
-        copilot -p "$PROMPT" "${TOOL_FLAGS[@]}"
+        copilot -p "$PROMPT" "${COPILOT_FLAGS[@]}"
       fi
       ;;
     gemini)
@@ -573,6 +787,12 @@ start_sleep_prevention
 
 for i in $(seq 1 "$MAX_ITERATIONS"); do
   ITERATION_START=$(date +%s)
+  
+  # Run pre-iteration compaction if enabled
+  if [ "$COMPACTION_ENABLED" = true ]; then
+    pre_iteration_compact "$PROGRESS_FILE" 2>/dev/null || true
+  fi
+  
   print_status $i $MAX_ITERATIONS
 
   set +e

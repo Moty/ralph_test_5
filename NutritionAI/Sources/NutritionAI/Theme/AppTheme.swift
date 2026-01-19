@@ -33,42 +33,42 @@ class ThemeManager: ObservableObject {
 
 // MARK: - App Color Palette
 struct AppColors {
-    // Primary gradient colors - softer, easier on eyes
-    static let primaryGradientStart = Color(red: 0.35, green: 0.65, blue: 0.55) // Soft sage green
-    static let primaryGradientEnd = Color(red: 0.25, green: 0.50, blue: 0.70)   // Muted ocean blue
+    // Primary gradient colors - softer teal/sage theme
+    static let primaryGradientStart = Color(red: 0.28, green: 0.62, blue: 0.58) // Teal green
+    static let primaryGradientEnd = Color(red: 0.22, green: 0.45, blue: 0.60)   // Deep ocean blue
     
-    // Accent colors - toned down
-    static let accent = Color(red: 0.85, green: 0.45, blue: 0.50)              // Soft coral
-    static let accentSecondary = Color(red: 0.90, green: 0.60, blue: 0.40)     // Muted peach
+    // Accent colors - complementary soft tones
+    static let accent = Color(red: 0.82, green: 0.45, blue: 0.50)              // Muted rose
+    static let accentSecondary = Color(red: 0.88, green: 0.65, blue: 0.35)     // Soft gold
     
-    // Card gradient colors - softer pastels
-    static let cardGradient1Start = Color(red: 0.45, green: 0.60, blue: 0.75)  // Soft sky blue
-    static let cardGradient1End = Color(red: 0.55, green: 0.50, blue: 0.70)    // Soft lavender
+    // Card gradient colors - sophisticated pastels
+    static let cardGradient1Start = Color(red: 0.40, green: 0.55, blue: 0.70)  // Slate blue
+    static let cardGradient1End = Color(red: 0.50, green: 0.45, blue: 0.65)    // Muted purple
     
-    static let cardGradient2Start = Color(red: 0.75, green: 0.55, blue: 0.58)  // Dusty rose
-    static let cardGradient2End = Color(red: 0.85, green: 0.65, blue: 0.50)    // Soft peach
+    static let cardGradient2Start = Color(red: 0.70, green: 0.50, blue: 0.55)  // Dusty pink
+    static let cardGradient2End = Color(red: 0.80, green: 0.60, blue: 0.45)    // Terracotta
     
-    static let cardGradient3Start = Color(red: 0.45, green: 0.65, blue: 0.60)  // Soft teal
-    static let cardGradient3End = Color(red: 0.40, green: 0.55, blue: 0.65)    // Slate blue
+    static let cardGradient3Start = Color(red: 0.40, green: 0.60, blue: 0.55)  // Sage
+    static let cardGradient3End = Color(red: 0.35, green: 0.50, blue: 0.60)    // Slate
     
-    static let cardGradient4Start = Color(red: 0.70, green: 0.58, blue: 0.75)  // Soft lavender
-    static let cardGradient4End = Color(red: 0.58, green: 0.48, blue: 0.68)    // Muted violet
+    static let cardGradient4Start = Color(red: 0.65, green: 0.55, blue: 0.70)  // Mauve
+    static let cardGradient4End = Color(red: 0.55, green: 0.45, blue: 0.65)    // Deep violet
     
-    // Nutrition-specific colors - slightly muted for less eye strain
-    static let calories = Color(red: 0.90, green: 0.50, blue: 0.45)           // Soft red-coral
-    static let protein = Color(red: 0.40, green: 0.60, blue: 0.80)            // Steel blue
-    static let carbs = Color(red: 0.90, green: 0.70, blue: 0.35)              // Soft amber
-    static let fat = Color(red: 0.75, green: 0.55, blue: 0.78)                // Soft purple
+    // Nutrition-specific colors - clear but not jarring
+    static let calories = Color(red: 0.85, green: 0.45, blue: 0.40)           // Muted red
+    static let protein = Color(red: 0.35, green: 0.55, blue: 0.75)            // Calm blue
+    static let carbs = Color(red: 0.85, green: 0.65, blue: 0.30)              // Muted yellow
+    static let fat = Color(red: 0.70, green: 0.50, blue: 0.75)                // Muted purple
     
-    // Light mode background colors - warmer, easier on eyes
-    static let backgroundPrimary = Color(red: 0.96, green: 0.95, blue: 0.93)  // Warm off-white
-    static let backgroundSecondary = Color(red: 0.98, green: 0.97, blue: 0.95) // Cream white
-    static let cardBackground = Color(red: 0.99, green: 0.98, blue: 0.97)     // Soft white
+    // Light mode background colors - warm neutral (Sand/Cream)
+    static let backgroundPrimary = Color(red: 0.97, green: 0.96, blue: 0.94)  // Very light sand
+    static let backgroundSecondary = Color(red: 0.99, green: 0.98, blue: 0.96) // Off-white
+    static let cardBackground = Color(red: 1.0, green: 0.99, blue: 0.98)      // Paper white
     
-    // Dark mode variants - comfortable dark theme
-    static let darkBackgroundPrimary = Color(red: 0.10, green: 0.11, blue: 0.13)
-    static let darkBackgroundSecondary = Color(red: 0.14, green: 0.15, blue: 0.17)
-    static let darkCardBackground = Color(red: 0.18, green: 0.19, blue: 0.22)
+    // Dark mode variants - deep rich dark (Charcoal/Navy)
+    static let darkBackgroundPrimary = Color(red: 0.08, green: 0.10, blue: 0.12) // Deep charcoal
+    static let darkBackgroundSecondary = Color(red: 0.12, green: 0.14, blue: 0.16) // Lighter charcoal
+    static let darkCardBackground = Color(red: 0.16, green: 0.18, blue: 0.20)    // Dark slate
     
     // Dynamic colors that adapt to color scheme
     static func background(for colorScheme: ColorScheme) -> Color {
@@ -80,11 +80,11 @@ struct AppColors {
     }
     
     static func textPrimary(for colorScheme: ColorScheme) -> Color {
-        colorScheme == .dark ? Color(white: 0.92) : Color(white: 0.15)
+        colorScheme == .dark ? Color(white: 0.95) : Color(red: 0.15, green: 0.15, blue: 0.18)
     }
     
     static func textSecondary(for colorScheme: ColorScheme) -> Color {
-        colorScheme == .dark ? Color(white: 0.65) : Color(white: 0.45)
+        colorScheme == .dark ? Color(white: 0.70) : Color(red: 0.45, green: 0.45, blue: 0.48)
     }
 }
 
@@ -99,8 +99,8 @@ struct AppGradients {
     // Softer, eye-friendly background gradient for light mode
     static let background = LinearGradient(
         colors: [
-            Color(red: 0.96, green: 0.95, blue: 0.93),  // Warm cream
-            Color(red: 0.95, green: 0.94, blue: 0.92)   // Soft beige
+            AppColors.backgroundPrimary,
+            AppColors.backgroundSecondary
         ],
         startPoint: .top,
         endPoint: .bottom
@@ -109,8 +109,8 @@ struct AppGradients {
     // Dark mode background gradient
     static let darkBackground = LinearGradient(
         colors: [
-            Color(red: 0.10, green: 0.11, blue: 0.13),
-            Color(red: 0.12, green: 0.13, blue: 0.15)
+            AppColors.darkBackgroundPrimary,
+            AppColors.darkBackgroundSecondary
         ],
         startPoint: .top,
         endPoint: .bottom
@@ -123,9 +123,8 @@ struct AppGradients {
     
     static let loginBackground = LinearGradient(
         colors: [
-            Color(red: 0.25, green: 0.50, blue: 0.70),  // Muted blue
-            Color(red: 0.35, green: 0.60, blue: 0.60),  // Soft teal
-            Color(red: 0.40, green: 0.65, blue: 0.55)   // Sage green
+            AppColors.primaryGradientEnd,
+            AppColors.primaryGradientStart
         ],
         startPoint: .topLeading,
         endPoint: .bottomTrailing

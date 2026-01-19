@@ -1,6 +1,55 @@
 # NutritionAI
 
-AI-Powered Nutrition Analyzer Mobile App - iOS app with photo-based food nutrition analysis
+AI-Powered Nutrition Analyzer with iOS and Web apps featuring photo-based food nutrition analysis.
+
+## Quick Start - Running the Web App
+
+### Prerequisites
+- Node.js 18+
+- Backend server running (see Backend section below)
+
+### 1. Start the Backend Server
+```bash
+cd backend
+npm install
+npm run dev
+```
+The server will start on port 3000.
+
+### 2. Run the Web App Locally
+```bash
+cd web
+npm install
+npm run dev
+```
+Open http://localhost:5173 in your browser.
+
+### 3. Test the Web App
+1. **Register/Login**: Create an account or use guest mode
+2. **Home Dashboard**: View your nutrition stats (Today/Week/All Time)
+3. **Camera**: Capture or upload a meal photo
+4. **Analyze**: Submit photo and view nutrition breakdown
+5. **History**: View your previously analyzed meals
+6. **Settings**: Toggle theme, change AI model, or logout
+
+### Deploy to Firebase Hosting
+```bash
+# Build the web app
+cd web
+npm run build
+
+# Deploy to Firebase (from project root)
+cd ..
+firebase deploy --only hosting
+```
+
+Your app will be live at:
+- https://nutritionai2026.web.app
+- https://nutritionai2026.firebaseapp.com
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions.
+
+---
 
 ## Quick Start - Running the iOS App
 
@@ -68,6 +117,7 @@ The app defaults to `192.168.50.48:3000`. If your Mac's IP is different:
 
 ## Project Structure
 
+- **web/** - React + Vite + TypeScript web application (Firebase Hosting)
 - **NutritionAI/** - iOS Swift Package + Wrapper App (USE THIS)
   - `Sources/NutritionAI/` - Main package source code
   - `NutritionAIApp/` - Wrapper Xcode app project
@@ -383,6 +433,83 @@ Analyze food image and return nutrition data (requires authentication).
   - 429 status code when limit exceeded
   - Retry-After header in rate limit responses
   - Rate limit headers (x-ratelimit-limit, x-ratelimit-remaining, x-ratelimit-reset)
+
+## Web App
+
+### Requirements
+- Node.js 18+
+- npm or yarn
+
+### Setup
+```bash
+cd web
+npm install
+```
+
+### Environment Variables
+Create a `.env` file in the web directory:
+```
+VITE_API_BASE_URL=http://localhost:3000
+```
+
+### Development
+```bash
+npm run dev     # Start dev server on http://localhost:5173
+npm run build   # Build for production
+npm run preview # Preview production build
+```
+
+### Features
+- React + Vite + TypeScript web application
+- **Routing** with react-router-dom
+  - Home - Dashboard with stats from backend API
+  - Camera - Live camera capture or file upload
+  - Analyze - Submit image for nutrition analysis
+  - History - Meal history list with thumbnails
+  - Meal Detail - Full nutrition breakdown for individual meals
+  - Settings - Theme toggle, AI model selector, logout
+  - Login/Register - User authentication with guest mode
+- **User Authentication**
+  - Login and registration with JWT tokens
+  - Guest mode for local-only usage
+  - Persistent session via localStorage
+  - 401 auto-logout and redirect to login
+- **Home Dashboard**
+  - Today/Week/All Time statistics
+  - Loading and error states with retry
+  - Refresh button for authenticated users
+  - Guest mode info card
+- **Camera Capture**
+  - Live camera preview using getUserMedia
+  - File upload fallback when camera unavailable
+  - Preview with retake/continue actions
+  - Image compression and File conversion
+- **Meal Analysis**
+  - Submit image to /api/analyze with selected AI model
+  - Loading state and error handling
+  - Results view with totals and item breakdown
+  - Navigation to Home or History after viewing
+- **Meal History**
+  - Fetch and display meal list from /api/meals
+  - Thumbnails with fallback emoji
+  - Empty state for new users
+  - Click to view meal detail
+  - Guest mode shows unavailable message
+- **Settings**
+  - System/Light/Dark theme toggle
+  - AI model selector (7 Gemini models)
+  - Logout for authenticated users
+  - Backend URL override (dev only)
+- **iOS-Inspired Theme**
+  - CSS variables for colors and typography
+  - Light and dark mode support
+  - Gradient cards matching iOS design
+  - Mobile-first responsive layout
+- Environment-based backend API configuration
+- TypeScript strict mode with verbatimModuleSyntax
+
+### Deployment
+See [DEPLOYMENT.md](DEPLOYMENT.md) for Firebase Hosting setup and deployment instructions.
 
 ## Development
 

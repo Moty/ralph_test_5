@@ -4,6 +4,8 @@ public struct ContentView: View {
     @EnvironmentObject var authService: AuthService
     @StateObject private var themeManager = ThemeManager.shared
     @State private var selectedTab = 0
+    @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
+    @State private var showOnboarding = false
     let apiService: APIService
     
     public init(apiService: APIService) {
@@ -32,27 +34,9 @@ public struct ContentView: View {
                 VStack(spacing: 0) {
                     // Guest mode banner
                     if authService.isGuest {
-                        HStack {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundColor(.orange)
-                            Text("Guest Mode – Data stored locally only")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                            Spacer()
-                            Button("Sign Up") {
-                                authService.logout() // Go back to login screen
-                            }
-                            .font(.caption)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(AppColors.primaryGradientEnd)
-                            .cornerRadius(12)
+                        GuestModeCard {
+                            authService.logout()
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                        .background(Color.orange.opacity(0.15))
                     }
                     
                     TabView(selection: $selectedTab) {
@@ -93,6 +77,17 @@ public struct ContentView: View {
                 }
             } else {
                 LoginView(apiService: apiService)
+            }
+        }
+        .onAppear {
+            if !hasSeenOnboarding {
+                showOnboarding = true
+            }
+        }
+        .sheet(isPresented: $showOnboarding) {
+            OnboardingView {
+                hasSeenOnboarding = true
+                showOnboarding = false
             }
         }
         .preferredColorScheme(themeManager.colorScheme)

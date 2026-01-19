@@ -88,6 +88,7 @@ Each story needs:
 - **Title:** Short descriptive name
 - **Description:** "As a [user], I want [feature] so that [benefit]"
 - **Acceptance Criteria:** Verifiable checklist of what "done" means
+- **Dependencies:** Note which stories must complete first (for Ralph conversion)
 
 Each story should be small enough to implement in one focused session.
 
@@ -95,6 +96,7 @@ Each story should be small enough to implement in one focused session.
 ```markdown
 ### US-001: [Title]
 **Description:** As a [user], I want [feature] so that [benefit].
+**Dependencies:** None (or: Requires US-001, US-002)
 
 **Acceptance Criteria:**
 - [ ] Specific verifiable criterion
@@ -102,6 +104,12 @@ Each story should be small enough to implement in one focused session.
 - [ ] Typecheck/lint passes
 - [ ] **[UI stories only]** Verify in browser using dev-browser skill
 ```
+
+**Dependency Guidelines:**
+- Database/schema stories typically have no dependencies
+- Backend stories depend on the schema they read/write
+- UI stories depend on the backend APIs or data they display
+- Order stories so dependencies come first (lower story numbers)
 
 **Important:** 
 - Acceptance criteria must be verifiable, not vague. "Works correctly" is bad. "Button shows confirmation dialog before deleting" is good.
@@ -177,6 +185,7 @@ Add priority levels to tasks so users can focus on what matters most. Tasks can 
 
 ### US-001: Add priority field to database
 **Description:** As a developer, I need to store task priority so it persists across sessions.
+**Dependencies:** None
 
 **Acceptance Criteria:**
 - [ ] Add priority column to tasks table: 'high' | 'medium' | 'low' (default 'medium')
@@ -185,6 +194,7 @@ Add priority levels to tasks so users can focus on what matters most. Tasks can 
 
 ### US-002: Display priority indicator on task cards
 **Description:** As a user, I want to see task priority at a glance so I know what needs attention first.
+**Dependencies:** Requires US-001
 
 **Acceptance Criteria:**
 - [ ] Each task card shows colored priority badge (red=high, yellow=medium, gray=low)
@@ -194,6 +204,7 @@ Add priority levels to tasks so users can focus on what matters most. Tasks can 
 
 ### US-003: Add priority selector to task edit
 **Description:** As a user, I want to change a task's priority when editing it.
+**Dependencies:** Requires US-001
 
 **Acceptance Criteria:**
 - [ ] Priority dropdown in task edit modal
@@ -204,6 +215,7 @@ Add priority levels to tasks so users can focus on what matters most. Tasks can 
 
 ### US-004: Filter tasks by priority
 **Description:** As a user, I want to filter the task list to see only high-priority items when I'm focused.
+**Dependencies:** Requires US-001, US-002
 
 **Acceptance Criteria:**
 - [ ] Filter dropdown with options: All | High | Medium | Low
