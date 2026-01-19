@@ -139,3 +139,21 @@ Started: Sun Jan 18 17:35:36 PST 2026
   - Video element uses playsInline for iOS compatibility
   - getUserMedia wrapped in try-catch for permission handling
 ---
+
+## 2026-01-19T01:55:00.000Z - US-009
+- Implemented meal analysis submission to /api/analyze using mealApi.analyze
+- Added loading state showing "Analyzing your meal..." message
+- Error handling displays backend error message in red card
+- Results view shows totals in gradient cards and item breakdown list
+- Navigation buttons allow return to Home or History after viewing results
+- Image preview shown at top of analyze and results screens
+- Build and typecheck passing
+- Files changed: web/src/pages/Analyze.tsx
+- **Learnings for future iterations:**
+  - Analyze page uses useLocation to get imageFile and imagePreview from route state
+  - Results displayed conditionally based on result state (null = input form, data = results view)
+  - Macros rounded with Math.round() for display
+  - Item breakdown uses 4-column grid for compact display
+  - Image shown at reduced height (30vh) in results, larger (50vh) in input view
+  - Navigation provides clear paths to Home and History after analysis
+---
