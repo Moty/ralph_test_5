@@ -252,3 +252,25 @@ Started: Sun Jan 18 17:35:36 PST 2026
   - Firebase rewrites needed for SPA routing
   - Deployment: npm run build in web/, then firebase deploy --only hosting
 ---
+
+## 2026-01-19T02:01:00.000Z - US-015
+- Installed Vitest, @testing-library/react, @testing-library/jest-dom, jsdom
+- Created vite.config.ts test configuration with globals and jsdom environment
+- Added npm test and npm test:ui scripts
+- Created api.test.ts with unit tests for API client and auth state localStorage
+- Created routes.test.tsx with smoke tests for Home, History, Settings routes
+- Created vite-env.d.ts to define ImportMetaEnv types for VITE_* variables
+- Updated tsconfig.app.json to exclude src/test from build
+- All 11 tests passing
+- Build and typecheck passing
+- Files changed: web/package.json, web/vite.config.ts, web/tsconfig.json, web/tsconfig.app.json, web/tsconfig.test.json (new), web/src/vite-env.d.ts (new), web/src/test/setup.ts (new), web/src/test/api.test.ts (new), web/src/test/routes.test.tsx (new)
+- **Learnings for future iterations:**
+  - Vitest configured with globals: true for describe/it/expect without imports
+  - jsdom environment needed for React component testing
+  - @testing-library/react and @testing-library/jest-dom for DOM assertions
+  - Test files excluded from production build via tsconfig.app.json
+  - vite.config.ts uses vitest/config import instead of vite for test support
+  - localStorage mocked with simple in-memory store for tests
+  - API module mocked in route tests to prevent network calls
+  - AuthProvider wrapper required for components using useAuth hook
+---
