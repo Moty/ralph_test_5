@@ -10,7 +10,7 @@ NutritionAI is an AI-powered nutrition analyzer with iOS, web, and Node.js backe
 
 - **web/** - React + Vite + TypeScript web application (Firebase Hosting)
 - **NutritionAI/** - iOS Swift Package + Wrapper App (primary iOS project)
-- **backend/** - Node.js/Fastify API server with TypeScript
+- **backend/** - Node.js/Fastify API server with TypeScript (Firestore database)
 - **NutritionAIApp/** - Deprecated standalone iOS project (do not use)
 
 ## Production Environment
@@ -37,10 +37,8 @@ npm run start            # Start production build (requires npm run build first)
 npm run start:tsx        # Start without building (uses tsx)
 npm run build            # Compile TypeScript
 npm run typecheck        # Type check without building
-npm test                 # Run tests (requires PostgreSQL test DB)
+npm test                 # Run tests
 npm run deploy           # Deploy to Google Cloud Run
-npx prisma generate      # Generate Prisma client
-npx prisma migrate dev   # Run database migrations
 ```
 
 ### Web App
@@ -76,22 +74,18 @@ In Xcode: ⌘⇧K to clean, ⌘R to build and run on physical iPhone (camera req
 
 ### Backend (Fastify + TypeScript)
 
-The backend uses a database abstraction layer (`src/services/database.ts`) supporting both PostgreSQL (via Prisma) and Firebase Firestore. Database type is auto-detected from environment variables.
+The backend uses Firebase Firestore for data storage.
 
 **Key files:**
 - `src/server.ts` - Entry point, registers routes and middleware
-- `src/services/database.ts` - `DatabaseService` interface with `PostgresDatabase` and `FirestoreDatabase` implementations
+- `src/services/database.ts` - Firestore database service
+- `src/services/firebase.ts` - Firebase Admin SDK initialization
 - `src/services/gemini.ts` - Google Generative AI integration
 - `src/services/auth.ts` - JWT token verification
 - `src/routes/analyze.ts` - Image analysis endpoint (multipart upload → Gemini AI)
 - `src/routes/auth.ts` - Register/login endpoints
 - `src/routes/user.ts` - User statistics
 - `src/routes/meals.ts` - Meal history CRUD
-
-**Database selection:**
-- Set `FIREBASE_PROJECT_ID` for Firestore
-- Set `DATABASE_URL` for PostgreSQL
-- `DATABASE_TYPE` env var can force selection
 
 ### iOS App (SwiftUI + Swift Package)
 
@@ -132,14 +126,11 @@ React 19 SPA with React Router for navigation and context-based auth state.
 Required:
 - `GEMINI_API_KEY` - Google Generative AI key
 - `JWT_SECRET` - Secret for JWT signing
-
-Database (one of):
-- `FIREBASE_PROJECT_ID` - For Firestore
-- `DATABASE_URL` - PostgreSQL connection string (e.g., `postgresql://user:pass@localhost:5432/nutritionai`)
+- `FIREBASE_PROJECT_ID` - Firebase project ID for Firestore
 
 Optional:
 - `PORT` - Server port (default: 8080)
-- `DATABASE_TYPE` - Force `firestore` or `postgres`
+- `FIREBASE_SERVICE_ACCOUNT` - Service account JSON (for local development)
 
 ### Web App
 

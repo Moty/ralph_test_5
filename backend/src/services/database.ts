@@ -1,20 +1,10 @@
 /**
- * Database abstraction layer
- * Supports both PostgreSQL (via Prisma) and Firestore
- * 
- * Usage:
- * - Set DATABASE_TYPE=firestore to use Firestore
- * - Set DATABASE_TYPE=postgres to use PostgreSQL (default)
+ * Database service using Firestore
  */
 
-import { PrismaClient } from '@prisma/client';
-import { Pool } from 'pg';
-import { PrismaPg } from '@prisma/adapter-pg';
 import { getFirestoreDb, isFirebaseEnabled } from './firebase.js';
 import type { Firestore } from 'firebase-admin/firestore';
 import admin from 'firebase-admin';
-
-export type DatabaseType = 'postgres' | 'firestore';
 
 export interface User {
   id: string;
@@ -38,83 +28,14 @@ export interface DatabaseService {
   createUser(data: { email: string; passwordHash: string; name: string }): Promise<User>;
   findUserByEmail(email: string): Promise<User | null>;
   findUserById(id: string): Promise<User | null>;
-  
+
   // Meal analysis operations
   createMealAnalysis(data: { userId?: string; imageUrl: string; thumbnail?: string; nutritionData: any }): Promise<MealAnalysis>;
   findMealAnalysesByUserId(userId: string): Promise<MealAnalysis[]>;
   findMealAnalysisById(id: string): Promise<MealAnalysis | null>;
-  
+
   // Utility
   disconnect(): Promise<void>;
-}
-
-/**
- * PostgreSQL implementation using Prisma
- */
-class PostgresDatabase implements DatabaseService {
-  private prisma: PrismaClient;
-
-  constructor() {
-    const connectionString = process.env.DATABASE_URL;
-    if (!connectionString) {
-      throw new Error('DATABASE_URL is required for PostgreSQL');
-    }
-
-    const pool = new Pool({ connectionString });
-    const adapter = new PrismaPg(pool);
-    this.prisma = new PrismaClient({ adapter });
-  }
-
-  async createUser(data: { email: string; passwordHash: string; name: string }): Promise<User> {
-    const user = await this.prisma.user.create({ data });
-    return {
-      ...user,
-      createdAt: user.createdAt
-    };
-  }
-
-  async findUserByEmail(email: string): Promise<User | null> {
-    const user = await this.prisma.user.findUnique({ where: { email } });
-    return user ? { ...user, createdAt: user.createdAt } : null;
-  }
-
-  async findUserById(id: string): Promise<User | null> {
-    const user = await this.prisma.user.findUnique({ where: { id } });
-    return user ? { ...user, createdAt: user.createdAt } : null;
-  }
-
-  async createMealAnalysis(data: { userId?: string; imageUrl: string; thumbnail?: string; nutritionData: any }): Promise<MealAnalysis> {
-    const analysis = await this.prisma.mealAnalysis.create({
-      data: {
-        userId: data.userId || null,
-        imageUrl: data.imageUrl,
-        thumbnail: data.thumbnail || null,
-        nutritionData: data.nutritionData
-      }
-    });
-    return {
-      ...analysis,
-      thumbnail: analysis.thumbnail || null,
-      createdAt: analysis.createdAt
-    };
-  }
-
-  async findMealAnalysesByUserId(userId: string): Promise<MealAnalysis[]> {
-    const analyses = await this.prisma.mealAnalysis.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' }
-    });
-    return analyses.map(a => ({ ...a, thumbnail: a.thumbnail || null, createdAt: a.createdAt }));
-  }
-
-  async findMealAnalysisById(id: string): Promise<MealAnalysis | null> {
-    const analysis = await this.prisma.mealAnalysis.findUnique({ where: { id } });
-    return analysis ? { ...analysis, createdAt: analysis.createdAt } : null;
-  }
-
-  async disconnect(): Promise<void> {
-    await this.prisma.$disconnect();
-  }
 }
 
 /**
@@ -138,12 +59,12 @@ class FirestoreDatabase implements DatabaseService {
       ...data,
       createdAt: new Date()
     };
-    
+
     await this.db.collection('users').doc(id).set({
       ...user,
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
-    
+
     return user;
   }
 
@@ -152,9 +73,9 @@ class FirestoreDatabase implements DatabaseService {
       .where('email', '==', email)
       .limit(1)
       .get();
-    
+
     if (snapshot.empty) return null;
-    
+
     const doc = snapshot.docs[0];
     const data = doc.data();
     return {
@@ -168,9 +89,9 @@ class FirestoreDatabase implements DatabaseService {
 
   async findUserById(id: string): Promise<User | null> {
     const doc = await this.db.collection('users').doc(id).get();
-    
+
     if (!doc.exists) return null;
-    
+
     const data = doc.data()!;
     return {
       id: doc.id,
@@ -191,12 +112,12 @@ class FirestoreDatabase implements DatabaseService {
       nutritionData: data.nutritionData,
       createdAt: new Date()
     };
-    
+
     await this.db.collection('mealAnalyses').doc(id).set({
       ...analysis,
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
-    
+
     return analysis;
   }
 
@@ -207,7 +128,7 @@ class FirestoreDatabase implements DatabaseService {
         .where('userId', '==', userId)
         .orderBy('createdAt', 'desc')
         .get();
-      
+
       return snapshot.docs.map(doc => {
         const data = doc.data();
         return {
@@ -226,7 +147,7 @@ class FirestoreDatabase implements DatabaseService {
         const snapshot = await this.db.collection('mealAnalyses')
           .where('userId', '==', userId)
           .get();
-        
+
         const meals = snapshot.docs.map(doc => {
           const data = doc.data();
           return {
@@ -238,7 +159,7 @@ class FirestoreDatabase implements DatabaseService {
             createdAt: data.createdAt?.toDate() || new Date()
           };
         });
-        
+
         // Sort in memory
         return meals.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
       }
@@ -248,9 +169,9 @@ class FirestoreDatabase implements DatabaseService {
 
   async findMealAnalysisById(id: string): Promise<MealAnalysis | null> {
     const doc = await this.db.collection('mealAnalyses').doc(id).get();
-    
+
     if (!doc.exists) return null;
-    
+
     const data = doc.data()!;
     return {
       id: doc.id,
@@ -269,24 +190,14 @@ class FirestoreDatabase implements DatabaseService {
 }
 
 /**
- * Get the appropriate database service based on configuration
+ * Get the database service (Firestore)
  */
 export function getDatabaseService(): DatabaseService {
-  const dbType = process.env.DATABASE_TYPE as DatabaseType | undefined;
-  
-  // Auto-detect: if Firebase is enabled and no explicit DATABASE_TYPE, use Firestore
-  if (!dbType && isFirebaseEnabled()) {
-    console.log('🔥 Using Firestore database');
-    return new FirestoreDatabase();
+  if (!isFirebaseEnabled()) {
+    throw new Error('Firebase is not configured. Set FIREBASE_PROJECT_ID environment variable.');
   }
-  
-  if (dbType === 'firestore') {
-    console.log('🔥 Using Firestore database');
-    return new FirestoreDatabase();
-  }
-  
-  console.log('🐘 Using PostgreSQL database');
-  return new PostgresDatabase();
+  console.log('🔥 Using Firestore database');
+  return new FirestoreDatabase();
 }
 
 // Singleton instance
