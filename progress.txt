@@ -233,3 +233,22 @@ Started: Sun Jan 18 17:35:36 PST 2026
   - API override only enabled via environment variable for security
   - Select dropdown styled with theme CSS variables
 ---
+
+## 2026-01-19T02:00:00.000Z - US-014
+- Created firebase.json with hosting config pointing to web/dist
+- Created .firebaserc with project nutritionai2026
+- Added SPA rewrite rule for all routes to /index.html
+- Configured cache headers for static assets (1 year)
+- Created DEPLOYMENT.md with comprehensive deployment guide
+- Updated README.md with web app features list
+- Backend CORS already configured to accept all origins (origin: true)
+- Documented production CORS restriction recommendation in DEPLOYMENT.md
+- Build and typecheck passing
+- Files changed: firebase.json (new), .firebaserc (new), DEPLOYMENT.md (new), README.md
+- **Learnings for future iterations:**
+  - Firebase Hosting URLs: nutritionai2026.web.app and nutritionai2026.firebaseapp.com
+  - Web app requires VITE_API_BASE_URL in .env.production
+  - Backend CORS set to origin: true for dev, should restrict in production
+  - Firebase rewrites needed for SPA routing
+  - Deployment: npm run build in web/, then firebase deploy --only hosting
+---
