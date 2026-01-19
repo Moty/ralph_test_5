@@ -177,3 +177,22 @@ Started: Sun Jan 18 17:35:36 PST 2026
   - Empty/loading/error states handled with conditional rendering
   - Refresh button in header matches Home dashboard pattern
 ---
+
+## 2026-01-19T01:57:00.000Z - US-011
+- Created MealDetail page component showing full meal breakdown
+- Displays meal photo at top if available
+- Shows formatted timestamp with full date format
+- Renders totals in gradient cards matching Home/Analyze layouts
+- Item breakdown displayed in same grid format as Analyze results
+- Back button navigates to history list
+- Route /history/:id receives meal data via location state
+- Build and typecheck passing
+- Files changed: web/src/pages/MealDetail.tsx (new), web/src/App.tsx
+- **Learnings for future iterations:**
+  - MealDetail receives meal data via location.state from History list
+  - Date formatting uses longer format than list view for detail context
+  - Layout matches Analyze results view for consistency
+  - Back button placed in header next to title
+  - Handles missing meal gracefully with message and back link
+  - Empty items array shows "No items detected" message
+---

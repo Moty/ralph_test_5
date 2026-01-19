@@ -35,6 +35,19 @@
   --color-text-primary: rgb(38, 38, 46);
   --color-text-secondary: rgb(115, 115, 122);
   
+  /* Surface colors */
+  --color-surface-primary: rgb(255, 252, 250);
+  --color-surface-secondary: rgb(242, 240, 235);
+  
+  /* UI colors */
+  --color-error: rgb(217, 115, 102);
+  --color-success: rgb(89, 153, 140);
+  
+  /* Border */
+  --border-radius-sm: 8px;
+  --border-radius-md: 12px;
+  --border-radius-lg: 16px;
+  
   /* Spacing system */
   --spacing-xs: 4px;
   --spacing-sm: 8px;
@@ -76,7 +89,8 @@
 }
 
 /* Dark mode variants - deep rich dark (Charcoal/Navy) */
-[data-theme="dark"] {
+[data-theme="dark"],
+.dark-theme {
   --color-background-primary: rgb(20, 26, 31);
   --color-background-secondary: rgb(31, 36, 41);
   --color-card-background: rgb(41, 46, 51);
