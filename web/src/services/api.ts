@@ -5,11 +5,18 @@ interface ApiError {
   status?: number;
 }
 
+type UnauthorizedHandler = () => void;
+
 class ApiClient {
   private baseUrl: string;
+  private onUnauthorized?: UnauthorizedHandler;
 
   constructor(baseUrl: string = API_BASE_URL) {
     this.baseUrl = baseUrl;
+  }
+
+  setUnauthorizedHandler(handler: UnauthorizedHandler) {
+    this.onUnauthorized = handler;
   }
 
   private getAuthHeaders(): HeadersInit {
@@ -27,6 +34,10 @@ class ApiClient {
 
   private async handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
+      if (response.status === 401 && this.onUnauthorized) {
+        this.onUnauthorized();
+      }
+      
       let errorMessage = `HTTP error! status: ${response.status}`;
       
       try {
@@ -88,6 +99,10 @@ class ApiClient {
 }
 
 const api = new ApiClient();
+
+export function setApiUnauthorizedHandler(handler: () => void) {
+  api.setUnauthorizedHandler(handler);
+}
 
 export interface RegisterRequest {
   email: string;
