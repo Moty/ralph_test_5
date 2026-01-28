@@ -294,6 +294,16 @@ Add ability to mark tasks with different statuses.
 
 ---
 
+## Security: No Hardcoded Secrets
+
+When converting PRDs that mention specific passwords, API keys, or credentials:
+
+1. **NEVER include literal passwords/keys in acceptance criteria or descriptions**
+2. **Replace with env var references:** e.g. "password 12345678" → "read from `ADMIN_PASSWORD` env var"
+3. If the source PRD contains hardcoded secrets, convert them to env var patterns during conversion
+
+---
+
 ## Checklist Before Saving
 
 Before writing prd.json, verify:
@@ -305,3 +315,4 @@ Before writing prd.json, verify:
 - [ ] UI stories have "Verify in browser using dev-browser skill" as criterion
 - [ ] Acceptance criteria are verifiable (not vague)
 - [ ] No story depends on a later story
+- [ ] **No hardcoded secrets** in descriptions or acceptance criteria

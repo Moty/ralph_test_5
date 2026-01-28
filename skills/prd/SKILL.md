@@ -258,6 +258,21 @@ Add priority levels to tasks so users can focus on what matters most. Tasks can 
 
 ---
 
+## Security: No Hardcoded Secrets
+
+If the user's description mentions specific passwords, API keys, tokens, or credentials:
+
+1. **NEVER put literal credentials in the PRD or acceptance criteria**
+2. **Convert to environment variables:** e.g. "password 12345678" → "use `ADMIN_PASSWORD` from environment"
+3. **Use `.env.example` pattern:** Document required env vars with placeholder values
+4. **Seed data:** For initial users/admin accounts, reference env vars: `ADMIN_EMAIL`, `ADMIN_PASSWORD`
+
+**Example transformation:**
+- User says: "make user admin@foo.com with password secret123"
+- PRD says: "Create admin seed using `ADMIN_EMAIL` and `ADMIN_PASSWORD` env vars, documented in `.env.example`"
+
+---
+
 ## Checklist
 
 Before saving the PRD:
@@ -267,4 +282,5 @@ Before saving the PRD:
 - [ ] User stories are small and specific
 - [ ] Functional requirements are numbered and unambiguous
 - [ ] Non-goals section defines clear boundaries
+- [ ] **No hardcoded secrets** - credentials use env vars
 - [ ] Saved to `tasks/prd-[feature-name].md`

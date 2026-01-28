@@ -26,15 +26,19 @@ Before implementing any new functionality:
 
 1. Read the PRD at `prd.json` (in the ralph directory)
 2. Read the progress log at `progress.txt` (check Codebase Patterns section first)
-3. **Create a sub-branch for this story**: `git checkout -b <branchName>/<Story-ID>` from the feature branch.
-   Example: If branchName is `ralph/auth-system` and story is US-003, create `ralph/auth-system/US-003`.
-   This allows Ralph to merge your changes back to the feature branch after verification.
+3. **Verify you are on the feature branch** (CRITICAL):
+   - Read the `branchName` field from `prd.json`
+   - Run: `git branch --show-current`
+   - If NOT on the correct branch: `git checkout <branchName>`
+   - Do NOT create sub-branches. Commit directly to the feature branch.
 4. Pick the **highest priority** user story where `passes: false`
 5. Implement that single user story
 6. Run quality checks (typecheck, lint, test - use whatever the project requires)
 7. Update AGENTS.md files if you discover reusable patterns
 8. **Update README.md** to document any new features, endpoints, or usage instructions
-9. If checks pass, commit ALL changes with message: `feat: [Story ID] - [Story Title]`
+9. If checks pass, stage and commit changes with message: `feat: [Story ID] - [Story Title]`
+   - **NEVER commit secret or credential files** (see SECURITY section below)
+   - Stage files explicitly with `git add <file>` rather than `git add -A` or `git add .`
 10. Update `prd.json` to set `passes: true` for the completed story
 11. Append your progress to `progress.txt`
 
@@ -117,6 +121,25 @@ If README.md doesn't exist, create one with:
 - Do NOT commit broken code
 - Keep changes focused and minimal
 - Follow existing code patterns
+
+## SECURITY: NEVER COMMIT SECRETS
+
+**Before staging files, verify NONE of these are included:**
+
+- `.env` files (except `.env.example` with placeholder values)
+- `*-adminsdk-*.json` (Firebase/GCP service account keys)
+- `*-credentials*.json`, `*-keyfile*.json`
+- `*.pem`, `*.key`, `*.p12`, `*.pfx` (private keys/certificates)
+- `*secret*`, `*token*` files containing actual credentials
+- `node_modules/`, `vendor/`, dependency directories
+- Any file containing API keys, passwords, or connection strings with real values
+
+**Rules:**
+1. NEVER use `git add -A`, `git add .`, or `git add --all`
+2. Stage files individually: `git add src/file1.ts src/file2.ts`
+3. Before committing, run `git diff --cached --name-only` to review staged files
+4. If a secret file exists in the working tree, add it to `.gitignore`
+5. If you accidentally stage a secret file, unstage it: `git reset HEAD <file>`
 
 ## REPL MODE (Complex Tasks)
 

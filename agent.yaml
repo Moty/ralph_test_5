@@ -10,14 +10,34 @@ agent:
   # Options: github-copilot, claude-code, gemini, codex, auto (auto-detect based on availability)
   primary: github-copilot
   fallback: codex
+# Rotation configuration - intelligent model/agent rotation on failures
+rotation:
+  enabled: true
+  failure-threshold: 2 # consecutive failures before rotating model
+  rate-limit-cooldown: 300 # seconds before retrying rate-limited agent
+  strategy: sequential # "sequential" or "priority"
+# Agent rotation order (extends primary/fallback with ordered list)
+agent-rotation:
+  - github-copilot
+  - claude-code
+  - gemini
+  - codex
 # Claude Code settings
 claude-code:
   model: claude-sonnet-4-20250514 # or: claude-3-5-sonnet, claude-3-opus, etc.
-  # Additional CLI flags (optional)
-  # flags: "--verbose"
-# Codex settings  
+  models:
+    - claude-sonnet-4-5-20250929
+    - claude-opus-4-5-20251101
+    - claude-sonnet-4-20250514
+    - claude-3-5-haiku-20241022
+    # Additional CLI flags (optional)
+    # flags: "--verbose"
+# Codex settings
 codex:
   model: gpt-5.2-codex # Latest: gpt-5.2-codex, gpt-5.1-codex-max, gpt-5.1-codex-mini, gpt-5.2
+  models:
+    - gpt-5.2-codex
+    - gpt-5.1-codex-mini
   approval-mode: full-auto # full-auto, danger, or omit for interactive
   sandbox: full-access # full-access (git allowed), workspace-write, read-only
   # Additional CLI flags (optional)
@@ -27,6 +47,10 @@ github-copilot:
   # Model selection for Copilot CLI
   # Options: claude-opus-4.5, claude-sonnet-4.5, claude-haiku-4.5, gpt-5.2-codex, gpt-5.2, gpt-5.1, auto
   model: auto # auto = let Copilot choose, or specify a model explicitly
+  models:
+    - auto
+    - claude-sonnet-4.5
+    - gpt-5.2-codex
   # Tool permissions for automated execution
   # Options: allow-all, selective, or omit for interactive
   tool-approval: allow-all # allow-all grants all tool permissions automatically
@@ -39,13 +63,17 @@ github-copilot:
 # Gemini settings (Google AI)
 gemini:
   model: gemini-3-pro # Options: gemini-3-pro, gemini-3-flash, gemini-2.5-pro, gemini-2.5-flash
+  models:
+    - gemini-3-pro
+    - gemini-3-flash
+    - gemini-2.5-flash
   # approval-mode: auto (default), yolo (auto-approve all tools), default (prompt for approval)
   approval-mode: auto
   # Gemini CLI uses 'gemini' command (npm install -g @anthropic/gemini-cli)
   # Additional CLI flags (optional)
   # flags: ""
 # Git workflow settings
-# Ralph creates sub-branches per story, merges them to feature branch, and optionally pushes/creates PRs
+# Agents commit directly to the feature branch. Ralph optionally pushes and creates PRs.
 git:
   # Automatically checkout the feature branch before spawning agent
   auto-checkout-branch: true
@@ -53,13 +81,33 @@ git:
   base-branch: main
   # Push settings
   push:
-    # Enable automatic push after each story merge (disabled by default for backward compatibility)
-    enabled: false
+    # Enable automatic push after each iteration
+    enabled: true
     # When to push: "iteration" (after each story) or "end" (after RALPH_COMPLETE)
     timing: iteration
   # Pull Request settings
   pr:
-    # Enable automatic PR creation when all stories complete (disabled by default)
-    enabled: false
+    # Enable automatic PR creation when all stories complete
+    enabled: true
     # Create as draft PR
     draft: false
+    # Automatically merge the PR after creation (requires push and pr enabled)
+    auto-merge: true
+# Per-command configuration
+# Override agent rotation and permissions per Ralph command (build, review, prd, filebug, change)
+commands:
+  build:
+    agent-rotation: [github-copilot, claude-code, gemini, codex]
+    dangerous-permissions: true
+  review:
+    agent-rotation: [claude-code]
+    dangerous-permissions: false
+  prd:
+    agent-rotation: [github-copilot, claude-code]
+    dangerous-permissions: true
+  filebug:
+    agent-rotation: [claude-code, github-copilot]
+    dangerous-permissions: false
+  change:
+    agent-rotation: [claude-code, github-copilot]
+    dangerous-permissions: true

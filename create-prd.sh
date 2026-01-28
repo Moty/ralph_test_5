@@ -344,8 +344,8 @@ run_claude() {
   local prompt="$1"
   local model_flag=""
   case "$PREFERRED_MODEL" in
-    claude-opus) model_flag="--model claude-opus-4-20250514" ;;
-    claude-sonnet) model_flag="--model claude-sonnet-4-20250514" ;;
+    claude-opus) model_flag="--model claude-opus-4-5-20251101" ;;
+    claude-sonnet) model_flag="--model claude-sonnet-4-5-20250929" ;;
     *) model_flag="" ;;  # Use default
   esac
   local claude_cmd="$AGENT"

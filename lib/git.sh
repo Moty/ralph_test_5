@@ -1,5 +1,5 @@
 #!/bin/bash
-# Ralph Git Library - Git operations for branch management, merging, pushing, and PRs
+# Ralph Git Library - Git operations for branch management, pushing, and PRs
 # Source this file from ralph.sh: source "$SCRIPT_DIR/lib/git.sh"
 
 # ---- Git Configuration Getters -----------------------------------
@@ -38,11 +38,48 @@ get_git_pr_draft() {
   [ "$value" = "true" ]
 }
 
+# Get git.pr.auto-merge setting (default: false)
+get_git_pr_auto_merge() {
+  local value=$(yq '.git.pr.auto-merge // false' "$AGENT_CONFIG" 2>/dev/null)
+  [ "$value" = "true" ]
+}
+
 # ---- Branch Management Functions ---------------------------------
+
+# Delete local branches that have been merged into the current branch
+# Skips the current branch and base branch (main). Useful for cleaning up
+# stale sub-branches from old Ralph workflows.
+# Usage: cleanup_merged_branches
+cleanup_merged_branches() {
+  local current_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+  local base_branch=$(get_git_base_branch 2>/dev/null || echo "main")
+  local deleted=0
+
+  # Get branches merged into current branch, excluding current and base
+  local merged_branches
+  merged_branches=$(git branch --merged 2>/dev/null | grep -v '^\*' | grep -v "^[[:space:]]*${base_branch}$" | sed 's/^[[:space:]]*//')
+
+  if [ -z "$merged_branches" ]; then
+    return 0
+  fi
+
+  while IFS= read -r branch; do
+    [ -z "$branch" ] && continue
+    # Skip the current branch (safety check)
+    [ "$branch" = "$current_branch" ] && continue
+    git branch -d "$branch" >/dev/null 2>&1 && ((deleted++)) || true
+  done <<< "$merged_branches"
+
+  if [ "$deleted" -gt 0 ]; then
+    log_info "Cleaned up $deleted merged branch(es)"
+    echo -e "${GREEN}✓ Cleaned up $deleted merged branch(es)${NC}"
+  fi
+}
 
 # Ensure the feature branch exists and we're on it
 # Usage: ensure_feature_branch <branch_name>
 # Creates from base-branch if it doesn't exist
+# Returns 0 on success, 1 on failure
 ensure_feature_branch() {
   local branch_name="$1"
   local base_branch=$(get_git_base_branch)
@@ -54,108 +91,129 @@ ensure_feature_branch() {
 
   log_info "Ensuring feature branch: $branch_name"
 
+  # Stash any uncommitted changes to allow branch switching
+  local stash_needed=false
+  if ! git diff-index --quiet HEAD -- 2>/dev/null; then
+    log_info "Stashing uncommitted changes before branch switch"
+    if git stash push -m "Ralph auto-stash before switching to $branch_name"; then
+      stash_needed=true
+    else
+      log_error "Failed to stash changes, attempting checkout anyway"
+    fi
+  fi
+
+  local checkout_success=false
+
   # Check if branch exists locally
   if git show-ref --verify --quiet "refs/heads/$branch_name" 2>/dev/null; then
     log_debug "Branch $branch_name exists locally"
-    git checkout "$branch_name"
+    if git checkout "$branch_name" 2>/dev/null; then
+      checkout_success=true
+    fi
   # Check if branch exists on remote
   elif git ls-remote --exit-code --heads origin "$branch_name" >/dev/null 2>&1; then
     log_debug "Branch $branch_name exists on remote, checking out"
     git fetch origin "$branch_name"
-    git checkout -b "$branch_name" "origin/$branch_name"
+    if git checkout -b "$branch_name" "origin/$branch_name" 2>/dev/null; then
+      checkout_success=true
+    fi
   else
     # Create new branch from base
     log_info "Creating new branch $branch_name from $base_branch"
 
-    # Make sure we have the latest base branch
+    # Fetch latest from remote (for awareness) but create from LOCAL base branch
+    # to include any local commits (e.g., new prd.json from create-prd.sh)
     if git ls-remote --exit-code --heads origin "$base_branch" >/dev/null 2>&1; then
       git fetch origin "$base_branch"
-      git checkout -b "$branch_name" "origin/$base_branch"
+    fi
+
+    # Create from local base branch (includes unpushed commits like new prd.json)
+    if git show-ref --verify --quiet "refs/heads/$base_branch" 2>/dev/null; then
+      if git checkout -b "$branch_name" "$base_branch" 2>/dev/null; then
+        checkout_success=true
+      fi
     else
-      # No remote, create from local base or current HEAD
-      if git show-ref --verify --quiet "refs/heads/$base_branch" 2>/dev/null; then
-        git checkout -b "$branch_name" "$base_branch"
-      else
-        git checkout -b "$branch_name"
+      # No local base branch, fall back to current HEAD
+      if git checkout -b "$branch_name" 2>/dev/null; then
+        checkout_success=true
       fi
     fi
   fi
 
-  log_info "Now on branch: $(git branch --show-current)"
-  return 0
-}
+  # Restore stashed changes if we stashed them
+  if [ "$stash_needed" = true ]; then
+    log_info "Restoring stashed changes"
+    git stash pop 2>/dev/null || log_warn "Could not restore stashed changes"
+  fi
 
-# Get the sub-branch name for a story
-# Usage: get_story_branch_name <feature_branch> <story_id>
-get_story_branch_name() {
-  local feature_branch="$1"
-  local story_id="$2"
-  echo "${feature_branch}/${story_id}"
-}
-
-# Check if a story sub-branch exists
-# Usage: story_branch_exists <branch_name>
-story_branch_exists() {
-  local branch_name="$1"
-  git show-ref --verify --quiet "refs/heads/$branch_name" 2>/dev/null
-}
-
-# ---- Merge Functions ---------------------------------------------
-
-# Merge a story sub-branch into the feature branch
-# Usage: merge_story_branch <feature_branch> <story_branch> <story_id> [story_title]
-merge_story_branch() {
-  local feature_branch="$1"
-  local story_branch="$2"
-  local story_id="$3"
-  local story_title="${4:-$story_id}"
-
-  log_info "Merging $story_branch into $feature_branch"
-
-  # Ensure we're on the feature branch
-  git checkout "$feature_branch"
-
-  # Pull latest changes to feature branch (in case of remote updates)
-  git pull origin "$feature_branch" 2>/dev/null || true
-
-  # Merge the story branch with --no-ff for clear merge commit
-  local merge_msg="Merge $story_id: $story_title"
-  if git merge --no-ff "$story_branch" -m "$merge_msg"; then
-    log_info "Successfully merged $story_branch"
-    echo -e "${GREEN}✓ Merged ${story_id}${NC}"
+  # Verify we're on the correct branch
+  local current_branch=$(git branch --show-current 2>/dev/null)
+  if [ "$current_branch" = "$branch_name" ]; then
+    log_info "Now on branch: $current_branch"
     return 0
   else
-    log_error "Merge conflict detected for $story_branch"
-    echo -e "${RED}✗ Merge conflict for ${story_id}${NC}"
-    echo -e "${YELLOW}Attempting to abort merge and continue...${NC}"
-    git merge --abort 2>/dev/null || true
+    log_error "Failed to switch to branch $branch_name (currently on: $current_branch)"
+    echo -e "${RED}✗ Failed to switch to feature branch ${branch_name}${NC}"
+    echo -e "${YELLOW}  Current branch: ${current_branch}${NC}"
+    echo -e "${YELLOW}  Try: git stash && git checkout $branch_name${NC}"
     return 1
   fi
 }
 
-# ---- Cleanup Functions -------------------------------------------
+# Verify we're on the expected feature branch
+# Usage: verify_on_feature_branch <expected_branch>
+# Returns 0 if on correct branch (or successfully switched), 1 on failure
+verify_on_feature_branch() {
+  local expected_branch="$1"
+  local current_branch=$(git branch --show-current 2>/dev/null)
 
-# Delete a story sub-branch locally and optionally on remote
-# Usage: cleanup_story_branch <branch_name> [delete_remote]
-cleanup_story_branch() {
-  local branch_name="$1"
-  local delete_remote="${2:-false}"
-
-  log_info "Cleaning up branch: $branch_name"
-
-  # Delete local branch
-  if git show-ref --verify --quiet "refs/heads/$branch_name" 2>/dev/null; then
-    git branch -d "$branch_name" 2>/dev/null || git branch -D "$branch_name" 2>/dev/null || true
-    log_debug "Deleted local branch: $branch_name"
+  if [ "$current_branch" = "$expected_branch" ]; then
+    return 0
   fi
 
-  # Optionally delete remote branch
-  if [ "$delete_remote" = "true" ]; then
-    if git ls-remote --exit-code --heads origin "$branch_name" >/dev/null 2>&1; then
-      git push origin --delete "$branch_name" 2>/dev/null || true
-      log_debug "Deleted remote branch: $branch_name"
-    fi
+  log_warn "Not on expected branch. Expected: $expected_branch, Current: $current_branch"
+  if git checkout "$expected_branch" 2>/dev/null; then
+    log_info "Recovered: switched to $expected_branch"
+    return 0
   fi
+
+  log_error "Failed to switch to $expected_branch"
+  return 1
+}
+
+# ---- PRD State Functions -----------------------------------------
+
+# Preserve story completion status after merge conflict
+# Usage: preserve_story_completion <story_id>
+# Updates prd.json on current branch to mark story as complete
+preserve_story_completion() {
+  local story_id="$1"
+  local prd_file="${PRD_FILE:-prd.json}"
+
+  if [ ! -f "$prd_file" ]; then
+    log_error "PRD file not found: $prd_file"
+    return 1
+  fi
+
+  # Update prd.json on current branch to mark story as complete
+  local temp_file=$(mktemp)
+  if jq --arg id "$story_id" \
+    '(.userStories[] | select(.id == $id)).passes = true' \
+    "$prd_file" > "$temp_file"; then
+    mv "$temp_file" "$prd_file"
+  else
+    rm -f "$temp_file"
+    log_error "Failed to update prd.json for $story_id"
+    return 1
+  fi
+
+  # Commit the prd.json update
+  git add "$prd_file"
+  git commit -m "chore: Preserve $story_id completion after merge conflict"
+
+  log_info "Preserved completion status for $story_id"
+  echo -e "${GREEN}✓ Preserved ${story_id} completion status${NC}"
+  return 0
 }
 
 # ---- Push Functions ----------------------------------------------
@@ -253,6 +311,38 @@ create_pr() {
     echo "$pr_url"
     return 1
   fi
+}
+
+# Merge a PR into its base branch
+# Usage: merge_pr <feature_branch>
+# Attempts direct merge first, falls back to enabling auto-merge (for repos with required checks)
+merge_pr() {
+  local feature_branch="$1"
+
+  log_info "Merging PR for branch: $feature_branch"
+
+  # Try direct merge first
+  local merge_output
+  merge_output=$(gh pr merge "$feature_branch" --merge --delete-branch 2>&1)
+  if [ $? -eq 0 ]; then
+    log_info "PR merged successfully"
+    echo -e "${GREEN}✓ Pull request merged into $(get_git_base_branch)${NC}"
+    return 0
+  fi
+
+  # Direct merge failed - try enabling auto-merge (waits for required checks)
+  log_info "Direct merge failed, attempting auto-merge: $merge_output"
+  merge_output=$(gh pr merge "$feature_branch" --auto --merge --delete-branch 2>&1)
+  if [ $? -eq 0 ]; then
+    log_info "Auto-merge enabled for PR"
+    echo -e "${GREEN}✓ Auto-merge enabled (will merge when checks pass)${NC}"
+    return 0
+  fi
+
+  log_error "Failed to merge PR: $merge_output"
+  echo -e "${RED}✗ Could not merge PR automatically${NC}"
+  echo -e "${YELLOW}  Merge manually: gh pr merge $feature_branch --merge${NC}"
+  return 1
 }
 
 # Generate PR body from prd.json and progress

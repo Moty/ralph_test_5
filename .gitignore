@@ -58,3 +58,13 @@ coverage/
 *.pem
 *.p12
 *.key
+.ralph-version
+.ralph/repl/
+.ralph/context.json
+
+# OS generated files
+**/.DS_Store
+._*
+Thumbs.db
+desktop.ini
+*.swo

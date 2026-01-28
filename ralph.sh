@@ -1,9 +1,12 @@
 #!/bin/bash
 # Ralph Wiggum - Long-running AI agent loop (agent-agnostic)
-# Usage: ./ralph.sh [max_iterations] [--no-sleep-prevent] [--verbose] [--timeout SECONDS] [--no-timeout] [--greenfield] [--brownfield] [--update] [--check-update] [--push|--no-push] [--create-pr|--no-pr]
+# Usage: ./ralph.sh [max_iterations|status|review|filebug|change] [--no-sleep-prevent] [--verbose] [--timeout SECONDS] [--no-timeout] [--greenfield] [--brownfield] [--update] [--check-update] [--push|--no-push] [--create-pr|--no-pr] [--auto-merge|--no-auto-merge] [--rotation|--no-rotation] [--fixes] [--file FILE]
 # Agent priority: GitHub Copilot CLI → Claude Code → Gemini → Codex
 
 set -e
+
+# ---- Version ------------------------------------------------------
+RALPH_VERSION="1.4.0"
 
 # ---- Configuration ------------------------------------------------
 
@@ -19,11 +22,86 @@ MAX_ITERATIONS=10
 # Git workflow CLI overrides (empty = use config file)
 GIT_PUSH_OVERRIDE=""
 GIT_PR_OVERRIDE=""
+GIT_AUTO_MERGE_OVERRIDE=""
+
+# Rotation CLI overrides
+ROTATION_OVERRIDE=""
+# Command mode: build (default), review, status, filebug, change
+CURRENT_COMMAND="build"
+# Fixes mode: read from fixes.json instead of prd.json
+USE_FIXES=false
+# Filebug/change: description and optional file reference
+FILEBUG_DESCRIPTION=""
+FILEBUG_FILE=""
+CHANGE_DESCRIPTION=""
+
+# ---- Help --------------------------------------------------------
+
+show_help() {
+  cat <<HELPEOF
+Ralph - Autonomous AI Agent Loop (v${RALPH_VERSION})
+
+Usage: ./ralph.sh [max_iterations] [options]
+       ./ralph.sh <subcommand> [args] [options]
+
+Subcommands:
+  status                         Show project status, story progress, rotation state
+  review                         Run code review, produce fixes.json
+  filebug "description"          File a bug as a fix story in fixes.json
+  filebug --file FILE "desc"     File a bug with a specific file reference
+  change "description"           Apply a mid-build change to prd.json
+
+Core Options:
+  -h, --help                     Show this help message
+  -V, --version                  Show Ralph version
+  -v, --verbose                  Enable debug logging
+  --timeout SECONDS              Set timeout per iteration (default: 7200)
+  --no-timeout                   Disable iteration timeout
+  --no-sleep-prevent             Disable caffeinate/systemd-inhibit
+  --fixes                        Build from fixes.json instead of prd.json
+  --greenfield                   Force greenfield project type
+  --brownfield                   Force brownfield project type
+
+Git Options:
+  --push                         Enable auto-push after each iteration
+  --no-push                      Disable auto-push
+  --create-pr                    Enable PR creation when all stories complete
+  --no-pr                        Disable PR creation
+  --auto-merge                   Enable auto-merge of PR into base branch
+  --no-auto-merge                Disable auto-merge
+
+Rotation Options:
+  --rotation                     Enable model/agent rotation
+  --no-rotation                  Disable rotation
+
+Update Options:
+  --check-update                 Check if Ralph updates are available
+  --update                       Self-update from source repository
+
+Examples:
+  ./ralph.sh                     Run with defaults (10 iterations)
+  ./ralph.sh 20 --verbose        Run 20 iterations with debug logging
+  ./ralph.sh --push --create-pr  Enable push and PR for this run
+  ./ralph.sh --fixes             Build from fixes.json
+  ./ralph.sh review              Run code review
+  ./ralph.sh filebug "Login button broken after auth redirect"
+  ./ralph.sh change "Add pagination to user list endpoint"
+  ./ralph.sh status              Show current project status
+HELPEOF
+  exit 0
+}
 
 # Check for flags first (before processing positional args)
 POSITIONAL_ARGS=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    -h|--help)
+      show_help
+      ;;
+    -V|--version)
+      echo "Ralph v${RALPH_VERSION}"
+      exit 0
+      ;;
     --no-sleep-prevent)
       PREVENT_SLEEP=false
       shift
@@ -73,6 +151,31 @@ while [[ $# -gt 0 ]]; do
       GIT_PR_OVERRIDE="false"
       shift
       ;;
+    --auto-merge)
+      GIT_AUTO_MERGE_OVERRIDE="true"
+      shift
+      ;;
+    --no-auto-merge)
+      GIT_AUTO_MERGE_OVERRIDE="false"
+      shift
+      ;;
+    --rotation)
+      ROTATION_OVERRIDE="true"
+      shift
+      ;;
+    --no-rotation)
+      ROTATION_OVERRIDE="false"
+      shift
+      ;;
+    --fixes)
+      USE_FIXES=true
+      shift
+      ;;
+    --file)
+      shift
+      FILEBUG_FILE="$1"
+      shift
+      ;;
     -*)
       echo "Unknown option: $1"
       exit 1
@@ -84,13 +187,39 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# Set MAX_ITERATIONS from positional arg if provided
+# Check for subcommands (status, review, filebug, change) as first positional arg
 if [[ ${#POSITIONAL_ARGS[@]} -gt 0 ]]; then
-  MAX_ITERATIONS="${POSITIONAL_ARGS[0]}"
+  case "${POSITIONAL_ARGS[0]}" in
+    status)
+      CURRENT_COMMAND="status"
+      ;;
+    review)
+      CURRENT_COMMAND="review"
+      ;;
+    filebug)
+      CURRENT_COMMAND="filebug"
+      # Remaining positional args become the bug description
+      FILEBUG_DESCRIPTION="${POSITIONAL_ARGS[*]:1}"
+      ;;
+    change)
+      CURRENT_COMMAND="change"
+      # Remaining positional args become the change description
+      CHANGE_DESCRIPTION="${POSITIONAL_ARGS[*]:1}"
+      ;;
+    *)
+      MAX_ITERATIONS="${POSITIONAL_ARGS[0]}"
+      ;;
+  esac
 fi
 
 PRD_FILE="$SCRIPT_DIR/prd.json"
-PROGRESS_FILE="$SCRIPT_DIR/progress.txt"
+FIXES_FILE="$SCRIPT_DIR/fixes.json"
+if [ "$USE_FIXES" = true ]; then
+  PRD_FILE="$FIXES_FILE"
+  PROGRESS_FILE="$SCRIPT_DIR/fixes-progress.txt"
+else
+  PROGRESS_FILE="$SCRIPT_DIR/progress.txt"
+fi
 ARCHIVE_DIR="$SCRIPT_DIR/archive"
 LAST_BRANCH_FILE="$SCRIPT_DIR/.last-branch"
 AGENT_CONFIG="$SCRIPT_DIR/agent.yaml"
@@ -104,7 +233,8 @@ get_local_version() {
   if [ -f "$VERSION_FILE" ]; then
     grep '^version=' "$VERSION_FILE" 2>/dev/null | sed 's/version=//' || head -n 1 "$VERSION_FILE"
   else
-    echo "unknown"
+    # Fall back to embedded version constant
+    echo "$RALPH_VERSION"
   fi
 }
 
@@ -228,6 +358,10 @@ fi
 if [ -f "$SCRIPT_DIR/lib/context.sh" ]; then
   source "$SCRIPT_DIR/lib/context.sh"
   CONTEXT_SYSTEM_ENABLED=true
+  # Initialize context from PRD if available
+  if [ -f "$PRD_FILE" ]; then
+    import_prd "$PRD_FILE" 2>/dev/null || true
+  fi
 else
   CONTEXT_SYSTEM_ENABLED=false
 fi
@@ -272,6 +406,14 @@ else
   GIT_LIBRARY_LOADED=false
 fi
 
+# Load rotation library if present
+if [ -f "$SCRIPT_DIR/lib/rotation.sh" ]; then
+  source "$SCRIPT_DIR/lib/rotation.sh"
+  ROTATION_LIBRARY_LOADED=true
+else
+  ROTATION_LIBRARY_LOADED=false
+fi
+
 # ---- Helper Functions ---------------------------------------------
 
 require_bin jq
@@ -313,6 +455,39 @@ should_create_pr() {
   fi
 }
 
+# Check if PR auto-merge is enabled (respects CLI override)
+# Usage: should_auto_merge_pr && merge_pr ...
+should_auto_merge_pr() {
+  # CLI override takes precedence
+  if [ "$GIT_AUTO_MERGE_OVERRIDE" = "true" ]; then
+    return 0
+  elif [ "$GIT_AUTO_MERGE_OVERRIDE" = "false" ]; then
+    return 1
+  fi
+
+  # Fall back to config file
+  if [ "$GIT_LIBRARY_LOADED" = true ] && type get_git_pr_auto_merge >/dev/null 2>&1; then
+    get_git_pr_auto_merge
+  else
+    return 1
+  fi
+}
+
+# Check if rotation is enabled (respects CLI override)
+should_use_rotation() {
+  if [ "$ROTATION_OVERRIDE" = "true" ]; then
+    return 0
+  elif [ "$ROTATION_OVERRIDE" = "false" ]; then
+    return 1
+  fi
+  # Fall back to config file
+  if [ "$ROTATION_LIBRARY_LOADED" = true ] && type is_rotation_enabled >/dev/null 2>&1; then
+    is_rotation_enabled
+  else
+    return 1
+  fi
+}
+
 # Use format_duration from common.sh, or define fallback if not loaded
 if ! type format_duration >/dev/null 2>&1; then
   format_duration() {
@@ -340,10 +515,13 @@ get_current_story() {
   if [ -f "$PRD_FILE" ]; then
     # Use context system if available
     if [ "$CONTEXT_SYSTEM_ENABLED" = true ]; then
-      local ready_tasks=$(get_ready_tasks 2>/dev/null || echo "")
-      if [ -n "$ready_tasks" ]; then
-        echo "$ready_tasks" | head -n 1
-        return
+      local ready_tasks=$(get_ready_tasks 2>/dev/null || echo "[]")
+      if [ "$ready_tasks" != "[]" ] && [ -n "$ready_tasks" ]; then
+        local first_task=$(echo "$ready_tasks" | jq -r '.[0] | "\(.id): \(.title)"' 2>/dev/null)
+        if [ -n "$first_task" ] && [ "$first_task" != "null: null" ]; then
+          echo "$first_task"
+          return
+        fi
       fi
     fi
     
@@ -360,7 +538,7 @@ get_current_story() {
     local ready_story=""
     while IFS= read -r story_json; do
       local story_id=$(echo "$story_json" | jq -r '.id')
-      local blockedBy=$(echo "$story_json" | jq -r '.blockedBy // empty | .[]' 2>/dev/null)
+      local blockedBy=$(echo "$story_json" | jq -r '.blockedBy[]?' 2>/dev/null)
       
       # Check if all dependencies are complete
       local is_ready=true
@@ -412,6 +590,39 @@ check_rate_limit() {
   return 1
 }
 
+rotate_log_if_needed() {
+  local max_mb="${RALPH_LOG_MAX_SIZE_MB:-10}"
+  local retention_days="${RALPH_LOG_RETENTION_DAYS:-14}"
+  local log_file="$LOG_FILE"
+  local logs_dir="$SCRIPT_DIR/logs"
+
+  [ -f "$log_file" ] || return 0
+  [ "$max_mb" -gt 0 ] 2>/dev/null || return 0
+
+  local size_bytes
+  size_bytes=$(wc -c < "$log_file" 2>/dev/null || echo "0")
+  local max_bytes=$((max_mb * 1024 * 1024))
+
+  if [ "$size_bytes" -ge "$max_bytes" ]; then
+    mkdir -p "$logs_dir"
+    local ts
+    ts=$(date '+%Y%m%d-%H%M%S')
+    mv "$log_file" "$logs_dir/ralph_${ts}.log" 2>/dev/null || true
+    touch "$log_file" 2>/dev/null || true
+  fi
+
+  if [ -d "$logs_dir" ]; then
+    find "$logs_dir" -name "*.log" -type f -mtime "+$retention_days" -delete 2>/dev/null || true
+  fi
+}
+
+cleanup_old_logs() {
+  local days="${1:-14}"
+  local logs_dir="$SCRIPT_DIR/logs"
+  [ -d "$logs_dir" ] || return 0
+  find "$logs_dir" -name "*.log" -type f -mtime "+$days" -delete 2>/dev/null || true
+}
+
 check_error() {
   local output="$1"
   if echo "$output" | grep -qi '"is_error":true\|error_during_execution'; then
@@ -437,6 +648,11 @@ print_status() {
   echo -e "${CYAN}├─────────────────────────────────────────────────────────┤${NC}"
   echo -e "${CYAN}│${NC}  📊 Stories: ${GREEN}$progress${NC} complete"
   echo -e "${CYAN}│${NC}  🎯 Current: ${YELLOW}$story${NC}"
+  if [ -n "$ACTIVE_AGENT" ]; then
+    local agent_display="$ACTIVE_AGENT"
+    [ -n "$RALPH_OVERRIDE_MODEL" ] && agent_display="$agent_display ($RALPH_OVERRIDE_MODEL)"
+    echo -e "${CYAN}│${NC}  🤖 Agent: ${CYAN}$agent_display${NC}"
+  fi
   echo -e "${CYAN}│${NC}  ⏱️  Elapsed: ${BLUE}$elapsed${NC}"
   echo -e "${CYAN}└─────────────────────────────────────────────────────────┘${NC}"
   echo ""
@@ -460,6 +676,8 @@ print_iteration_summary() {
     echo -e "${BLUE}→ Iteration $iteration finished${NC} ($duration_str)"
   fi
 }
+
+rotate_log_if_needed
 
 cleanup() {
   if [ -n "$CAFFEINATE_PID" ]; then
@@ -641,7 +859,7 @@ get_agent() {
 }
 
 get_fallback_agent() { yq '.agent.fallback // ""' "$AGENT_CONFIG"; }
-get_claude_model() { yq '.claude-code.model // "claude-sonnet-4-20250514"' "$AGENT_CONFIG"; }
+get_claude_model() { yq '.claude-code.model // "claude-sonnet-4-5-20250929"' "$AGENT_CONFIG"; }
 get_codex_model() { yq '.codex.model // "gpt-4o"' "$AGENT_CONFIG"; }
 get_codex_approval_mode() { yq '.codex.approval-mode // "full-auto"' "$AGENT_CONFIG"; }
 get_codex_sandbox() { yq '.codex.sandbox // "full-access"' "$AGENT_CONFIG"; }
@@ -664,25 +882,69 @@ run_agent() {
 
   log_info "Starting agent: $AGENT (timeout: $TIMEOUT_DISPLAY)" 2>/dev/null || true
 
+  # Determine if dangerous permissions are allowed for this command
+  local USE_DANGEROUS_PERMS=true
+  if [ "$ROTATION_LIBRARY_LOADED" = true ] && type get_command_dangerous_permissions >/dev/null 2>&1; then
+    if ! get_command_dangerous_permissions "$CURRENT_COMMAND"; then
+      USE_DANGEROUS_PERMS=false
+    fi
+  fi
+
   case "$AGENT" in
     claude-code)
       local MODEL=$(get_claude_model)
+      # Override model if RALPH_OVERRIDE_MODEL is set
+      [ -n "$RALPH_OVERRIDE_MODEL" ] && MODEL="$RALPH_OVERRIDE_MODEL"
       echo -e "→ Running ${CYAN}Claude Code${NC} (model: $MODEL, timeout: $TIMEOUT_DISPLAY)"
       [ -z "$CLAUDE_CMD" ] && { echo -e "${RED}Error: Claude CLI not found${NC}"; return 1; }
 
+      # Build Claude flags
+      local CLAUDE_FLAGS=("--print" "--model" "$MODEL")
+      if [ "$USE_DANGEROUS_PERMS" = true ]; then
+        CLAUDE_FLAGS+=("--dangerously-skip-permissions")
+      fi
+
+      # Select system instructions based on command mode
+      local SYS_INSTRUCTIONS="$SCRIPT_DIR/system_instructions/system_instructions.md"
+      local BACKLOG_NAME=$(basename "$PRD_FILE")
+      local FIXES_NOTE=""
+      if [ "$USE_FIXES" = true ]; then
+        FIXES_NOTE=" IMPORTANT: You are in fixes mode. Use fixes.json instead of prd.json for all reads and writes."
+      fi
+      local CLAUDE_PROMPT="Read ${BACKLOG_NAME} and implement the next incomplete story. Follow the system instructions exactly.${FIXES_NOTE}"
+      if [ "$CURRENT_COMMAND" = "review" ] && [ -f "$SCRIPT_DIR/system_instructions/system_instructions_review.md" ]; then
+        SYS_INSTRUCTIONS="$SCRIPT_DIR/system_instructions/system_instructions_review.md"
+        CLAUDE_PROMPT="Review the codebase and produce fix stories. Follow the review system instructions exactly."
+      elif [ "$CURRENT_COMMAND" = "filebug" ] && [ -f "$SCRIPT_DIR/system_instructions/system_instructions_filebug.md" ]; then
+        SYS_INSTRUCTIONS="$SCRIPT_DIR/system_instructions/system_instructions_filebug.md"
+        CLAUDE_PROMPT="Analyze this bug report and produce a fix story. Bug: ${FILEBUG_DESCRIPTION}. ${FILEBUG_FILE:+Related file: $FILEBUG_FILE. }Follow the filebug system instructions exactly."
+      elif [ "$CURRENT_COMMAND" = "change" ] && [ -f "$SCRIPT_DIR/system_instructions/system_instructions_change.md" ]; then
+        SYS_INSTRUCTIONS="$SCRIPT_DIR/system_instructions/system_instructions_change.md"
+        CLAUDE_PROMPT="Apply this change request to ${BACKLOG_NAME}: ${CHANGE_DESCRIPTION}. Follow the change system instructions exactly.${FIXES_NOTE}"
+      fi
+      CLAUDE_FLAGS+=("--system-prompt" "$SYS_INSTRUCTIONS")
+
+      # Use script command to create PTY (prevents output buffering when piped)
+      # macOS: script -q /dev/null command...
+      # Linux: script -q -c "command..." /dev/null
+      local RUN_CMD
+      if [[ "$OSTYPE" == "darwin"* ]]; then
+        RUN_CMD=(script -q /dev/null "$CLAUDE_CMD" "${CLAUDE_FLAGS[@]}" "$CLAUDE_PROMPT")
+      else
+        # Linux script syntax
+        RUN_CMD=(script -q -c "$CLAUDE_CMD ${CLAUDE_FLAGS[*]} '$CLAUDE_PROMPT'" /dev/null)
+      fi
+
       # Run with timeout if run_with_timeout function exists and timeout > 0
       if type run_with_timeout >/dev/null 2>&1 && [ "$AGENT_TIMEOUT" -gt 0 ] 2>/dev/null; then
-        run_with_timeout "$AGENT_TIMEOUT" "$CLAUDE_CMD" --print --dangerously-skip-permissions --model "$MODEL" \
-          --system-prompt "$SCRIPT_DIR/system_instructions/system_instructions.md" \
-          "Read prd.json and implement the next incomplete story. Follow the system instructions exactly."
+        run_with_timeout "$AGENT_TIMEOUT" "${RUN_CMD[@]}"
       else
-        "$CLAUDE_CMD" --print --dangerously-skip-permissions --model "$MODEL" \
-          --system-prompt "$SCRIPT_DIR/system_instructions/system_instructions.md" \
-          "Read prd.json and implement the next incomplete story. Follow the system instructions exactly."
+        "${RUN_CMD[@]}"
       fi
       ;;
     codex)
       local MODEL=$(get_codex_model)
+      [ -n "$RALPH_OVERRIDE_MODEL" ] && MODEL="$RALPH_OVERRIDE_MODEL"
       local APPROVAL=$(get_codex_approval_mode)
       local SANDBOX=$(get_codex_sandbox)
       echo -e "→ Running ${CYAN}Codex${NC} (model: $MODEL, approval: $APPROVAL, sandbox: $SANDBOX, timeout: $TIMEOUT_DISPLAY)"
@@ -704,18 +966,34 @@ run_agent() {
         esac
       fi
 
+      # Construct the prompt for Codex based on command mode
+      local BACKLOG_NAME=$(basename "$PRD_FILE")
+      local FIXES_NOTE=""
+      if [ "$USE_FIXES" = true ]; then
+        FIXES_NOTE=" IMPORTANT: You are in fixes mode. Use fixes.json instead of prd.json for all reads and writes."
+      fi
+      local CODEX_PROMPT="Read ${BACKLOG_NAME} and implement the next incomplete story. Follow system_instructions/system_instructions_codex.md. When all stories complete, output: RALPH_COMPLETE${FIXES_NOTE}"
+      if [ "$CURRENT_COMMAND" = "filebug" ]; then
+        CODEX_PROMPT="Analyze this bug report and produce a fix story. Bug: ${FILEBUG_DESCRIPTION}. ${FILEBUG_FILE:+Related file: $FILEBUG_FILE. }Follow system_instructions/system_instructions_filebug.md exactly."
+      elif [ "$CURRENT_COMMAND" = "change" ]; then
+        CODEX_PROMPT="Apply this change request to ${BACKLOG_NAME}: ${CHANGE_DESCRIPTION}. Follow system_instructions/system_instructions_change.md exactly.${FIXES_NOTE}"
+      elif [ "$CURRENT_COMMAND" = "review" ]; then
+        CODEX_PROMPT="Review the codebase and produce fix stories. Follow system_instructions/system_instructions_review.md exactly."
+      fi
+
       # Run with timeout if run_with_timeout function exists and timeout > 0
       if type run_with_timeout >/dev/null 2>&1 && [ "$AGENT_TIMEOUT" -gt 0 ] 2>/dev/null; then
         run_with_timeout "$AGENT_TIMEOUT" codex exec $CODEX_FLAGS -m "$MODEL" --skip-git-repo-check \
-          "Read prd.json and implement the next incomplete story. Follow system_instructions/system_instructions_codex.md. When all stories complete, output: RALPH_COMPLETE"
+          "$CODEX_PROMPT"
       else
         codex exec $CODEX_FLAGS -m "$MODEL" --skip-git-repo-check \
-          "Read prd.json and implement the next incomplete story. Follow system_instructions/system_instructions_codex.md. When all stories complete, output: RALPH_COMPLETE"
+          "$CODEX_PROMPT"
       fi
       ;;
     github-copilot)
       local TOOL_APPROVAL=$(get_copilot_tool_approval)
       local COPILOT_MODEL=$(get_copilot_model)
+      [ -n "$RALPH_OVERRIDE_MODEL" ] && COPILOT_MODEL="$RALPH_OVERRIDE_MODEL"
       local MODEL_DISPLAY="auto"
       [ "$COPILOT_MODEL" != "auto" ] && MODEL_DISPLAY="$COPILOT_MODEL"
       echo -e "→ Running ${CYAN}GitHub Copilot${NC} (model: $MODEL_DISPLAY, tool-approval: $TOOL_APPROVAL, timeout: $TIMEOUT_DISPLAY)"
@@ -729,8 +1007,8 @@ run_agent() {
         COPILOT_FLAGS+=("--model" "$COPILOT_MODEL")
       fi
       
-      # Add tool approval flags
-      if [ "$TOOL_APPROVAL" = "allow-all" ]; then
+      # Add tool approval flags (respect per-command permissions)
+      if [ "$TOOL_APPROVAL" = "allow-all" ] && [ "$USE_DANGEROUS_PERMS" = true ]; then
         COPILOT_FLAGS+=("--allow-all-tools")
         # Add deny-tools if specified
         local DENY_TOOLS="$(get_copilot_deny_tools)"
@@ -741,8 +1019,20 @@ run_agent() {
         fi
       fi
 
-      # Construct the prompt
-      local PROMPT="Read prd.json and implement the next incomplete story. Follow the instructions in system_instructions/system_instructions_copilot.md exactly. When all stories are complete, output: RALPH_COMPLETE"
+      # Construct the prompt based on command mode
+      local BACKLOG_NAME=$(basename "$PRD_FILE")
+      local FIXES_NOTE=""
+      if [ "$USE_FIXES" = true ]; then
+        FIXES_NOTE=" IMPORTANT: You are in fixes mode. Use fixes.json instead of prd.json for all reads and writes."
+      fi
+      local PROMPT="Read ${BACKLOG_NAME} and implement the next incomplete story. Follow the instructions in system_instructions/system_instructions_copilot.md exactly. When all stories are complete, output: RALPH_COMPLETE${FIXES_NOTE}"
+      if [ "$CURRENT_COMMAND" = "filebug" ]; then
+        PROMPT="Analyze this bug report and produce a fix story. Bug: ${FILEBUG_DESCRIPTION}. ${FILEBUG_FILE:+Related file: $FILEBUG_FILE. }Follow the instructions in system_instructions/system_instructions_filebug.md exactly."
+      elif [ "$CURRENT_COMMAND" = "change" ]; then
+        PROMPT="Apply this change request to ${BACKLOG_NAME}: ${CHANGE_DESCRIPTION}. Follow the instructions in system_instructions/system_instructions_change.md exactly.${FIXES_NOTE}"
+      elif [ "$CURRENT_COMMAND" = "review" ]; then
+        PROMPT="Review the codebase and produce fix stories. Follow the instructions in system_instructions/system_instructions_review.md exactly."
+      fi
 
       # Run with timeout if run_with_timeout function exists and timeout > 0
       if type run_with_timeout >/dev/null 2>&1 && [ "$AGENT_TIMEOUT" -gt 0 ] 2>/dev/null; then
@@ -753,11 +1043,24 @@ run_agent() {
       ;;
     gemini)
       local MODEL=$(get_gemini_model)
+      [ -n "$RALPH_OVERRIDE_MODEL" ] && MODEL="$RALPH_OVERRIDE_MODEL"
       echo -e "→ Running ${CYAN}Gemini${NC} (model: $MODEL, timeout: $TIMEOUT_DISPLAY)"
       command -v gemini >/dev/null 2>&1 || { echo -e "${RED}Error: Gemini CLI not found${NC}"; echo -e "${YELLOW}Install: npm install -g @anthropic/gemini-cli or pip install google-generativeai${NC}"; return 1; }
 
-      # Construct the prompt for Gemini
-      local PROMPT="Read prd.json and implement the next incomplete story. Follow the instructions in system_instructions/system_instructions.md exactly. When all stories are complete, output: RALPH_COMPLETE"
+      # Construct the prompt for Gemini based on command mode
+      local BACKLOG_NAME=$(basename "$PRD_FILE")
+      local FIXES_NOTE=""
+      if [ "$USE_FIXES" = true ]; then
+        FIXES_NOTE=" IMPORTANT: You are in fixes mode. Use fixes.json instead of prd.json for all reads and writes."
+      fi
+      local PROMPT="Read ${BACKLOG_NAME} and implement the next incomplete story. Follow the instructions in system_instructions/system_instructions.md exactly. When all stories are complete, output: RALPH_COMPLETE${FIXES_NOTE}"
+      if [ "$CURRENT_COMMAND" = "filebug" ]; then
+        PROMPT="Analyze this bug report and produce a fix story. Bug: ${FILEBUG_DESCRIPTION}. ${FILEBUG_FILE:+Related file: $FILEBUG_FILE. }Follow the instructions in system_instructions/system_instructions_filebug.md exactly."
+      elif [ "$CURRENT_COMMAND" = "change" ]; then
+        PROMPT="Apply this change request to ${BACKLOG_NAME}: ${CHANGE_DESCRIPTION}. Follow the instructions in system_instructions/system_instructions_change.md exactly.${FIXES_NOTE}"
+      elif [ "$CURRENT_COMMAND" = "review" ]; then
+        PROMPT="Review the codebase and produce fix stories. Follow the instructions in system_instructions/system_instructions_review.md exactly."
+      fi
 
       # Run with timeout if run_with_timeout function exists and timeout > 0
       if type run_with_timeout >/dev/null 2>&1 && [ "$AGENT_TIMEOUT" -gt 0 ] 2>/dev/null; then
@@ -861,6 +1164,11 @@ if [ -f "$PRD_FILE" ] && [ -f "$LAST_BRANCH_FILE" ]; then
     echo "# Ralph Progress Log" > "$PROGRESS_FILE"
     echo "Started: $(date)" >> "$PROGRESS_FILE"
     echo "---" >> "$PROGRESS_FILE"
+    # Reset rotation state for new PRD - start fresh with primary agent
+    if [ -f "$SCRIPT_DIR/.ralph/rotation-state.json" ]; then
+      echo -e "${CYAN}Resetting rotation state for new PRD${NC}"
+      rm -f "$SCRIPT_DIR/.ralph/rotation-state.json"
+    fi
   fi
 fi
 
@@ -929,14 +1237,417 @@ if [ "$GIT_LIBRARY_LOADED" = true ] && [ -n "$BRANCH_NAME" ]; then
       validate_git_remote || true
     fi
 
-    # Ensure we're on the feature branch
+    # Ensure we're on the feature branch (CRITICAL - must succeed)
     if ! ensure_feature_branch "$BRANCH_NAME"; then
-      echo -e "${YELLOW}Warning: Could not setup feature branch, continuing anyway${NC}"
+      echo -e "${RED}✗ Failed to switch to feature branch: ${BRANCH_NAME}${NC}"
+      echo -e "${YELLOW}This is required for proper git workflow. Please resolve manually:${NC}"
+      echo -e "${YELLOW}  1. Commit or stash your changes: git stash${NC}"
+      echo -e "${YELLOW}  2. Switch to feature branch: git checkout ${BRANCH_NAME}${NC}"
+      echo -e "${YELLOW}  3. Re-run Ralph${NC}"
+      cleanup
+      exit 1
     else
       echo -e "${GREEN}✓ On branch: ${BRANCH_NAME}${NC}"
     fi
     echo ""
   fi
+fi
+
+# ---- Handle Subcommands (status, review) --------------------------
+
+if [ "$CURRENT_COMMAND" = "status" ]; then
+  # Status subcommand: display project info, story progress, rotation state
+  echo ""
+  echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "${CYAN}  Ralph Status${NC}"
+  echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+
+  if [ -f "$PRD_FILE" ]; then
+    local_project=$(jq -r '.project // "Unknown"' "$PRD_FILE" 2>/dev/null)
+    local_branch=$(jq -r '.branchName // "N/A"' "$PRD_FILE" 2>/dev/null)
+    echo -e "Project: ${YELLOW}$local_project${NC}"
+    echo -e "Branch: ${CYAN}$local_branch${NC}"
+  else
+    echo -e "${YELLOW}No prd.json found${NC}"
+  fi
+
+  # Show current agent/model
+  if should_use_rotation && [ "$ROTATION_LIBRARY_LOADED" = true ]; then
+    local_selection=$(select_agent_and_model "" "$CURRENT_COMMAND" 2>/dev/null)
+    local_agent=$(echo "$local_selection" | cut -d'|' -f1)
+    local_model=$(echo "$local_selection" | cut -d'|' -f2)
+    echo -e "Agent: ${CYAN}$local_agent${NC} (model: ${CYAN}${local_model:-default}${NC})"
+  else
+    local_agent=$(get_agent 2>/dev/null || echo "unknown")
+    echo -e "Agent: ${CYAN}$local_agent${NC}"
+  fi
+
+  echo ""
+
+  # Story progress
+  if [ -f "$PRD_FILE" ]; then
+    local_total=$(jq '.userStories | length' "$PRD_FILE" 2>/dev/null || echo "0")
+    local_complete=$(jq '[.userStories[] | select(.passes == true)] | length' "$PRD_FILE" 2>/dev/null || echo "0")
+    local_pct=0
+    [ "$local_total" -gt 0 ] && local_pct=$(( (local_complete * 100) / local_total ))
+    echo -e "Stories: ${GREEN}$local_complete${NC}/${YELLOW}$local_total${NC} complete (${local_pct}%)"
+
+    # List each story with status
+    jq -r '.userStories[] | "\(.passes)|\(.id)|\(.title)|\(.blockedBy // [] | join(","))"' "$PRD_FILE" 2>/dev/null | while IFS='|' read -r passes sid stitle blocked; do
+      if [ "$passes" = "true" ]; then
+        echo -e "  ${GREEN}✓${NC} $sid: $stitle"
+      elif [ -n "$blocked" ]; then
+        echo -e "  ${RED}○${NC} $sid: $stitle ${YELLOW}(blocked by $blocked)${NC}"
+      else
+        echo -e "  ${BLUE}○${NC} $sid: $stitle ${GREEN}(ready)${NC}"
+      fi
+    done
+  fi
+
+  echo ""
+
+  # Rotation status
+  if [ "$ROTATION_LIBRARY_LOADED" = true ] && should_use_rotation; then
+    print_rotation_status
+  else
+    echo -e "Rotation: ${YELLOW}disabled${NC}"
+  fi
+
+  # Last iteration time (check log file modification time)
+  if [ -f "$LOG_FILE" ]; then
+    local_log_mtime=$(stat -f "%m" "$LOG_FILE" 2>/dev/null || stat -c "%Y" "$LOG_FILE" 2>/dev/null || echo "0")
+    local_now=$(date +%s)
+    local_ago=$((local_now - local_log_mtime))
+    if [ "$local_ago" -gt 0 ] && [ "$local_ago" -lt 86400 ]; then
+      echo -e "Last activity: ${BLUE}$(format_duration $local_ago)${NC} ago"
+    fi
+  fi
+
+  echo ""
+  exit 0
+fi
+
+# ---- Review Subcommand --------------------------------------------
+
+if [ "$CURRENT_COMMAND" = "review" ]; then
+  echo ""
+  echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "${CYAN}  Ralph Review${NC}"
+  echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+
+  # Select agent for review (uses commands.review config)
+  export RALPH_OVERRIDE_MODEL=""
+  if should_use_rotation && [ "$ROTATION_LIBRARY_LOADED" = true ]; then
+    SELECTION=$(select_agent_and_model "" "review")
+    REVIEW_AGENT=$(echo "$SELECTION" | cut -d'|' -f1)
+    RALPH_OVERRIDE_MODEL=$(echo "$SELECTION" | cut -d'|' -f2)
+  else
+    REVIEW_AGENT=$(get_agent 2>/dev/null || echo "claude-code")
+  fi
+
+  # Verify agent is available
+  if ! check_agent_available "$REVIEW_AGENT"; then
+    echo -e "${RED}Review agent $REVIEW_AGENT not available${NC}"
+    exit 1
+  fi
+
+  echo -e "Review agent: ${CYAN}$REVIEW_AGENT${NC} (model: ${CYAN}${RALPH_OVERRIDE_MODEL:-default}${NC})"
+  echo ""
+
+  # Run the review agent
+  set +e
+  REVIEW_OUTPUT=$(run_agent "$REVIEW_AGENT" 2>&1 | tee /dev/stderr)
+  REVIEW_STATUS=$?
+  set -e
+
+  if [ $REVIEW_STATUS -ne 0 ]; then
+    echo -e "${RED}Review agent failed with exit code $REVIEW_STATUS${NC}"
+    exit 1
+  fi
+
+  # Parse fixes from output (between RALPH_FIXES_START and RALPH_FIXES_END markers)
+  FIXES_JSON=$(echo "$REVIEW_OUTPUT" | sed -n '/RALPH_FIXES_START/,/RALPH_FIXES_END/p' | sed '1d;$d')
+
+  if [ -z "$FIXES_JSON" ]; then
+    echo -e "${YELLOW}No fix stories found in review output${NC}"
+    echo -e "${YELLOW}The review agent did not produce structured fixes.${NC}"
+    exit 0
+  fi
+
+  # Validate the extracted JSON
+  if ! echo "$FIXES_JSON" | jq empty 2>/dev/null; then
+    echo -e "${RED}Error: Review output contains invalid JSON${NC}"
+    echo "$FIXES_JSON" | head -5
+    exit 1
+  fi
+
+  # Get fix count
+  FIX_COUNT=$(echo "$FIXES_JSON" | jq '.fixes | length' 2>/dev/null || echo "0")
+
+  if [ "$FIX_COUNT" -eq 0 ]; then
+    echo -e "${GREEN}No issues found! Codebase looks good.${NC}"
+    exit 0
+  fi
+
+  # Build fixes.json with project metadata
+  FIXES_PROJECT=$(jq -r '.project // "Unknown"' "$SCRIPT_DIR/prd.json" 2>/dev/null || echo "Unknown")
+  FIXES_BRANCH=$(jq -r '.branchName // "unknown"' "$SCRIPT_DIR/prd.json" 2>/dev/null || echo "unknown")
+
+  echo "$FIXES_JSON" | jq --arg project "$FIXES_PROJECT" --arg branch "$FIXES_BRANCH" '
+    {
+      project: $project,
+      branchName: $branch,
+      userStories: [.fixes[] | . + {passes: false, blockedBy: []}]
+    }
+  ' > "$FIXES_FILE"
+
+  echo ""
+  echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "${GREEN}  Review complete: $FIX_COUNT fix(es) found${NC}"
+  echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "Fixes saved to: ${BLUE}$FIXES_FILE${NC}"
+  echo -e "Run fixes with: ${YELLOW}./ralph.sh --fixes${NC}"
+  echo ""
+
+  # List the fixes
+  jq -r '.userStories[] | "  \(.priority). [\(.id)] \(.title)"' "$FIXES_FILE" 2>/dev/null
+
+  exit 0
+fi
+
+# ---- Filebug Subcommand -------------------------------------------
+
+if [ "$CURRENT_COMMAND" = "filebug" ]; then
+  echo ""
+  echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "${CYAN}  Ralph Filebug${NC}"
+  echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+
+  # Validate bug description is not empty
+  if [ -z "$FILEBUG_DESCRIPTION" ]; then
+    echo -e "${RED}Error: Bug description is required${NC}"
+    echo -e "Usage: ${YELLOW}./ralph.sh filebug \"description of the bug\"${NC}"
+    echo -e "       ${YELLOW}./ralph.sh filebug --file src/auth.ts \"Login redirect broken\"${NC}"
+    exit 1
+  fi
+
+  echo -e "Bug: ${YELLOW}$FILEBUG_DESCRIPTION${NC}"
+  [ -n "$FILEBUG_FILE" ] && echo -e "File: ${CYAN}$FILEBUG_FILE${NC}"
+  echo ""
+
+  # Determine next FIX-NNN ID from existing fixes.json
+  NEXT_FIX_ID="FIX-001"
+  if [ -f "$FIXES_FILE" ]; then
+    HIGHEST_FIX=$(jq -r '.userStories[].id' "$FIXES_FILE" 2>/dev/null | grep -o '[0-9]*' | sort -n | tail -1)
+    if [ -n "$HIGHEST_FIX" ]; then
+      NEXT_FIX_NUM=$((HIGHEST_FIX + 1))
+      NEXT_FIX_ID=$(printf "FIX-%03d" "$NEXT_FIX_NUM")
+    fi
+  fi
+  echo -e "Next fix ID: ${CYAN}$NEXT_FIX_ID${NC}"
+
+  # Append next ID info to the description for the agent
+  FILEBUG_DESCRIPTION="${FILEBUG_DESCRIPTION} Use fix ID: ${NEXT_FIX_ID}."
+
+  # Select agent for filebug (uses commands.filebug config)
+  export RALPH_OVERRIDE_MODEL=""
+  if should_use_rotation && [ "$ROTATION_LIBRARY_LOADED" = true ]; then
+    SELECTION=$(select_agent_and_model "" "filebug")
+    FILEBUG_AGENT=$(echo "$SELECTION" | cut -d'|' -f1)
+    RALPH_OVERRIDE_MODEL=$(echo "$SELECTION" | cut -d'|' -f2)
+  else
+    FILEBUG_AGENT=$(get_agent 2>/dev/null || echo "claude-code")
+  fi
+
+  # Verify agent is available
+  if ! check_agent_available "$FILEBUG_AGENT"; then
+    echo -e "${RED}Filebug agent $FILEBUG_AGENT not available${NC}"
+    exit 1
+  fi
+
+  echo -e "Agent: ${CYAN}$FILEBUG_AGENT${NC} (model: ${CYAN}${RALPH_OVERRIDE_MODEL:-default}${NC})"
+  echo ""
+
+  # Run the filebug agent
+  ACTIVE_AGENT="$FILEBUG_AGENT"
+  set +e
+  FILEBUG_OUTPUT=$(run_agent "$FILEBUG_AGENT" 2>&1 | tee /dev/stderr)
+  FILEBUG_STATUS=$?
+  set -e
+
+  if [ $FILEBUG_STATUS -ne 0 ]; then
+    echo -e "${RED}Filebug agent failed with exit code $FILEBUG_STATUS${NC}"
+    exit 1
+  fi
+
+  # Parse fix story from output (between RALPH_FIX_START and RALPH_FIX_END markers)
+  FIX_JSON=$(echo "$FILEBUG_OUTPUT" | sed -n '/RALPH_FIX_START/,/RALPH_FIX_END/p' | sed '1d;$d')
+
+  if [ -z "$FIX_JSON" ]; then
+    echo -e "${YELLOW}No fix story found in agent output${NC}"
+    echo -e "${YELLOW}The agent did not produce a structured fix story.${NC}"
+    exit 1
+  fi
+
+  # Validate the extracted JSON
+  if ! echo "$FIX_JSON" | jq empty 2>/dev/null; then
+    echo -e "${RED}Error: Agent output contains invalid JSON${NC}"
+    echo "$FIX_JSON" | head -5
+    exit 1
+  fi
+
+  # Build or append to fixes.json
+  FIXES_PROJECT=$(jq -r '.project // "Unknown"' "$SCRIPT_DIR/prd.json" 2>/dev/null || echo "Unknown")
+  FIXES_BRANCH=$(jq -r '.branchName // "unknown"' "$SCRIPT_DIR/prd.json" 2>/dev/null || echo "unknown")
+
+  # Add passes: false and blockedBy: [] to the fix story
+  FIX_STORY=$(echo "$FIX_JSON" | jq '. + {passes: false, blockedBy: []}')
+
+  if [ -f "$FIXES_FILE" ] && jq empty "$FIXES_FILE" 2>/dev/null; then
+    # Append to existing fixes.json
+    jq --argjson fix "$FIX_STORY" '.userStories += [$fix]' "$FIXES_FILE" > "${FIXES_FILE}.tmp" && mv "${FIXES_FILE}.tmp" "$FIXES_FILE"
+  else
+    # Create new fixes.json
+    jq -n --arg project "$FIXES_PROJECT" --arg branch "$FIXES_BRANCH" --argjson fix "$FIX_STORY" '
+      {
+        project: $project,
+        branchName: $branch,
+        userStories: [$fix]
+      }
+    ' > "$FIXES_FILE"
+  fi
+
+  # Validate resulting JSON
+  if ! jq empty "$FIXES_FILE" 2>/dev/null; then
+    echo -e "${RED}Error: Resulting fixes.json is invalid${NC}"
+    exit 1
+  fi
+
+  FIX_TITLE=$(echo "$FIX_STORY" | jq -r '.title // "Untitled"')
+  FIX_ID=$(echo "$FIX_STORY" | jq -r '.id // "FIX-???"')
+  FIX_PRIORITY=$(echo "$FIX_STORY" | jq -r '.priority // "?"')
+
+  echo ""
+  echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "${GREEN}  Bug filed: [$FIX_ID] $FIX_TITLE (priority: $FIX_PRIORITY)${NC}"
+  echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "Fixes saved to: ${BLUE}$FIXES_FILE${NC}"
+  echo -e "Run fixes with: ${YELLOW}./ralph.sh --fixes${NC}"
+  echo ""
+
+  # List all fixes
+  jq -r '.userStories[] | "  \(.priority). [\(.id)] \(.title)"' "$FIXES_FILE" 2>/dev/null
+
+  exit 0
+fi
+
+# ---- Change Subcommand --------------------------------------------
+
+if [ "$CURRENT_COMMAND" = "change" ]; then
+  echo ""
+  echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "${CYAN}  Ralph Change Request${NC}"
+  echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+
+  # Validate change description is not empty
+  if [ -z "$CHANGE_DESCRIPTION" ]; then
+    echo -e "${RED}Error: Change description is required${NC}"
+    echo -e "Usage: ${YELLOW}./ralph.sh change \"Add pagination to the user list endpoint\"${NC}"
+    echo -e "       ${YELLOW}./ralph.sh change \"Remove the export feature\"${NC}"
+    echo -e "       ${YELLOW}./ralph.sh change \"Update US-003 to handle edge case\"${NC}"
+    exit 1
+  fi
+
+  # Validate PRD exists
+  if [ ! -f "$SCRIPT_DIR/prd.json" ]; then
+    echo -e "${RED}Error: prd.json not found — nothing to change${NC}"
+    exit 1
+  fi
+
+  echo -e "Change: ${YELLOW}$CHANGE_DESCRIPTION${NC}"
+  echo ""
+
+  # Backup prd.json before making changes
+  CHANGE_BACKUP_DIR="$SCRIPT_DIR/.ralph-backup/$(date +%Y%m%d-%H%M%S)"
+  mkdir -p "$CHANGE_BACKUP_DIR"
+  cp "$SCRIPT_DIR/prd.json" "$CHANGE_BACKUP_DIR/prd.json"
+  echo -e "Backup: ${CYAN}$CHANGE_BACKUP_DIR/prd.json${NC}"
+
+  # Select agent for change (uses commands.change config)
+  export RALPH_OVERRIDE_MODEL=""
+  if should_use_rotation && [ "$ROTATION_LIBRARY_LOADED" = true ]; then
+    SELECTION=$(select_agent_and_model "" "change")
+    CHANGE_AGENT=$(echo "$SELECTION" | cut -d'|' -f1)
+    RALPH_OVERRIDE_MODEL=$(echo "$SELECTION" | cut -d'|' -f2)
+  else
+    CHANGE_AGENT=$(get_agent 2>/dev/null || echo "claude-code")
+  fi
+
+  # Verify agent is available
+  if ! check_agent_available "$CHANGE_AGENT"; then
+    echo -e "${RED}Change agent $CHANGE_AGENT not available${NC}"
+    exit 1
+  fi
+
+  echo -e "Agent: ${CYAN}$CHANGE_AGENT${NC} (model: ${CYAN}${RALPH_OVERRIDE_MODEL:-default}${NC})"
+  echo ""
+
+  # Run the change agent (agent modifies prd.json directly)
+  ACTIVE_AGENT="$CHANGE_AGENT"
+  set +e
+  CHANGE_OUTPUT=$(run_agent "$CHANGE_AGENT" 2>&1 | tee /dev/stderr)
+  CHANGE_STATUS=$?
+  set -e
+
+  if [ $CHANGE_STATUS -ne 0 ]; then
+    echo -e "${RED}Change agent failed with exit code $CHANGE_STATUS${NC}"
+    echo -e "${YELLOW}Restoring prd.json from backup...${NC}"
+    cp "$CHANGE_BACKUP_DIR/prd.json" "$SCRIPT_DIR/prd.json"
+    echo -e "${GREEN}prd.json restored${NC}"
+    exit 1
+  fi
+
+  # Post-validation: validate the resulting prd.json
+  if type validate_prd_json >/dev/null 2>&1; then
+    if ! validate_prd_json "$SCRIPT_DIR/prd.json"; then
+      echo -e "${RED}Error: Agent produced invalid prd.json${NC}"
+      echo -e "${YELLOW}Restoring prd.json from backup...${NC}"
+      cp "$CHANGE_BACKUP_DIR/prd.json" "$SCRIPT_DIR/prd.json"
+      echo -e "${GREEN}prd.json restored${NC}"
+      exit 1
+    fi
+  fi
+
+  # Show summary of changes
+  STORIES_BEFORE_CHANGE=$(jq '.userStories | length' "$CHANGE_BACKUP_DIR/prd.json" 2>/dev/null || echo "0")
+  STORIES_AFTER_CHANGE=$(jq '.userStories | length' "$SCRIPT_DIR/prd.json" 2>/dev/null || echo "0")
+  REMOVED_COUNT=$(jq '[.userStories[] | select(.status == "removed")] | length' "$SCRIPT_DIR/prd.json" 2>/dev/null || echo "0")
+  CHANGE_REQUESTS=$(jq '.changeRequests | length // 0' "$SCRIPT_DIR/prd.json" 2>/dev/null || echo "0")
+
+  echo ""
+  echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "${GREEN}  Change request applied${NC}"
+  echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "Stories: ${YELLOW}$STORIES_BEFORE_CHANGE${NC} → ${GREEN}$STORIES_AFTER_CHANGE${NC} (${RED}$REMOVED_COUNT removed${NC})"
+  echo -e "Change requests logged: ${CYAN}$CHANGE_REQUESTS${NC}"
+  echo -e "Backup: ${CYAN}$CHANGE_BACKUP_DIR/prd.json${NC}"
+  echo ""
+
+  # List updated story list
+  jq -r '.userStories[] | "\(.passes)|\(.id)|\(.title)|\(.status // "")"' "$SCRIPT_DIR/prd.json" 2>/dev/null | while IFS='|' read -r passes sid stitle sstatus; do
+    if [ "$sstatus" = "removed" ]; then
+      echo -e "  ${RED}✗${NC} $sid: $stitle ${RED}(removed)${NC}"
+    elif [ "$passes" = "true" ]; then
+      echo -e "  ${GREEN}✓${NC} $sid: $stitle"
+    else
+      echo -e "  ${BLUE}○${NC} $sid: $stitle"
+    fi
+  done
+
+  echo ""
+  echo -e "Continue building with: ${YELLOW}./ralph.sh${NC}"
+
+  exit 0
 fi
 
 # ---- Main loop ----------------------------------------------------
@@ -962,6 +1673,11 @@ else
   echo -e "Agent timeout: ${YELLOW}no timeout${NC}"
 fi
 [ "$VERBOSE" = true ] && echo -e "Verbose mode: ${GREEN}enabled${NC}"
+if should_use_rotation; then
+  echo -e "Rotation: ${GREEN}enabled${NC} (threshold: $(get_failure_threshold 2>/dev/null || echo 2), cooldown: $(get_rate_limit_cooldown 2>/dev/null || echo 300)s)"
+else
+  echo -e "Rotation: ${YELLOW}disabled${NC}"
+fi
 echo -e "Log file: ${BLUE}$LOG_FILE${NC}"
 echo -e "Started at: ${BLUE}$(date '+%Y-%m-%d %H:%M:%S')${NC}"
 # Show git workflow status
@@ -975,6 +1691,9 @@ if [ -n "$BRANCH_NAME" ]; then
   fi
   if should_create_pr; then
     echo -e "Auto-PR: ${GREEN}enabled${NC}"
+    if should_auto_merge_pr; then
+      echo -e "Auto-merge: ${GREEN}enabled${NC}"
+    fi
   else
     echo -e "Auto-PR: ${YELLOW}disabled${NC}"
   fi
@@ -982,15 +1701,33 @@ fi
 
 start_sleep_prevention
 
+# Initialize rotation state if rotation is enabled
+if should_use_rotation && [ "$ROTATION_LIBRARY_LOADED" = true ]; then
+  init_rotation_state
+fi
+
+# Clean up stale branches from previous runs (merged sub-branches)
+if [ "$GIT_LIBRARY_LOADED" = true ] && [ -n "$BRANCH_NAME" ]; then
+  cleanup_merged_branches
+fi
+
 for i in $(seq 1 "$MAX_ITERATIONS"); do
   ITERATION_START=$(date +%s)
 
   # Ensure we're on the feature branch and pull latest before each iteration
   if [ "$GIT_LIBRARY_LOADED" = true ] && [ -n "$BRANCH_NAME" ]; then
     if get_git_auto_checkout_branch 2>/dev/null; then
-      git checkout "$BRANCH_NAME" 2>/dev/null || true
-      git pull origin "$BRANCH_NAME" 2>/dev/null || true
+      GIT_TERMINAL_PROMPT=0 git checkout "$BRANCH_NAME" 2>/dev/null || true
+      # Only pull if we're behind origin, not ahead; use GIT_TERMINAL_PROMPT=0 to prevent hanging on auth
+      if git rev-list --count HEAD..origin/"$BRANCH_NAME" 2>/dev/null | grep -q '^[1-9]'; then
+        GIT_TERMINAL_PROMPT=0 git pull --no-edit origin "$BRANCH_NAME" 2>/dev/null || true
+      fi
     fi
+  fi
+
+  # Sync context system from PRD (captures agent's prd.json updates from previous iteration)
+  if [ "$CONTEXT_SYSTEM_ENABLED" = true ] && [ -f "$PRD_FILE" ]; then
+    import_prd "$PRD_FILE" 2>/dev/null || true
   fi
 
   # Run pre-iteration compaction if enabled
@@ -1002,6 +1739,12 @@ for i in $(seq 1 "$MAX_ITERATIONS"); do
   if [ "$CHECKPOINTING_ENABLED" = true ] && [ $((i % 5)) -eq 1 ]; then
     clean_old_checkpoints 2>/dev/null || true
   fi
+  if [ "$REPL_LIBRARY_LOADED" = true ] && [ $((i % 5)) -eq 1 ]; then
+    cleanup_old_repl "${RALPH_REPL_RETENTION_DAYS:-1}" 2>/dev/null || true
+  fi
+  if [ $((i % 5)) -eq 1 ]; then
+    cleanup_old_logs "${RALPH_LOG_RETENTION_DAYS:-14}" 2>/dev/null || true
+  fi
 
   # Get current task details for REPL integration
   TASK_DETAILS=$(get_current_task_details)
@@ -1009,70 +1752,170 @@ for i in $(seq 1 "$MAX_ITERATIONS"); do
   CURRENT_TASK_DESC=$(echo "$TASK_DETAILS" | cut -d'|' -f2)
   CURRENT_AC_COUNT=$(echo "$TASK_DETAILS" | cut -d'|' -f3)
 
+  # Select agent and model (rotation-aware or static)
+  ACTIVE_AGENT="$PRIMARY_AGENT"
+  export RALPH_OVERRIDE_MODEL=""
+  if should_use_rotation && [ "$ROTATION_LIBRARY_LOADED" = true ]; then
+    SELECTION=$(select_agent_and_model "$CURRENT_TASK_ID" "$CURRENT_COMMAND")
+    ACTIVE_AGENT=$(echo "$SELECTION" | cut -d'|' -f1)
+    RALPH_OVERRIDE_MODEL=$(echo "$SELECTION" | cut -d'|' -f2)
+    # Verify selected agent is available
+    if ! check_agent_available "$ACTIVE_AGENT"; then
+      log_warn "Selected agent $ACTIVE_AGENT not available, rotating" 2>/dev/null || true
+      rotate_agent "$CURRENT_COMMAND" 2>/dev/null || true
+      SELECTION=$(select_agent_and_model "$CURRENT_TASK_ID" "$CURRENT_COMMAND")
+      ACTIVE_AGENT=$(echo "$SELECTION" | cut -d'|' -f1)
+      RALPH_OVERRIDE_MODEL=$(echo "$SELECTION" | cut -d'|' -f2)
+    fi
+  fi
+
+  # Track story progress before agent runs (for auto-commit detection)
+  STORIES_BEFORE=$(jq '[.userStories[] | select(.passes == true)] | length' "$PRD_FILE" 2>/dev/null || echo "0")
+
   print_status $i $MAX_ITERATIONS
 
   set +e
   # Use REPL-aware runner if we have task details
+  # Use temp file to capture output while displaying in real-time
+  TEMP_OUTPUT=$(mktemp)
+  trap "rm -f '$TEMP_OUTPUT'" EXIT
+
+  # Run agent and capture output to file while streaming to terminal
+  # The | cat at the end helps with buffering on some systems
   if [ -n "$CURRENT_TASK_ID" ] && [ "$REPL_LIBRARY_LOADED" = true ]; then
-    OUTPUT=$(run_agent_with_repl "$PRIMARY_AGENT" "$CURRENT_TASK_ID" "$CURRENT_TASK_DESC" "$CURRENT_AC_COUNT" 2>&1 | tee /dev/stderr)
+    run_agent_with_repl "$ACTIVE_AGENT" "$CURRENT_TASK_ID" "$CURRENT_TASK_DESC" "$CURRENT_AC_COUNT" 2>&1 | tee "$TEMP_OUTPUT"
   else
-    OUTPUT=$(run_agent "$PRIMARY_AGENT" 2>&1 | tee /dev/stderr)
+    run_agent "$ACTIVE_AGENT" 2>&1 | tee "$TEMP_OUTPUT"
   fi
-  STATUS=$?
+  STATUS=${PIPESTATUS[0]}
+  OUTPUT=$(cat "$TEMP_OUTPUT" 2>/dev/null || echo "")
+  rm -f "$TEMP_OUTPUT"
   set -e
 
-  if check_rate_limit "$OUTPUT"; then
-    print_iteration_summary $i 0 "rate_limited"
-    echo -e "\n${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${RED}  ⚠ Rate limit hit - Ralph stopping${NC}"
-    echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
-    echo -e "Resume later with: ${YELLOW}./ralph.sh $((MAX_ITERATIONS - i + 1))${NC}"
-    exit 1
+  # Parse usage metrics from output
+  if [ "$ROTATION_LIBRARY_LOADED" = true ] && should_use_rotation; then
+    parse_usage_from_output "$ACTIVE_AGENT" "$OUTPUT" 2>/dev/null || true
   fi
 
-  if [ $STATUS -ne 0 ] && [ -n "$FALLBACK_AGENT" ]; then
-    echo -e "${YELLOW}Primary agent failed — trying $FALLBACK_AGENT${NC}"
-    set +e
-    OUTPUT=$(run_agent "$FALLBACK_AGENT" 2>&1 | tee /dev/stderr)
-    STATUS=$?
-    set -e
-    check_rate_limit "$OUTPUT" && { echo -e "${RED}⚠ Rate limit on fallback${NC}"; exit 1; }
+  # Handle rate limits
+  RATE_LIMITED=false
+  if check_rate_limit "$OUTPUT" || { [ "$ROTATION_LIBRARY_LOADED" = true ] && check_rate_limit_extended "$ACTIVE_AGENT" "$OUTPUT"; }; then
+    RATE_LIMITED=true
+    if should_use_rotation && [ "$ROTATION_LIBRARY_LOADED" = true ]; then
+      # Rotation enabled: record rate limit, rotate, and continue
+      # Note: || true prevents set -e from exiting on rotation function failures
+      record_rate_limit "$ACTIVE_AGENT" 2>/dev/null || true
+      update_rotation_state "$CURRENT_TASK_ID" "$ACTIVE_AGENT" "$RALPH_OVERRIDE_MODEL" "rate_limit" 2>/dev/null || true
+      echo -e "${YELLOW}⚠ Rate limit hit on $ACTIVE_AGENT — rotating to next agent${NC}"
+      set +e
+      rotate_agent "$CURRENT_COMMAND" 2>/dev/null
+      ROTATE_RESULT=$?
+      set -e
+      if [ $ROTATE_RESULT -eq 2 ]; then
+        # All agents exhausted
+        echo -e "${RED}All agents exhausted after rate limits. Waiting for cooldown...${NC}"
+        local_cooldown=$(get_rate_limit_cooldown)
+        echo -e "Sleeping ${YELLOW}${local_cooldown}s${NC} for cooldown..."
+        sleep "$local_cooldown"
+      fi
+      # Continue to next iteration instead of exiting
+      sleep 2
+      continue
+    else
+      # No rotation: exit as before
+      print_iteration_summary $i 0 "rate_limited"
+      echo -e "\n${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+      echo -e "${RED}  ⚠ Rate limit hit - Ralph stopping${NC}"
+      echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
+      echo -e "Resume later with: ${YELLOW}./ralph.sh $((MAX_ITERATIONS - i + 1))${NC}"
+      exit 1
+    fi
+  fi
+
+  # Handle failures
+  if [ $STATUS -ne 0 ]; then
+    if should_use_rotation && [ "$ROTATION_LIBRARY_LOADED" = true ]; then
+      # Rotation enabled: track failure, possibly rotate
+      # Note: || true prevents set -e from exiting on rotation function failures
+      update_rotation_state "$CURRENT_TASK_ID" "$ACTIVE_AGENT" "$RALPH_OVERRIDE_MODEL" "failure" 2>/dev/null || true
+      if should_rotate "$CURRENT_TASK_ID" "$ACTIVE_AGENT" "$RALPH_OVERRIDE_MODEL" 2>/dev/null; then
+        echo -e "${YELLOW}Failure threshold reached for $ACTIVE_AGENT ($RALPH_OVERRIDE_MODEL) — rotating${NC}"
+        rotate_model "$ACTIVE_AGENT" "$CURRENT_COMMAND" 2>/dev/null || true
+      fi
+      # Continue to next iteration (retry with rotated model/agent)
+      sleep 2
+      continue
+    elif [ -n "$FALLBACK_AGENT" ]; then
+      # Legacy fallback behavior
+      echo -e "${YELLOW}Primary agent failed — trying $FALLBACK_AGENT${NC}"
+      set +e
+      OUTPUT=$(run_agent "$FALLBACK_AGENT" 2>&1 | tee /dev/stderr)
+      STATUS=$?
+      set -e
+      check_rate_limit "$OUTPUT" && { echo -e "${RED}⚠ Rate limit on fallback${NC}"; exit 1; }
+    fi
+  else
+    # Success: update rotation state
+    if should_use_rotation && [ "$ROTATION_LIBRARY_LOADED" = true ] && [ -n "$CURRENT_TASK_ID" ]; then
+      update_rotation_state "$CURRENT_TASK_ID" "$ACTIVE_AGENT" "$RALPH_OVERRIDE_MODEL" "success" 2>/dev/null || true
+      reset_story_state "$CURRENT_TASK_ID" 2>/dev/null || true
+    fi
   fi
 
   ITERATION_END=$(date +%s)
   ITERATION_DURATION=$((ITERATION_END - ITERATION_START))
 
   # ---- Post-iteration Git Workflow ----
-  # Check for story sub-branch, merge it to feature branch, optionally push
-  if [ "$GIT_LIBRARY_LOADED" = true ] && [ -n "$BRANCH_NAME" ] && [ -n "$CURRENT_TASK_ID" ]; then
-    STORY_BRANCH=$(get_story_branch_name "$BRANCH_NAME" "$CURRENT_TASK_ID" 2>/dev/null || echo "")
+  # Verify we're still on the feature branch; push if enabled
+  if [ "$GIT_LIBRARY_LOADED" = true ] && [ -n "$BRANCH_NAME" ]; then
+    CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "")
+    if [ -n "$CURRENT_BRANCH" ] && [ "$CURRENT_BRANCH" != "$BRANCH_NAME" ]; then
+      echo -e "${YELLOW}⚠ Agent switched to branch: ${CURRENT_BRANCH}, returning to ${BRANCH_NAME}${NC}"
+      log_warn "Agent switched to $CURRENT_BRANCH, recovering to $BRANCH_NAME"
+      if ! git diff-index --quiet HEAD -- 2>/dev/null; then
+        git add -A
+        git commit -m "chore: auto-commit uncommitted agent work before branch restore" 2>/dev/null || true
+      fi
+      git checkout "$BRANCH_NAME" 2>/dev/null || true
+    fi
 
-    if [ -n "$STORY_BRANCH" ] && story_branch_exists "$STORY_BRANCH" 2>/dev/null; then
-      echo ""
-      echo -e "${CYAN}Git workflow: merging story branch...${NC}"
+    # Auto-commit uncommitted changes if agent made progress but forgot to commit
+    # Check if story progress was made (comparing before/after)
+    STORIES_AFTER=$(jq '[.userStories[] | select(.passes == true)] | length' "$PRD_FILE" 2>/dev/null || echo "0")
+    STORY_PROGRESS_MADE=false
+    if [ "$STORIES_AFTER" -gt "$STORIES_BEFORE" ]; then
+      STORY_PROGRESS_MADE=true
+    fi
+    if ! git diff-index --quiet HEAD -- 2>/dev/null; then
+      # There are uncommitted changes
+      UNCOMMITTED_SRC=$(git diff --name-only HEAD 2>/dev/null | grep -c '^src/' || echo "0")
+      UNCOMMITTED_PRD=$(git diff --name-only HEAD 2>/dev/null | grep -c 'prd.json' || echo "0")
 
-      # Get story title for merge commit
-      STORY_TITLE=$(jq -r ".userStories[] | select(.id == \"$CURRENT_TASK_ID\") | .title // \"$CURRENT_TASK_ID\"" "$PRD_FILE" 2>/dev/null)
+      if [ "$STORIES_AFTER" -gt "$STORIES_BEFORE" ]; then
+        # Story progress was made but changes weren't committed - auto-commit
+        echo -e "${YELLOW}⚠ Agent made progress but didn't commit - auto-committing${NC}"
+        COMPLETED_STORY=$(jq -r ".userStories[] | select(.passes == true) | .id" "$PRD_FILE" 2>/dev/null | tail -1)
+        git add -A
+        git commit -m "feat: ${COMPLETED_STORY:-story} - auto-commit by Ralph (agent forgot to commit)" 2>/dev/null || true
+      elif [ "$UNCOMMITTED_SRC" -gt 0 ] || [ "$UNCOMMITTED_PRD" -gt 0 ]; then
+        # Source or PRD changes exist - warn but don't auto-commit (might be incomplete work)
+        echo -e "${YELLOW}⚠ Uncommitted changes detected (${UNCOMMITTED_SRC} src files, prd: ${UNCOMMITTED_PRD})${NC}"
+        log_warn "Uncommitted changes after iteration: $UNCOMMITTED_SRC src files" 2>/dev/null || true
+      fi
+    fi
 
-      # Merge sub-branch into feature branch
-      if merge_story_branch "$BRANCH_NAME" "$STORY_BRANCH" "$CURRENT_TASK_ID" "$STORY_TITLE"; then
-        # Push if enabled and timing is "iteration"
-        if should_push; then
-          PUSH_TIMING=$(get_git_push_timing 2>/dev/null || echo "iteration")
-          if [ "$PUSH_TIMING" = "iteration" ]; then
-            push_branch "$BRANCH_NAME"
-          fi
-        fi
-
-        # Cleanup the story sub-branch
-        cleanup_story_branch "$STORY_BRANCH" false
+    # Push if enabled and timing is "iteration"
+    if should_push; then
+      PUSH_TIMING=$(get_git_push_timing 2>/dev/null || echo "iteration")
+      if [ "$PUSH_TIMING" = "iteration" ] && [ "$STORY_PROGRESS_MADE" = true ]; then
+        push_branch "$BRANCH_NAME"
       fi
     fi
   fi
 
   # Check for RALPH_COMPLETE - must be a standalone line, not part of the prompt
-  # The prompt contains "output: RALPH_COMPLETE" so we need to match it as standalone
-  if echo "$OUTPUT" | grep -qE '^RALPH_COMPLETE$|^[^:]*RALPH_COMPLETE[^"]*$'; then
+  # The prompt contains "output: RALPH_COMPLETE" so we need to match only standalone occurrence
+  if echo "$OUTPUT" | grep -qxE '\s*RALPH_COMPLETE\s*'; then
     # Double-check: verify all stories in PRD are marked as passing
     ALL_PASS=$(jq '[.userStories[].passes] | all' "$PRD_FILE" 2>/dev/null || echo "false")
     if [ "$ALL_PASS" = "true" ]; then
@@ -1085,21 +1928,36 @@ for i in $(seq 1 "$MAX_ITERATIONS"); do
       # ---- Final Git Workflow ----
       if [ "$GIT_LIBRARY_LOADED" = true ] && [ -n "$BRANCH_NAME" ]; then
         echo ""
+        push_succeeded=true
 
         # Final push (if timing is "end" or we haven't pushed yet)
         if should_push; then
           PUSH_TIMING=$(get_git_push_timing 2>/dev/null || echo "iteration")
           if [ "$PUSH_TIMING" = "end" ]; then
             echo -e "${CYAN}Pushing final changes...${NC}"
-            push_branch "$BRANCH_NAME"
+            if ! push_branch "$BRANCH_NAME"; then
+              push_succeeded=false
+              echo -e "${YELLOW}Push failed - PR creation skipped${NC}"
+            fi
           fi
         fi
 
-        # Create PR if enabled
+        # Create PR if enabled (only if push succeeded)
         if should_create_pr; then
-          echo -e "${CYAN}Creating pull request...${NC}"
-          BASE_BRANCH=$(get_git_base_branch 2>/dev/null || echo "main")
-          create_pr "$BRANCH_NAME" "$BASE_BRANCH"
+          if [ "$push_succeeded" = true ]; then
+            echo -e "${CYAN}Creating pull request...${NC}"
+            BASE_BRANCH=$(get_git_base_branch 2>/dev/null || echo "main")
+            if create_pr "$BRANCH_NAME" "$BASE_BRANCH"; then
+              # Auto-merge PR if enabled
+              if should_auto_merge_pr; then
+                echo -e "${CYAN}Merging pull request...${NC}"
+                merge_pr "$BRANCH_NAME"
+              fi
+            fi
+          else
+            echo -e "${YELLOW}Skipping PR creation due to push failure${NC}"
+            echo -e "${YELLOW}Push manually: git push -u origin $BRANCH_NAME${NC}"
+          fi
         fi
       fi
 

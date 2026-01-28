@@ -8,9 +8,10 @@ CACHE_MAX_AGE_HOURS=24
 
 # Default fallback models (used if detection fails)
 DEFAULT_CLAUDE_MODELS='[
+  "claude-sonnet-4-5-20250929",
+  "claude-opus-4-5-20251101",
   "claude-sonnet-4-20250514",
   "claude-opus-4-20250514",
-  "claude-sonnet-4-5-20250929",
   "claude-3-5-sonnet-20241022",
   "claude-3-5-haiku-20241022"
 ]'
@@ -47,7 +48,7 @@ detect_claude_models() {
 
   if [ -z "$CLAUDE_CMD" ]; then
     # CLI not installed, return minimal set
-    echo '["claude-sonnet-4-20250514"]'
+    echo '["claude-sonnet-4-5-20250929"]'
     return 0
   fi
 

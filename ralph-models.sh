@@ -36,7 +36,7 @@ echo ""
 # Claude Code models
 show_claude_models() {
   echo -e "${BLUE}Claude Code${NC} (via claude CLI)"
-  echo -e "  ${YELLOW}Current:${NC} $(yq '.claude-code.model // "claude-sonnet-4-20250514"' "$AGENT_CONFIG" 2>/dev/null)"
+  echo -e "  ${YELLOW}Current:${NC} $(yq '.claude-code.model // "claude-sonnet-4-5-20250929"' "$AGENT_CONFIG" 2>/dev/null)"
   echo ""
 
   # Get available models dynamically
@@ -51,11 +51,14 @@ show_claude_models() {
       while IFS= read -r model; do
         # Annotate recommended models
         case "$model" in
-          *"claude-sonnet-4"*|*"claude-sonnet-4-5"*)
+          *"claude-sonnet-4-5"*)
             echo "    • $model ${CYAN}(recommended, fast)${NC}"
             ;;
-          *"claude-opus-4"*)
+          *"claude-opus-4-5"*)
             echo "    • $model ${CYAN}(powerful, slower)${NC}"
+            ;;
+          *"claude-sonnet-4"*|*"claude-opus-4"*)
+            echo "    • $model ${CYAN}(previous gen)${NC}"
             ;;
           *)
             echo "    • $model"
@@ -64,16 +67,16 @@ show_claude_models() {
       done <<< "$models"
     else
       echo "    ${YELLOW}No models detected, showing defaults:${NC}"
-      echo "    • claude-sonnet-4-20250514 (recommended, fast)"
-      echo "    • claude-opus-4-20250514   (powerful, slower)"
-      echo "    • claude-3-5-sonnet-20241022"
+      echo "    • claude-sonnet-4-5-20250929 (recommended, fast)"
+      echo "    • claude-opus-4-5-20251101   (powerful, slower)"
+      echo "    • claude-sonnet-4-20250514   (previous gen)"
       echo "    • claude-3-5-haiku-20241022"
     fi
   else
     echo -e "  ${GREEN}Available models:${NC}"
-    echo "    • claude-sonnet-4-20250514 (recommended, fast)"
-    echo "    • claude-opus-4-20250514   (powerful, slower)"
-    echo "    • claude-3-5-sonnet-20241022"
+    echo "    • claude-sonnet-4-5-20250929 (recommended, fast)"
+    echo "    • claude-opus-4-5-20251101   (powerful, slower)"
+    echo "    • claude-sonnet-4-20250514   (previous gen)"
     echo "    • claude-3-5-haiku-20241022"
   fi
   echo ""
