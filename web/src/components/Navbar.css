@@ -1,0 +1,341 @@
+/* ========================================
+   Modern Navbar Styles
+   ======================================== */
+
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+}
+
+.navbar-scrolled {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.navbar-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spacing-sm) var(--spacing-md);
+  position: relative;
+}
+
+/* ========================================
+   Logo Styles
+   ======================================== */
+
+.navbar-logo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  text-decoration: none;
+  color: var(--color-text-primary);
+  z-index: 1001;
+}
+
+.logo-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--color-primary-gradient-start), var(--color-primary-gradient-end));
+  color: white;
+  box-shadow: 0 4px 12px rgba(71, 158, 148, 0.3);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.navbar-logo:hover .logo-icon {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(71, 158, 148, 0.4);
+}
+
+.logo-text {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #479e94;
+  letter-spacing: -0.02em;
+}
+
+/* ========================================
+   Hamburger Menu Button
+   ======================================== */
+
+.hamburger {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 40px;
+  height: 40px;
+  padding: 8px;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  z-index: 1001;
+  transition: background 0.2s ease;
+}
+
+.hamburger:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.hamburger-line {
+  display: block;
+  width: 100%;
+  height: 2.5px;
+  background: #26262e;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+  transform-origin: center;
+}
+
+.hamburger-active .hamburger-line:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.hamburger-active .hamburger-line:nth-child(2) {
+  opacity: 0;
+  transform: scaleX(0);
+}
+
+.hamburger-active .hamburger-line:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+/* ========================================
+   Navigation Menu
+   ======================================== */
+
+.navbar-menu {
+  position: fixed;
+  top: 0;
+  right: -100%;
+  width: 280px;
+  height: 100vh;
+  background: white;
+  padding: 80px var(--spacing-lg) var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.1);
+  transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+  overflow-y: auto;
+}
+
+.navbar-menu-open {
+  right: 0;
+}
+
+.navbar-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 999;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ========================================
+   Navigation Links
+   ======================================== */
+
+.navbar-link {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  text-decoration: none;
+  color: var(--color-text-primary);
+  border-radius: 12px;
+  font-weight: 500;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.navbar-link:hover {
+  background: rgba(71, 158, 148, 0.08);
+  color: var(--color-primary-gradient-start);
+}
+
+.navbar-link-active {
+  background: linear-gradient(135deg, rgba(71, 158, 148, 0.12), rgba(77, 171, 161, 0.08));
+  color: var(--color-primary-gradient-start);
+  font-weight: 600;
+}
+
+.navbar-link-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 24px;
+  background: linear-gradient(135deg, var(--color-primary-gradient-start), var(--color-primary-gradient-end));
+  border-radius: 0 4px 4px 0;
+}
+
+.navbar-link-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.navbar-link-text {
+  flex: 1;
+}
+
+/* ========================================
+   Tablet Styles (>= 768px)
+   ======================================== */
+
+@media (min-width: 768px) {
+  .navbar-container {
+    padding: var(--spacing-md) var(--spacing-lg);
+  }
+
+  .hamburger {
+    display: none;
+  }
+
+  .navbar-menu {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: 0;
+    flex-direction: row;
+    gap: var(--spacing-xs);
+    background: transparent;
+    box-shadow: none;
+    overflow: visible;
+  }
+
+  .navbar-backdrop {
+    display: none;
+  }
+
+  .navbar-link {
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: 10px;
+    position: relative;
+  }
+
+  .navbar-link-icon {
+    font-size: 1rem;
+  }
+
+  .navbar-link-active::before {
+    display: none;
+  }
+
+  .navbar-link-active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 3px;
+    background: linear-gradient(135deg, var(--color-primary-gradient-start), var(--color-primary-gradient-end));
+    border-radius: 3px 3px 0 0;
+  }
+}
+
+/* ========================================
+   Desktop Styles (>= 1024px)
+   ======================================== */
+
+@media (min-width: 1024px) {
+  .navbar-container {
+    padding: var(--spacing-md) var(--spacing-xl);
+  }
+
+  .navbar-menu {
+    gap: var(--spacing-sm);
+  }
+
+  .navbar-link {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    font-size: 0.95rem;
+  }
+
+  .logo-icon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .logo-icon svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .logo-text {
+    font-size: 1.35rem;
+  }
+}
+
+/* ========================================
+   Dark Mode Support
+   ======================================== */
+
+@media (prefers-color-scheme: dark) {
+  .navbar {
+    background: rgba(26, 26, 26, 0.95);
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .navbar-scrolled {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+
+  .logo-text {
+    color: #6bc4b8;
+  }
+
+  .hamburger:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .hamburger-line {
+    background: #ffffff;
+  }
+
+  .navbar-menu {
+    background: #1a1a1a;
+    box-shadow: -10px 0 40px rgba(0, 0, 0, 0.4);
+  }
+
+  .navbar-link {
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .navbar-backdrop {
+    background: rgba(0, 0, 0, 0.6);
+  }
+
+  .navbar-link:hover {
+    background: rgba(71, 158, 148, 0.15);
+  }
+
+  .navbar-link-active {
+    background: linear-gradient(135deg, rgba(71, 158, 148, 0.2), rgba(77, 171, 161, 0.15));
+    color: #6bc4b8;
+  }
+}

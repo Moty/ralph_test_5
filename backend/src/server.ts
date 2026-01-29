@@ -7,6 +7,9 @@ import { analyzeRoutes } from './routes/analyze.js';
 import { authRoutes } from './routes/auth.js';
 import { userRoutes } from './routes/user.js';
 import { mealsRoutes } from './routes/meals.js';
+import profileRoutes from './routes/profile.js';
+import progressRoutes from './routes/progress.js';
+import ketoneRoutes from './routes/ketone.js';
 import { initializeFirebase } from './services/firebase.js';
 
 // Initialize Firebase if configured
@@ -29,7 +32,9 @@ const server = Fastify({
 });
 
 await server.register(cors, {
-  origin: true
+  origin: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 });
 
 await server.register(multipart, {
@@ -64,6 +69,9 @@ await server.register(authRoutes);
 await server.register(userRoutes);
 await server.register(analyzeRoutes);
 await server.register(mealsRoutes);
+await server.register(profileRoutes);
+await server.register(progressRoutes);
+await server.register(ketoneRoutes);
 
 const start = async () => {
   try {

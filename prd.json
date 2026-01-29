@@ -293,6 +293,28 @@
       ],
       "passes": true,
       "notes": ""
+    },
+    {
+      "id": "US-016",
+      "title": "Add desktop responsive layout detection and UI adjustments",
+      "description": "As a desktop user, I want the web app to detect larger screens and provide a desktop-optimized layout so that I get a better experience than just a mobile-friendly view.",
+      "acceptanceCriteria": [
+        "Detect desktop vs mobile using viewport width breakpoints (e.g., >= 768px for tablet, >= 1024px for desktop)",
+        "Add CSS media queries or responsive hooks to adjust layout for larger screens",
+        "Desktop layout changes: wider max-width containers, multi-column layouts where appropriate, better use of horizontal space",
+        "Adjust navigation for desktop (e.g., side navigation or horizontal nav bar instead of mobile bottom tabs)",
+        "Scale typography and spacing appropriately for larger screens",
+        "Maintain mobile-first approach but enhance for desktop viewing",
+        "Verify in browser using dev-browser skill on both mobile and desktop viewports",
+        "Typecheck passes"
+      ],
+      "priority": 16,
+      "blockedBy": [
+        "US-001",
+        "US-002"
+      ],
+      "passes": true,
+      "notes": "Added responsive breakpoints (768px tablet, 1024px desktop, 1440px large), CSS media queries, multi-column stat grids (4-col on desktop), centered nav with desktop spacing, useViewport hook, wider containers, larger typography."
     }
   ]
 }

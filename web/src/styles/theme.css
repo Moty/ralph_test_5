@@ -86,6 +86,18 @@
   --line-height-tight: 1.2;
   --line-height-normal: 1.5;
   --line-height-relaxed: 1.75;
+
+  /* Responsive breakpoints (for reference in media queries) */
+  /* Mobile: < 768px (default) */
+  /* Tablet: >= 768px */
+  /* Desktop: >= 1024px */
+  /* Large desktop: >= 1440px */
+
+  /* Container max-widths */
+  --container-max-width-mobile: 100%;
+  --container-max-width-tablet: 720px;
+  --container-max-width-desktop: 960px;
+  --container-max-width-large: 1200px;
 }
 
 /* Dark mode variants - deep rich dark (Charcoal/Navy) */

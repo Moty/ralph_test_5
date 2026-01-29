@@ -45,20 +45,29 @@ public struct ContentView: View {
                                 Label("Home", systemImage: "house.fill")
                             }
                             .tag(0)
-                        
+
+                        // Progress tab for registered users only
+                        if authService.isRegisteredUser {
+                            DietProgressView(apiService: apiService)
+                                .tabItem {
+                                    Label("Progress", systemImage: "chart.line.uptrend.xyaxis")
+                                }
+                                .tag(1)
+                        }
+
                         CameraView(apiService: apiService)
                             .tabItem {
                                 Label("Camera", systemImage: "camera.fill")
                             }
-                            .tag(1)
-                        
+                            .tag(authService.isRegisteredUser ? 2 : 1)
+
                         // History only available for registered users
                         if authService.isRegisteredUser {
-                            HistoryView()
+                            HistoryView(apiService: apiService)
                                 .tabItem {
                                     Label("History", systemImage: "clock.fill")
                                 }
-                                .tag(2)
+                                .tag(3)
                         } else {
                             GuestHistoryView()
                                 .tabItem {
@@ -66,12 +75,12 @@ public struct ContentView: View {
                                 }
                                 .tag(2)
                         }
-                        
+
                         SettingsView(apiService: apiService)
                             .tabItem {
                                 Label("Settings", systemImage: "gear")
                             }
-                            .tag(3)
+                            .tag(authService.isRegisteredUser ? 4 : 3)
                     }
                     .tint(AppColors.primaryGradientEnd)
                 }

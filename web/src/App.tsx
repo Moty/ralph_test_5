@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import './App.css';
 import Home from './pages/Home';
@@ -6,8 +6,13 @@ import Camera from './pages/Camera';
 import Analyze from './pages/Analyze';
 import History from './pages/History';
 import MealDetail from './pages/MealDetail';
+import MealEdit from './pages/MealEdit';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
+import Profile from './pages/Profile';
+import Progress from './pages/Progress';
+import Ketones from './pages/Ketones';
+import Navbar from './components/Navbar';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { setApiUnauthorizedHandler } from './services/api';
 
@@ -33,14 +38,7 @@ function AppContent() {
 
   return (
     <div className="app">
-      {(isAuthenticated || isGuest) && (
-        <nav>
-          <Link to="/">Home</Link>
-          <Link to="/camera">Camera</Link>
-          <Link to="/history">History</Link>
-          <Link to="/settings">Settings</Link>
-        </nav>
-      )}
+      <Navbar isAuthenticated={isAuthenticated} isGuest={isGuest} />
       <main>
         <Routes>
           <Route path="/login" element={
@@ -61,8 +59,20 @@ function AppContent() {
           <Route path="/history/:id" element={
             requiresAuth ? <Navigate to="/login" replace /> : <MealDetail />
           } />
+          <Route path="/history/:id/edit" element={
+            requiresAuth ? <Navigate to="/login" replace /> : <MealEdit />
+          } />
           <Route path="/settings" element={
             requiresAuth ? <Navigate to="/login" replace /> : <Settings />
+          } />
+          <Route path="/profile" element={
+            requiresAuth ? <Navigate to="/login" replace /> : <Profile />
+          } />
+          <Route path="/progress" element={
+            requiresAuth ? <Navigate to="/login" replace /> : <Progress />
+          } />
+          <Route path="/ketones" element={
+            requiresAuth ? <Navigate to="/login" replace /> : <Ketones />
           } />
         </Routes>
       </main>

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, SectionHeader, Button } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
+import { profileApi } from '../services/api';
+import type { UserProfile } from '../services/api';
 
 type Theme = 'system' | 'light' | 'dark';
 
@@ -22,6 +24,7 @@ export default function Settings() {
   const [selectedModel, setSelectedModel] = useState<string>(AVAILABLE_MODELS[0]);
   const [showApiOverride, setShowApiOverride] = useState(false);
   const [apiBaseUrl, setApiBaseUrl] = useState('');
+  const [profile, setProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as Theme | null;
@@ -42,7 +45,21 @@ export default function Settings() {
     if (savedUrl) {
       setApiBaseUrl(savedUrl);
     }
-  }, []);
+
+    // Load user profile if authenticated
+    if (isAuthenticated) {
+      loadProfile();
+    }
+  }, [isAuthenticated]);
+
+  const loadProfile = async () => {
+    try {
+      const { profile: loadedProfile } = await profileApi.getProfile();
+      setProfile(loadedProfile);
+    } catch {
+      // No profile yet, that's okay
+    }
+  };
 
   const applyTheme = (newTheme: Theme) => {
     const root = document.documentElement;
@@ -147,6 +164,45 @@ export default function Settings() {
           <p style={{ marginBottom: 0 }}>Recommended: gemini-2.0-flash (Unlimited requests)</p>
         </div>
       </Card>
+
+      {isAuthenticated && (
+        <>
+          <SectionHeader>Diet Profile</SectionHeader>
+          <Card style={{ padding: 'var(--spacing-md)', marginBottom: 'var(--spacing-xl)' }}>
+            {profile ? (
+              <>
+                <div style={{ marginBottom: 'var(--spacing-md)' }}>
+                  <h3 style={{ marginTop: 0, marginBottom: 'var(--spacing-xs)' }}>
+                    {profile.dietType.charAt(0).toUpperCase() + profile.dietType.slice(1)} Diet
+                  </h3>
+                  <div style={{ fontSize: 'var(--font-size-sm)', opacity: 0.7 }}>
+                    {profile.dailyCalorieGoal} cal | {profile.dailyProteinGoal}g protein | {profile.dailyCarbsGoal}g carbs | {profile.dailyFatGoal}g fat
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 'var(--spacing-sm)' }}>
+                  <Button variant="secondary" onClick={() => navigate('/profile')}>
+                    Edit Profile
+                  </Button>
+                  {profile.dietType === 'keto' && (
+                    <Button variant="secondary" onClick={() => navigate('/ketones')}>
+                      Ketone Tracker
+                    </Button>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <p style={{ margin: '0 0 var(--spacing-md) 0', opacity: 0.7 }}>
+                  Set up your diet profile to get personalized nutrition goals and track your progress.
+                </p>
+                <Button variant="primary" onClick={() => navigate('/profile')}>
+                  Set Up Diet Profile
+                </Button>
+              </>
+            )}
+          </Card>
+        </>
+      )}
 
       {showApiOverride && (
         <>

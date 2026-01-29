@@ -75,12 +75,18 @@ public class StorageService {
         foodsDataAttribute.attributeType = .binaryDataAttributeType
         foodsDataAttribute.isOptional = true
         
+        let backendIdAttribute = NSAttributeDescription()
+        backendIdAttribute.name = "backendId"
+        backendIdAttribute.attributeType = .stringAttributeType
+        backendIdAttribute.isOptional = true
+        
         entity.properties = [
             idAttribute,
             timestampAttribute,
             thumbnailDataAttribute,
             nutritionDataAttribute,
-            foodsDataAttribute
+            foodsDataAttribute,
+            backendIdAttribute
         ]
         model.entities = [entity]
         return model
@@ -155,6 +161,7 @@ public class StorageService {
         
         let stored = StoredMealAnalysis(context: context)
         stored.id = UUID(uuidString: cloudMeal.id) ?? UUID()
+        stored.backendId = cloudMeal.id  // Store the backend ID for sync operations
         stored.timestamp = cloudMeal.timestamp
         stored.thumbnailData = thumbnailData
         stored.nutritionData = nutritionData
@@ -203,7 +210,7 @@ public class StorageService {
             
             let totals = try decoder.decode(NutritionData.self, from: nutritionData)
             let foods = try decoder.decode([FoodItem].self, from: foodsData)
-            return MealAnalysis(foods: foods, totals: totals, timestamp: timestamp)
+            return MealAnalysis(backendId: item.backendId, foods: foods, totals: totals, timestamp: timestamp)
         }
     }
     
@@ -227,7 +234,7 @@ public class StorageService {
             
             let totals = try decoder.decode(NutritionData.self, from: nutritionData)
             let foods = try decoder.decode([FoodItem].self, from: foodsData)
-            let analysis = MealAnalysis(foods: foods, totals: totals, timestamp: timestamp)
+            let analysis = MealAnalysis(backendId: item.backendId, foods: foods, totals: totals, timestamp: timestamp)
             
             let thumbnail: UIImage? = if let thumbnailData = item.thumbnailData {
                 UIImage(data: thumbnailData)
@@ -260,7 +267,7 @@ public class StorageService {
             
             let totals = try decoder.decode(NutritionData.self, from: nutritionData)
             let foods = try decoder.decode([FoodItem].self, from: foodsData)
-            return MealAnalysis(foods: foods, totals: totals, timestamp: timestamp)
+            return MealAnalysis(backendId: item.backendId, foods: foods, totals: totals, timestamp: timestamp)
         }
     }
     
@@ -280,11 +287,69 @@ public class StorageService {
             try context.save()
         }
     }
+    
+    /// Delete a meal by its timestamp (used as unique identifier)
+    @MainActor
+    public func deleteMeal(byTimestamp timestamp: Date) throws {
+        let context = persistentContainer.viewContext
+        let request = NSFetchRequest<StoredMealAnalysis>(entityName: "StoredMealAnalysis")
+        request.predicate = NSPredicate(format: "timestamp == %@", timestamp as NSDate)
+        
+        let results = try context.fetch(request)
+        guard let mealToDelete = results.first else {
+            throw NSError(domain: "StorageService", code: -2, userInfo: [NSLocalizedDescriptionKey: "Meal not found"])
+        }
+        
+        context.delete(mealToDelete)
+        try context.save()
+        print("[StorageService] Deleted meal with timestamp: \(timestamp)")
+    }
+    
+    /// Update a meal's data
+    @MainActor
+    public func updateMeal(originalTimestamp: Date, updatedAnalysis: MealAnalysis, thumbnail: Data?) throws {
+        let context = persistentContainer.viewContext
+        let request = NSFetchRequest<StoredMealAnalysis>(entityName: "StoredMealAnalysis")
+        request.predicate = NSPredicate(format: "timestamp == %@", originalTimestamp as NSDate)
+        
+        let results = try context.fetch(request)
+        guard let mealToUpdate = results.first else {
+            throw NSError(domain: "StorageService", code: -2, userInfo: [NSLocalizedDescriptionKey: "Meal not found"])
+        }
+        
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        
+        let nutritionData = try encoder.encode(updatedAnalysis.totals)
+        let foodsData = try encoder.encode(updatedAnalysis.foods)
+        
+        mealToUpdate.timestamp = updatedAnalysis.timestamp
+        mealToUpdate.nutritionData = nutritionData
+        mealToUpdate.foodsData = foodsData
+        if let thumbnail = thumbnail {
+            mealToUpdate.thumbnailData = thumbnail
+        }
+        
+        try context.save()
+        print("[StorageService] Updated meal with timestamp: \(originalTimestamp) -> \(updatedAnalysis.timestamp)")
+    }
+    
+    /// Get the thumbnail data for a meal
+    @MainActor
+    public func getThumbnailData(forTimestamp timestamp: Date) throws -> Data? {
+        let context = persistentContainer.viewContext
+        let request = NSFetchRequest<StoredMealAnalysis>(entityName: "StoredMealAnalysis")
+        request.predicate = NSPredicate(format: "timestamp == %@", timestamp as NSDate)
+        
+        let results = try context.fetch(request)
+        return results.first?.thumbnailData
+    }
 }
 
 @objc(StoredMealAnalysis)
 class StoredMealAnalysis: NSManagedObject {
     @NSManaged var id: UUID?
+    @NSManaged var backendId: String?
     @NSManaged var timestamp: Date?
     @NSManaged var thumbnailData: Data?
     @NSManaged var nutritionData: Data?
