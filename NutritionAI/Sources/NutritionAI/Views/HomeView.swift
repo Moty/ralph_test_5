@@ -44,9 +44,15 @@ struct HomeView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    Text("NutritionAI")
-                        .font(.headline)
-                        .foregroundColor(.primary)
+                    HStack(spacing: 8) {
+                        Image(systemName: "leaf.fill")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(AppGradients.primary)
+                        
+                        Text("NutritionAI")
+                            .font(.system(size: 18, weight: .bold, design: .rounded))
+                            .foregroundStyle(AppGradients.primary)
+                    }
                 }
             }
             .refreshable {
