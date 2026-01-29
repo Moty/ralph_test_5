@@ -66,7 +66,7 @@ export default function Analyze() {
         )}
 
         <SectionHeader>Totals</SectionHeader>
-        <div style={{ display: 'grid', gap: 'var(--spacing-md)', marginBottom: 'var(--spacing-xl)' }}>
+        <div className="stats-grid" style={{ marginBottom: 'var(--spacing-xl)' }}>
           <Card gradient={1}>
             <h3>Calories</h3>
             <p style={{ fontSize: 'var(--font-size-3xl)', margin: 0 }}>{Math.round(result.totals.calories)}</p>
@@ -111,7 +111,7 @@ export default function Analyze() {
           </Card>
         ))}
 
-        <div style={{ display: 'flex', gap: 'var(--spacing-md)', marginTop: 'var(--spacing-xl)' }}>
+        <div className="quick-actions" style={{ marginTop: 'var(--spacing-xl)' }}>
           <Button variant="secondary" fullWidth onClick={() => navigate('/')}>
             ← Home
           </Button>
@@ -152,7 +152,7 @@ export default function Analyze() {
           Analyzing your meal...
         </div>
       ) : (
-        <div style={{ display: 'flex', gap: 'var(--spacing-md)' }}>
+        <div className="quick-actions">
           <Button variant="secondary" fullWidth onClick={() => navigate('/camera')}>
             ← Back
           </Button>

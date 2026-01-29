@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { authMiddleware } from '../middleware/auth.js';
 import { getDb } from '../services/database.js';
+import { DIET_TEMPLATES, calculateMacroCompliance } from '../services/dietCompliance.js';
 
 interface NutritionData {
   totals: {
@@ -8,6 +9,8 @@ interface NutritionData {
     protein: number;
     carbs: number;
     fat: number;
+    fiber?: number;
+    sugar?: number;
   };
 }
 
@@ -78,13 +81,66 @@ export async function userRoutes(server: FastifyInstance) {
           };
         };
 
+        const todayStats = calculateStats(todayMeals);
         const stats = {
-          today: calculateStats(todayMeals),
+          today: todayStats,
           week: calculateStats(weekMeals),
           allTime: calculateStats(allMeals),
         };
 
-        return reply.code(200).send(stats);
+        // Get user profile for diet info
+        const profile = await db.findUserProfileByUserId(userId);
+
+        // If user has a profile, add diet goals and compliance
+        let dietInfo = null;
+        if (profile) {
+          const template = DIET_TEMPLATES[profile.dietType] || DIET_TEMPLATES.balanced;
+
+          // Calculate today's compliance
+          const todayCompliance = calculateMacroCompliance(
+            {
+              calories: todayStats.totalCalories,
+              protein: todayStats.totalProtein,
+              carbs: todayStats.totalCarbs,
+              fat: todayStats.totalFat
+            },
+            {
+              calories: profile.dailyCalorieGoal,
+              protein: profile.dailyProteinGoal,
+              carbs: profile.dailyCarbsGoal,
+              fat: profile.dailyFatGoal
+            },
+            template
+          );
+
+          dietInfo = {
+            dietType: profile.dietType,
+            dietName: template.name,
+            goals: {
+              dailyCalories: profile.dailyCalorieGoal,
+              dailyProtein: profile.dailyProteinGoal,
+              dailyCarbs: profile.dailyCarbsGoal,
+              dailyFat: profile.dailyFatGoal,
+              dailyFiber: profile.dailyFiberGoal,
+              dailySugarLimit: profile.dailySugarLimit
+            },
+            todayCompliance: {
+              isOnTrack: todayCompliance.isOnTrack,
+              carbsCompliance: todayCompliance.carbsCompliance,
+              proteinCompliance: todayCompliance.proteinCompliance,
+              fatCompliance: todayCompliance.fatCompliance,
+              overallCompliance: todayCompliance.overallCompliance,
+              issues: todayCompliance.issues,
+              suggestions: todayCompliance.suggestions
+            }
+          };
+        }
+
+        return reply.code(200).send({
+          ...stats,
+          dietInfo,
+          hasProfile: !!profile
+        });
       } catch (error) {
         server.log.error({ error, userId: request.user?.userId }, 'Error fetching user stats');
         return reply.code(500).send({ error: 'Failed to fetch user stats' });

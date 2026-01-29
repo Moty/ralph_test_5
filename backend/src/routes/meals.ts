@@ -90,4 +90,102 @@ export async function mealsRoutes(server: FastifyInstance) {
       return reply.code(500).send({ error: 'Failed to fetch meal' });
     }
   });
+
+  // Delete a meal by ID
+  server.delete<{ Params: { id: string } }>('/api/meals/:id', { preHandler: authMiddleware }, async (request, reply) => {
+    try {
+      const { id } = request.params;
+      const userId = request.user!.userId;
+      
+      const analysis = await db.findMealAnalysisById(id);
+      
+      if (!analysis) {
+        return reply.code(404).send({ error: 'Meal not found' });
+      }
+      
+      // Verify ownership
+      if (analysis.userId !== userId) {
+        return reply.code(403).send({ error: 'Access denied' });
+      }
+      
+      await db.deleteMealAnalysis(id);
+      console.log(`[Meals] Deleted meal ${id} for user ${userId}`);
+      
+      return reply.code(200).send({ success: true, message: 'Meal deleted' });
+      
+    } catch (error) {
+      server.log.error(error);
+      return reply.code(500).send({ error: 'Failed to delete meal' });
+    }
+  });
+
+  // Update a meal by ID
+  server.put<{ 
+    Params: { id: string };
+    Body: { 
+      foods?: Array<{
+        name: string;
+        portion: string;
+        nutrition: { calories: number; protein: number; carbs: number; fat: number };
+        confidence?: number;
+      }>;
+      totals?: { calories: number; protein: number; carbs: number; fat: number };
+      timestamp?: string;
+    }
+  }>('/api/meals/:id', { preHandler: authMiddleware }, async (request, reply) => {
+    try {
+      const { id } = request.params;
+      const userId = request.user!.userId;
+      const { foods, totals, timestamp } = request.body;
+      
+      const analysis = await db.findMealAnalysisById(id);
+      
+      if (!analysis) {
+        return reply.code(404).send({ error: 'Meal not found' });
+      }
+      
+      // Verify ownership
+      if (analysis.userId !== userId) {
+        return reply.code(403).send({ error: 'Access denied' });
+      }
+      
+      // Build update data
+      const updateData: { nutritionData?: any; createdAt?: Date } = {};
+      
+      if (foods || totals) {
+        const existingNutrition = analysis.nutritionData as any;
+        updateData.nutritionData = {
+          foods: foods || existingNutrition.foods || [],
+          totals: totals || existingNutrition.totals || { calories: 0, protein: 0, carbs: 0, fat: 0 }
+        };
+      }
+      
+      if (timestamp) {
+        updateData.createdAt = new Date(timestamp);
+      }
+      
+      const updated = await db.updateMealAnalysis(id, updateData);
+      
+      if (!updated) {
+        return reply.code(500).send({ error: 'Failed to update meal' });
+      }
+      
+      const nutritionData = updated.nutritionData as any;
+      const meal: MealResponse = {
+        id: updated.id,
+        thumbnail: updated.thumbnail,
+        foods: nutritionData.foods || [],
+        totals: nutritionData.totals || { calories: 0, protein: 0, carbs: 0, fat: 0 },
+        timestamp: updated.createdAt.toISOString()
+      };
+      
+      console.log(`[Meals] Updated meal ${id} for user ${userId}`);
+      
+      return reply.code(200).send(meal);
+      
+    } catch (error) {
+      server.log.error(error);
+      return reply.code(500).send({ error: 'Failed to update meal' });
+    }
+  });
 }

@@ -72,6 +72,41 @@ p {
   padding: 0 var(--spacing-md);
 }
 
+/* Tablet: >= 768px */
+@media (min-width: 768px) {
+  .container {
+    max-width: var(--container-max-width-tablet);
+    padding: 0 var(--spacing-lg);
+  }
+
+  h1 {
+    font-size: var(--font-size-4xl);
+  }
+
+  h2 {
+    font-size: var(--font-size-3xl);
+  }
+
+  h3 {
+    font-size: var(--font-size-2xl);
+  }
+}
+
+/* Desktop: >= 1024px */
+@media (min-width: 1024px) {
+  .container {
+    max-width: var(--container-max-width-desktop);
+    padding: 0 var(--spacing-xl);
+  }
+}
+
+/* Large desktop: >= 1440px */
+@media (min-width: 1440px) {
+  .container {
+    max-width: var(--container-max-width-large);
+  }
+}
+
 .text-secondary {
   color: var(--color-text-secondary);
 }

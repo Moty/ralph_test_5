@@ -1,0 +1,132 @@
+/* Responsive utility classes */
+
+/* Grid layouts */
+.stats-grid {
+  display: grid;
+  gap: var(--spacing-md);
+  grid-template-columns: 1fr;
+}
+
+.two-col-grid {
+  display: grid;
+  gap: var(--spacing-md);
+  grid-template-columns: 1fr;
+}
+
+.quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+/* Meal history list */
+.meal-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+/* Settings sections */
+.settings-grid {
+  display: grid;
+  gap: var(--spacing-xl);
+  grid-template-columns: 1fr;
+}
+
+/* Tablet: >= 768px */
+@media (min-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .two-col-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .quick-actions {
+    flex-direction: row;
+  }
+
+  .quick-actions > * {
+    flex: 1;
+  }
+
+  .meal-list {
+    gap: var(--spacing-lg);
+  }
+}
+
+/* Desktop: >= 1024px */
+@media (min-width: 1024px) {
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .settings-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .meal-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Large desktop: >= 1440px */
+@media (min-width: 1440px) {
+  .meal-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Page header with actions */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+.page-header h1 {
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .page-header {
+    margin-bottom: var(--spacing-xl);
+  }
+}
+
+/* Desktop-only and mobile-only utilities */
+.desktop-only {
+  display: none;
+}
+
+.mobile-only {
+  display: block;
+}
+
+@media (min-width: 1024px) {
+  .desktop-only {
+    display: block;
+  }
+
+  .mobile-only {
+    display: none;
+  }
+}
+
+/* Responsive flex utilities */
+.flex-col-tablet-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+@media (min-width: 768px) {
+  .flex-col-tablet-row {
+    flex-direction: row;
+  }
+}

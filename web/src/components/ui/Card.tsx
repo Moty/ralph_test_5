@@ -1,4 +1,4 @@
-import type { ReactNode, CSSProperties } from 'react';
+import type { ReactNode, CSSProperties, MouseEvent } from 'react';
 import './Card.css';
 
 interface CardProps {
@@ -6,7 +6,7 @@ interface CardProps {
   gradient?: 1 | 2 | 3 | 4;
   className?: string;
   style?: CSSProperties;
-  onClick?: () => void;
+  onClick?: (e: MouseEvent<HTMLDivElement>) => void;
 }
 
 export function Card({ children, gradient, className = '', style, onClick }: CardProps) {

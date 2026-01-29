@@ -47,8 +47,8 @@ export default function History() {
 
   return (
     <div className="container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-lg)' }}>
-        <h1 style={{ margin: 0 }}>Meal History</h1>
+      <div className="page-header">
+        <h1>Meal History</h1>
         {!isGuest && (
           <Button variant="secondary" onClick={fetchMeals} disabled={loading}>
             {loading ? '⟳' : '↻'} Refresh
@@ -90,7 +90,7 @@ export default function History() {
       )}
 
       {meals.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
+        <div className="meal-list">
           {meals.map((meal) => (
             <Card 
               key={meal.id} 

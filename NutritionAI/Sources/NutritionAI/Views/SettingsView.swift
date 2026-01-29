@@ -11,7 +11,10 @@ public struct SettingsView: View {
     @State private var showLogoutConfirm = false
     @State private var isSyncing = false
     @State private var showAdvanced = false
-    
+    @State private var showProfileSetup = false
+    @State private var showKetoneTracking = false
+    @State private var userProfile: UserProfile?
+
     let apiService: APIService
     
     // Admin email addresses that can see advanced settings
@@ -143,7 +146,96 @@ public struct SettingsView: View {
                             Text("Admin-only configuration options.")
                         }
                     } // End of admin-only sections
-                
+
+                // Diet Profile Section - only for registered users
+                if authService.isRegisteredUser {
+                    Section {
+                        if let profile = userProfile {
+                            VStack(alignment: .leading, spacing: 12) {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(profile.dietType.capitalized + " Diet")
+                                            .font(.headline)
+                                        Text("\(profile.dailyCalorieGoal) cal • \(profile.dailyProteinGoal)g P • \(profile.dailyCarbsGoal)g C • \(profile.dailyFatGoal)g F")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    Spacer()
+                                }
+
+                                HStack(spacing: 12) {
+                                    Button {
+                                        showProfileSetup = true
+                                    } label: {
+                                        HStack {
+                                            Image(systemName: "pencil")
+                                            Text("Edit Profile")
+                                        }
+                                        .font(.subheadline)
+                                        .fontWeight(.semibold)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 10)
+                                        .background(AppGradients.primary)
+                                        .foregroundColor(.white)
+                                        .cornerRadius(8)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+
+                                    if profile.dietType == "keto" {
+                                        Button {
+                                            showKetoneTracking = true
+                                        } label: {
+                                            HStack {
+                                                Image(systemName: "flame.fill")
+                                                Text("Ketones")
+                                            }
+                                            .font(.subheadline)
+                                            .fontWeight(.semibold)
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.vertical, 10)
+                                            .background(Color.orange.opacity(0.2))
+                                            .foregroundColor(.orange)
+                                            .cornerRadius(8)
+                                        }
+                                        .buttonStyle(PlainButtonStyle())
+                                    }
+                                }
+                            }
+                            .padding(.vertical, 4)
+                        } else {
+                            VStack(alignment: .center, spacing: 16) {
+                                Image(systemName: "person.crop.circle.badge.plus")
+                                    .font(.system(size: 40))
+                                    .foregroundStyle(AppGradients.primary)
+
+                                Text("Set Up Your Diet Profile")
+                                    .font(.headline)
+
+                                Text("Get personalized nutrition goals and track your diet compliance.")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+
+                                Button {
+                                    showProfileSetup = true
+                                } label: {
+                                    Text("Set Up Profile")
+                                        .fontWeight(.semibold)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 12)
+                                        .background(AppGradients.primary)
+                                        .foregroundColor(.white)
+                                        .cornerRadius(10)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                            .padding(.vertical, 8)
+                        }
+                    } header: {
+                        Label("Diet Profile", systemImage: "heart.text.square.fill")
+                    }
+                }
+
                 // Appearance Section - available to everyone
                 Section {
                     VStack(alignment: .leading, spacing: 12) {
@@ -321,7 +413,34 @@ public struct SettingsView: View {
                 }
                 Button("Cancel", role: .cancel) {}
             }
+            .sheet(isPresented: $showProfileSetup) {
+                ProfileSetupView(apiService: apiService)
             }
+            .sheet(isPresented: $showKetoneTracking) {
+                KetoneTrackingView(apiService: apiService)
+            }
+            .task {
+                await loadProfile()
+            }
+            .onChange(of: showProfileSetup) { isPresented in
+                if !isPresented {
+                    Task { await loadProfile() }
+                }
+            }
+            }
+        }
+    }
+
+    private func loadProfile() async {
+        guard authService.isRegisteredUser else { return }
+
+        do {
+            let response = try await apiService.fetchProfile()
+            await MainActor.run {
+                userProfile = response.profile
+            }
+        } catch {
+            // Profile doesn't exist yet, that's okay
         }
     }
     

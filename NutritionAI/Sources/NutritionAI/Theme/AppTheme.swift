@@ -96,6 +96,13 @@ struct AppGradients {
         endPoint: .bottomTrailing
     )
     
+    // Secondary gradient for back buttons and secondary actions
+    static let secondary = LinearGradient(
+        colors: [Color.gray.opacity(0.5), Color.gray.opacity(0.3)],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+    
     // Softer, eye-friendly background gradient for light mode
     static let background = LinearGradient(
         colors: [

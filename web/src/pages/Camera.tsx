@@ -106,7 +106,7 @@ export default function Camera() {
               marginBottom: 'var(--spacing-lg)'
             }} 
           />
-          <div style={{ display: 'flex', gap: 'var(--spacing-md)' }}>
+          <div className="quick-actions">
             <Button variant="secondary" fullWidth onClick={retake}>
               ↻ Retake
             </Button>

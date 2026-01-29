@@ -5,12 +5,17 @@ import UIKit
 
 public struct HistoryView: View {
     @EnvironmentObject var authService: AuthService
+    let apiService: APIService
     @ObservedObject var syncService = SyncService.shared
     @Environment(\.colorScheme) private var colorScheme
     @State private var historyItems: [HistoryItem] = []
     @State private var error: String?
     @State private var selectedMeal: MealAnalysis?
     @State private var isLoading: Bool = false
+    @State private var mealToEdit: MealAnalysis?
+    @State private var mealToEditThumbnail: UIImage?
+    @State private var showDeleteConfirmation = false
+    @State private var mealToDelete: MealAnalysis?
     private let storageService = StorageService.shared
     
     struct HistoryItem: Identifiable {
@@ -19,7 +24,9 @@ public struct HistoryView: View {
         let thumbnail: UIImage?
     }
     
-    public init() {}
+    public init(apiService: APIService) {
+        self.apiService = apiService
+    }
     
     public var body: some View {
         NavigationView {
@@ -127,23 +134,68 @@ public struct HistoryView: View {
     }
     
     private var historyListView: some View {
-        ScrollView {
-            LazyVStack(spacing: 14) {
-                ForEach(Array(historyItems.enumerated()), id: \.element.id) { index, item in
-                    HistoryItemCard(analysis: item.analysis, thumbnail: item.thumbnail, index: index)
-                        .onTapGesture {
-                            selectedMeal = item.analysis
+        List {
+            ForEach(Array(historyItems.enumerated()), id: \.element.id) { index, item in
+                HistoryItemCard(analysis: item.analysis, thumbnail: item.thumbnail, index: index)
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets(top: 7, leading: 16, bottom: 7, trailing: 16))
+                    .listRowSeparator(.hidden)
+                    .onTapGesture {
+                        selectedMeal = item.analysis
+                    }
+                    .contextMenu {
+                        Button {
+                            mealToEditThumbnail = item.thumbnail
+                            mealToEdit = item.analysis
+                        } label: {
+                            Label("Edit", systemImage: "pencil")
                         }
-                }
+                        
+                        Button(role: .destructive) {
+                            mealToDelete = item.analysis
+                            showDeleteConfirmation = true
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button(role: .destructive) {
+                            mealToDelete = item.analysis
+                            showDeleteConfirmation = true
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                        
+                        Button {
+                            mealToEditThumbnail = item.thumbnail
+                            mealToEdit = item.analysis
+                        } label: {
+                            Label("Edit", systemImage: "pencil")
+                        }
+                        .tint(.blue)
+                    }
             }
-            .padding()
         }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
         .sheet(item: $selectedMeal) { meal in
             NavigationView {
                 NutritionDetailView(mealAnalysis: meal)
                     .navigationTitle("Meal Details")
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            Button {
+                                // Find thumbnail for this meal
+                                let thumbnail = historyItems.first(where: { $0.analysis.timestamp == meal.timestamp })?.thumbnail
+                                mealToEditThumbnail = thumbnail
+                                selectedMeal = nil
+                                mealToEdit = meal
+                            } label: {
+                                Image(systemName: "pencil.circle.fill")
+                                    .foregroundStyle(AppGradients.primary)
+                            }
+                        }
                         ToolbarItem(placement: .navigationBarTrailing) {
                             Button {
                                 selectedMeal = nil
@@ -153,6 +205,106 @@ public struct HistoryView: View {
                             }
                         }
                     }
+            }
+        }
+        .sheet(item: $mealToEdit) { meal in
+            MealEditView(
+                meal: meal,
+                thumbnail: mealToEditThumbnail,
+                onSave: { updatedMeal in
+                    saveMealChanges(originalMeal: meal, updatedMeal: updatedMeal)
+                    mealToEdit = nil
+                },
+                onCancel: {
+                    mealToEdit = nil
+                }
+            )
+        }
+        .alert("Delete Meal", isPresented: $showDeleteConfirmation) {
+            Button("Cancel", role: .cancel) {
+                mealToDelete = nil
+            }
+            Button("Delete", role: .destructive) {
+                if let meal = mealToDelete {
+                    deleteMeal(meal)
+                }
+                mealToDelete = nil
+            }
+        } message: {
+            Text("Are you sure you want to delete this meal? This action cannot be undone.")
+        }
+    }
+    
+    private func deleteMeal(_ meal: MealAnalysis) {
+        Task {
+            do {
+                // If authenticated and have backend ID, delete from backend first
+                if authService.isAuthenticated, let backendId = meal.backendId {
+                    print("[HistoryView] Deleting meal from backend: \(backendId)")
+                    try await apiService.deleteMeal(id: backendId)
+                    print("[HistoryView] Backend delete successful")
+                }
+                
+                // Delete from local storage
+                try await MainActor.run {
+                    try storageService.deleteMeal(byTimestamp: meal.timestamp)
+                }
+                
+                // Reload the list
+                await MainActor.run {
+                    loadHistory()
+                }
+                
+                print("[HistoryView] Meal deleted successfully")
+            } catch {
+                print("[HistoryView] Failed to delete meal: \(error)")
+                await MainActor.run {
+                    self.error = "Failed to delete meal"
+                }
+            }
+        }
+    }
+    
+    private func saveMealChanges(originalMeal: MealAnalysis, updatedMeal: MealAnalysis) {
+        Task {
+            do {
+                // If authenticated and have backend ID, update in backend first
+                if authService.isAuthenticated, let backendId = originalMeal.backendId {
+                    print("[HistoryView] Updating meal in backend: \(backendId)")
+                    _ = try await apiService.updateMeal(
+                        id: backendId,
+                        foods: updatedMeal.foods,
+                        totals: updatedMeal.totals,
+                        timestamp: updatedMeal.timestamp
+                    )
+                    print("[HistoryView] Backend update successful")
+                }
+                
+                // Get existing thumbnail data
+                let thumbnailData = try? await MainActor.run {
+                    try? storageService.getThumbnailData(forTimestamp: originalMeal.timestamp)
+                }
+                
+                // Update in local storage
+                try await MainActor.run {
+                    try storageService.updateMeal(
+                        originalTimestamp: originalMeal.timestamp,
+                        updatedAnalysis: updatedMeal,
+                        thumbnail: thumbnailData
+                    )
+                }
+                
+                // Reload the list
+                await MainActor.run {
+                    loadHistory()
+                }
+                
+                print("[HistoryView] Meal updated successfully")
+            } catch {
+                print("[HistoryView] Failed to update meal: \(error)")
+                await MainActor.run {
+                    self.error = "Failed to update meal"
+                }
             }
         }
     }

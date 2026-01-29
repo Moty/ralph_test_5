@@ -4,6 +4,7 @@ import { Buffer } from 'buffer';
 import { validateImage, ImageValidationError } from '../utils/imageValidation.js';
 import { optionalAuthMiddleware } from '../middleware/auth.js';
 import { getDb } from '../services/database.js';
+import { updateDailyProgress } from '../services/progressTracking.js';
 import sharp from 'sharp';
 
 interface AnalyzeResponse {
@@ -149,6 +150,15 @@ export async function analyzeRoutes(server: FastifyInstance) {
             nutritionData: nutritionData as any,
           });
           console.log('Meal saved to database for user:', request.user.userId);
+
+          // Update daily progress for diet tracking
+          try {
+            await updateDailyProgress(request.user.userId);
+            console.log('Daily progress updated for user:', request.user.userId);
+          } catch (progressError) {
+            server.log.error({ progressError }, 'Failed to update daily progress');
+            // Continue - progress tracking is not critical
+          }
         } catch (dbError) {
           server.log.error({ dbError }, 'Failed to save analysis to database');
           // Continue and return the analysis even if database save fails

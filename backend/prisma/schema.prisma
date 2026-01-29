@@ -13,12 +13,133 @@ datasource db {
 }
 
 model User {
-  id           String         @id @default(cuid())
-  email        String         @unique
-  passwordHash String
-  name         String
-  createdAt    DateTime       @default(now())
-  mealAnalyses MealAnalysis[]
+  id              String          @id @default(cuid())
+  email           String          @unique
+  passwordHash    String
+  name            String
+  createdAt       DateTime        @default(now())
+  mealAnalyses    MealAnalysis[]
+  profile         UserProfile?
+  dailyProgress   DailyProgress[]
+  weeklySummaries WeeklySummary[]
+  ketoneLogs      KetoneLog[]
+}
+
+model UserProfile {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  dietType            String   @default("balanced")
+  dailyCalorieGoal    Int      @default(2000)
+  dailyProteinGoal    Int      @default(150)
+  dailyCarbsGoal      Int      @default(200)
+  dailyFatGoal        Int      @default(65)
+  dailyFiberGoal      Int?
+  dailySugarLimit     Int?
+
+  weight              Float?
+  height              Float?
+  age                 Int?
+  gender              String?
+  activityLevel       String?
+  dietaryRestrictions String[] @default([])
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model DietTemplate {
+  id               String @id @default(cuid())
+  dietType         String @unique
+  name             String
+  description      String
+  proteinRatio     Int    // percentage
+  carbsRatio       Int    // percentage
+  fatRatio         Int    // percentage
+  baselineCalories Int
+  baselineProtein  Int
+  baselineCarbs    Int
+  baselineFat      Int
+  carbsTolerance   Int    // percentage deviation allowed
+  proteinTolerance Int
+  fatTolerance     Int
+  fiberMinimum     Int?   // minimum fiber in grams
+  sugarMaximum     Int?   // maximum sugar in grams
+}
+
+model DailyProgress {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date              DateTime @db.Date
+
+  totalCalories     Int
+  totalProtein      Int
+  totalCarbs        Int
+  totalFat          Int
+  totalFiber        Int      @default(0)
+  totalSugar        Int      @default(0)
+  mealCount         Int
+
+  goalCalories      Int
+  goalProtein       Int
+  goalCarbs         Int
+  goalFat           Int
+  goalFiber         Int?
+  goalSugar         Int?
+
+  isOnTrack         Boolean
+  carbsCompliance   Float
+  proteinCompliance Float
+  fatCompliance     Float
+
+  dietType          String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model WeeklySummary {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weekStart      DateTime @db.Date
+  weekEnd        DateTime @db.Date
+
+  avgCalories    Int
+  avgProtein     Int
+  avgCarbs       Int
+  avgFat         Int
+  avgFiber       Int      @default(0)
+  avgSugar       Int      @default(0)
+  totalMeals     Int
+  daysTracked    Int
+  complianceRate Float
+
+  createdAt      DateTime @default(now())
+
+  @@unique([userId, weekStart])
+  @@index([userId, weekStart])
+}
+
+model KetoneLog {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timestamp       DateTime @default(now())
+
+  ketoneLevel     Float    // mmol/L (blood ketone measurement)
+  measurementType String   @default("blood") // blood, breath, urine
+  notes           String?
+
+  createdAt       DateTime @default(now())
+
+  @@index([userId, timestamp])
 }
 
 model MealAnalysis {

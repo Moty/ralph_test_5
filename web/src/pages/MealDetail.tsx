@@ -1,11 +1,17 @@
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useState, type MouseEvent } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Card, SectionHeader, Button } from '../components/ui';
-import type { Meal } from '../services/api';
+import { mealApi } from '../services/api';
+import type { Meal, ApiError } from '../services/api';
 
 export default function MealDetail() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
   const meal = location.state?.meal as Meal | undefined;
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!meal) {
     return (
@@ -31,14 +37,102 @@ export default function MealDetail() {
     });
   };
 
+  const handleDelete = async () => {
+    if (!id) return;
+    
+    setDeleting(true);
+    setError(null);
+
+    try {
+      await mealApi.deleteMeal(id);
+      navigate('/history', { replace: true });
+    } catch (err) {
+      const apiError = err as ApiError;
+      setError(apiError.message || 'Failed to delete meal');
+      setShowDeleteConfirm(false);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleEdit = () => {
+    navigate(`/history/${id}/edit`, { state: { meal } });
+  };
+
   return (
     <div className="container">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)', marginBottom: 'var(--spacing-lg)' }}>
-        <Button variant="secondary" onClick={() => navigate('/history')}>
-          ← Back
-        </Button>
-        <h1 style={{ margin: 0, flex: 1 }}>Meal Detail</h1>
+      <div className="page-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
+          <Button variant="secondary" onClick={() => navigate('/history')}>
+            ← Back
+          </Button>
+          <h1 style={{ margin: 0 }}>Meal Detail</h1>
+        </div>
+        <div style={{ display: 'flex', gap: 'var(--spacing-sm)' }}>
+          <Button variant="secondary" onClick={handleEdit}>
+            ✏️ Edit
+          </Button>
+          <Button 
+            variant="secondary" 
+            onClick={() => setShowDeleteConfirm(true)}
+            style={{ color: 'var(--color-error)' }}
+          >
+            🗑️ Delete
+          </Button>
+        </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+          onClick={() => setShowDeleteConfirm(false)}
+        >
+          <Card 
+            style={{ 
+              padding: 'var(--spacing-xl)', 
+              maxWidth: '400px', 
+              margin: 'var(--spacing-md)' 
+            }}
+            onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}
+          >
+            <h3 style={{ marginTop: 0 }}>Delete Meal?</h3>
+            <p style={{ opacity: 0.8, marginBottom: 'var(--spacing-lg)' }}>
+              Are you sure you want to delete this meal? This action cannot be undone.
+            </p>
+            <div style={{ display: 'flex', gap: 'var(--spacing-md)', justifyContent: 'flex-end' }}>
+              <Button variant="secondary" onClick={() => setShowDeleteConfirm(false)} disabled={deleting}>
+                Cancel
+              </Button>
+              <Button 
+                variant="primary" 
+                onClick={handleDelete}
+                disabled={deleting}
+                style={{ backgroundColor: 'var(--color-error)' }}
+              >
+                {deleting ? 'Deleting...' : 'Delete'}
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {error && (
+        <Card style={{ marginBottom: 'var(--spacing-lg)', padding: 'var(--spacing-md)', backgroundColor: 'var(--color-error)', color: 'white' }}>
+          <p style={{ margin: 0 }}>{error}</p>
+        </Card>
+      )}
 
       {(meal.thumbnail || meal.imageUrl) && (
         <img 
@@ -59,7 +153,7 @@ export default function MealDetail() {
       </p>
 
       <SectionHeader>Totals</SectionHeader>
-      <div style={{ display: 'grid', gap: 'var(--spacing-md)', marginBottom: 'var(--spacing-xl)' }}>
+      <div className="stats-grid" style={{ marginBottom: 'var(--spacing-xl)' }}>
         <Card gradient={1}>
           <h3>Calories</h3>
           <p style={{ fontSize: 'var(--font-size-3xl)', margin: 0 }}>{Math.round(meal.totals.calories)}</p>

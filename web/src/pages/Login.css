@@ -335,3 +335,68 @@
     font-size: 32px;
   }
 }
+
+/* Tablet: >= 768px */
+@media (min-width: 768px) {
+  .login-content {
+    max-width: 440px;
+    min-height: auto;
+    padding: var(--spacing-xl);
+  }
+
+  .login-card {
+    padding: 32px;
+  }
+
+  .login-title {
+    font-size: 42px;
+  }
+
+  .login-icon {
+    width: 120px;
+    height: 120px;
+  }
+
+  .login-circle-1 {
+    width: 400px;
+    height: 400px;
+    top: -100px;
+    left: -150px;
+  }
+
+  .login-circle-2 {
+    width: 300px;
+    height: 300px;
+    bottom: -100px;
+    right: -120px;
+  }
+}
+
+/* Desktop: >= 1024px */
+@media (min-width: 1024px) {
+  .login-content {
+    max-width: 480px;
+    padding: var(--spacing-2xl);
+  }
+
+  .login-card {
+    padding: 40px;
+    border-radius: 28px;
+  }
+
+  .login-title {
+    font-size: 48px;
+  }
+
+  .login-subtitle {
+    font-size: 18px;
+  }
+
+  .login-input-group {
+    padding: var(--spacing-md) var(--spacing-lg);
+  }
+
+  .login-input-group input {
+    font-size: 17px;
+  }
+}

@@ -54,6 +54,8 @@ Instructions:
    - Protein (grams)
    - Carbohydrates (grams)
    - Fat (grams)
+   - Fiber (grams) - dietary fiber content
+   - Sugar (grams) - total sugars content
 4. Provide a confidence score (0.0 to 1.0) for each food identification
 5. Calculate total nutritional values across all items
 
@@ -67,7 +69,9 @@ Return ONLY valid JSON matching this exact schema:
         "calories": number,
         "protein": number,
         "carbs": number,
-        "fat": number
+        "fat": number,
+        "fiber": number,
+        "sugar": number
       },
       "confidence": number (0.0-1.0)
     }
@@ -76,7 +80,9 @@ Return ONLY valid JSON matching this exact schema:
     "calories": number,
     "protein": number,
     "carbs": number,
-    "fat": number
+    "fat": number,
+    "fiber": number,
+    "sugar": number
   }
 }
 
@@ -85,5 +91,7 @@ Important:
 - If unsure about exact portion, provide best estimate and lower confidence score
 - All numeric values should be numbers, not strings
 - Confidence below 0.5 indicates high uncertainty
+- Fiber is important for calculating net carbs (carbs - fiber) for low-carb diets
+- Sugar should be the total sugars content, not added sugars
 - Do not include any text outside the JSON response`;
 }

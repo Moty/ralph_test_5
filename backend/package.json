@@ -10,7 +10,11 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "test": "DATABASE_URL='postgresql://test:test@localhost:5432/test' node --test --import tsx src/__tests__/*.test.ts",
-    "deploy": "gcloud run deploy nutrition-ai-backend --source . --region us-central1 --allow-unauthenticated"
+    "deploy": "gcloud run deploy nutrition-ai-backend --source . --region us-central1 --allow-unauthenticated",
+    "db:seed": "tsx prisma/seed.ts"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "keywords": [],
   "author": "",
