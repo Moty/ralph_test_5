@@ -26,7 +26,9 @@ Before implementing any new functionality:
 
 1. Read the PRD at `prd.json` (in the ralph directory)
 2. Read the progress log at `progress.txt` (check Codebase Patterns section first)
-3. Check you're on the correct branch from PRD `branchName`. If not, check it out or create from main.
+3. **Create a sub-branch for this story**: `git checkout -b <branchName>/<Story-ID>` from the feature branch.
+   Example: If branchName is `ralph/auth-system` and story is US-003, create `ralph/auth-system/US-003`.
+   This allows Ralph to merge your changes back to the feature branch after verification.
 4. Pick the **highest priority** user story where `passes: false`
 5. Implement that single user story
 6. Run quality checks (typecheck, lint, test - use whatever the project requires)
@@ -115,6 +117,56 @@ If README.md doesn't exist, create one with:
 - Do NOT commit broken code
 - Keep changes focused and minimal
 - Follow existing code patterns
+
+## REPL MODE (Complex Tasks)
+
+For tasks with >3 acceptance criteria or complexity indicators (integration, refactor, migration, multi-step), use REPL cycles:
+
+1. **Read Phase**: Examine current state, review errors from previous cycle
+2. **Evaluate Phase**: Determine the minimal fix needed
+3. **Print Phase**: Implement the fix, run tests, output results
+4. **Loop Phase**: Check results, decide to continue or exit
+
+**Exit Conditions:**
+- **SUCCESS**: All tests pass AND lint passes → task complete, commit and proceed
+- **PARTIAL**: Max cycles (3) reached → commit partial progress with notes
+- **STUCK**: Same errors for 2 consecutive cycles → document blocker, move on
+
+When in REPL mode, focus on incremental progress. Fix one thing at a time.
+
+## CHECKPOINTING
+
+Create checkpoints at key moments to enable recovery:
+
+- **Before risky refactoring**: Large structural changes
+- **After passing initial tests**: Lock in progress
+- **When switching focus**: Before moving to different file/component
+
+To signal a checkpoint, output:
+```
+**CHECKPOINT: [name]** - [brief state description]
+```
+
+Examples:
+- `**CHECKPOINT: tests_passing** - Core logic implemented, 5/5 tests green`
+- `**CHECKPOINT: pre_refactor** - About to restructure auth module`
+
+## RELEVANCE MARKERS
+
+Mark high-value learnings in progress.txt to improve compaction:
+
+- `[PATTERN]:` - Reusable patterns (highest priority during compaction)
+- `[GOTCHA]:` - Things to avoid, common mistakes
+- `[INTEGRATION]:` - How components connect, dependencies
+
+**Examples:**
+```
+- [PATTERN]: Use `useCallback` for event handlers passed to child components
+- [GOTCHA]: The auth middleware must be registered before routes
+- [INTEGRATION]: UserService depends on both AuthDB and CacheLayer
+```
+
+These markers ensure critical learnings survive memory compaction.
 
 ## BROWSER TESTING (For Frontend Stories)
 

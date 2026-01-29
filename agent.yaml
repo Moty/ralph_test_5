@@ -44,3 +44,22 @@ gemini:
   # Gemini CLI uses 'gemini' command (npm install -g @anthropic/gemini-cli)
   # Additional CLI flags (optional)
   # flags: ""
+# Git workflow settings
+# Ralph creates sub-branches per story, merges them to feature branch, and optionally pushes/creates PRs
+git:
+  # Automatically checkout the feature branch before spawning agent
+  auto-checkout-branch: true
+  # Base branch to create feature branches from (usually main or master)
+  base-branch: main
+  # Push settings
+  push:
+    # Enable automatic push after each story merge (disabled by default for backward compatibility)
+    enabled: false
+    # When to push: "iteration" (after each story) or "end" (after RALPH_COMPLETE)
+    timing: iteration
+  # Pull Request settings
+  pr:
+    # Enable automatic PR creation when all stories complete (disabled by default)
+    enabled: false
+    # Create as draft PR
+    draft: false

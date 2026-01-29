@@ -14,12 +14,6 @@ COPY tsconfig.json ./
 # Install ALL dependencies (including dev) for build
 RUN npm ci
 
-# Copy Prisma schema (optional - only needed for PostgreSQL)
-COPY prisma ./prisma
-
-# Generate Prisma Client (optional - only for PostgreSQL)
-RUN npx prisma generate || echo "Prisma generation skipped - using Firestore"
-
 # Copy application source
 COPY src ./src
 
@@ -35,7 +29,5 @@ EXPOSE 8080
 # Set production environment
 ENV NODE_ENV=production
 
-# Conditional startup: run migrations only if using PostgreSQL
-CMD if [ -n "$DATABASE_URL" ] && [ -z "$FIREBASE_PROJECT_ID" ]; then \
-      npx prisma migrate deploy; \
-    fi && npm start
+# Start the application
+CMD ["npm", "start"]

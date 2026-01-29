@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Memory compaction library for Ralph
 # Automatically compacts progress.txt when it exceeds threshold
+# Supports two modes: line-based (default) and semantic (relevance-based)
 
 # Default threshold in lines (configurable)
 COMPACTION_THRESHOLD=${RALPH_COMPACTION_THRESHOLD:-400}
@@ -10,6 +11,12 @@ PRESERVE_START=${RALPH_PRESERVE_START:-50}
 
 # Number of lines to preserve from end (recent entries)
 PRESERVE_END=${RALPH_PRESERVE_END:-200}
+
+# Compaction mode: "line" (default) or "semantic"
+COMPACTION_MODE=${RALPH_COMPACTION_MODE:-line}
+
+# Script directory for loading semantic compaction
+COMPACTION_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Compact progress.txt if it exceeds threshold
 # Preserves patterns section and recent entries
@@ -102,7 +109,56 @@ compact_progress() {
 
 # Pre-iteration hook for Ralph
 # Call this before each iteration to check and compact if needed
+# Uses semantic mode if RALPH_COMPACTION_MODE=semantic
 pre_iteration_compact() {
   local progress_file="${1:-progress.txt}"
+  local keywords="${2:-}"
+
+  if [ "$COMPACTION_MODE" = "semantic" ]; then
+    # Load semantic compaction library if not already loaded
+    if ! type do_semantic_compact >/dev/null 2>&1; then
+      if [ -f "$COMPACTION_SCRIPT_DIR/semantic-compaction.sh" ]; then
+        source "$COMPACTION_SCRIPT_DIR/semantic-compaction.sh"
+      else
+        echo "Warning: semantic-compaction.sh not found, falling back to line mode" >&2
+        compact_progress "$progress_file"
+        return
+      fi
+    fi
+
+    # Get keywords from current task if not provided
+    if [ -z "$keywords" ] && type get_current_task_keywords >/dev/null 2>&1; then
+      keywords=$(get_current_task_keywords)
+    fi
+
+    do_semantic_compact "$progress_file" "$keywords"
+  else
+    # Default line-based compaction
+    compact_progress "$progress_file"
+  fi
+}
+
+# Force line-based compaction regardless of mode
+# Usage: force_line_compact <progress_file>
+force_line_compact() {
+  local progress_file="${1:-progress.txt}"
   compact_progress "$progress_file"
+}
+
+# Force semantic compaction regardless of mode
+# Usage: force_semantic_compact <progress_file> [keywords]
+force_semantic_compact() {
+  local progress_file="${1:-progress.txt}"
+  local keywords="${2:-}"
+
+  if ! type do_semantic_compact >/dev/null 2>&1; then
+    if [ -f "$COMPACTION_SCRIPT_DIR/semantic-compaction.sh" ]; then
+      source "$COMPACTION_SCRIPT_DIR/semantic-compaction.sh"
+    else
+      echo "Error: semantic-compaction.sh not found" >&2
+      return 1
+    fi
+  fi
+
+  do_semantic_compact "$progress_file" "$keywords"
 }

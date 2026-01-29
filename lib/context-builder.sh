@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 # Context builder for dynamic context injection
 # Builds relevant context for current task based on keywords
+# Supports budget-aware mode via dynamic-context.sh
+
+# Script directory for loading dynamic context library
+CONTEXT_BUILDER_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Context mode: "standard" (default) or "dynamic"
+CONTEXT_MODE=${RALPH_CONTEXT_MODE:-standard}
 
 # Extract keywords from text (title and description)
 extract_keywords() {
@@ -128,9 +135,61 @@ inject_context() {
   local task_description="$3"
   local pin_file="${4:-specs/INDEX.md}"
   local progress_file="${5:-progress.txt}"
-  
+
   local context=$(build_context "$task_title" "$task_description" "$pin_file" "$progress_file")
-  
+
+  # Build enhanced prompt
+  echo "# CONTEXT FOR CURRENT TASK"
+  echo ""
+  echo "$context"
+  echo ""
+  echo "---"
+  echo ""
+  echo "# YOUR TASK"
+  echo ""
+  echo "$base_prompt"
+}
+
+# ---- Dynamic Context Integration ----------------------------------
+
+# Smart context builder that uses dynamic mode when enabled
+# Usage: smart_build_context <task_title> <task_description> [pin_file] [progress_file]
+smart_build_context() {
+  local task_title="$1"
+  local task_description="$2"
+  local pin_file="${3:-specs/INDEX.md}"
+  local progress_file="${4:-progress.txt}"
+
+  if [ "$CONTEXT_MODE" = "dynamic" ]; then
+    # Load dynamic context library if not already loaded
+    if ! type build_dynamic_context >/dev/null 2>&1; then
+      if [ -f "$CONTEXT_BUILDER_SCRIPT_DIR/dynamic-context.sh" ]; then
+        source "$CONTEXT_BUILDER_SCRIPT_DIR/dynamic-context.sh"
+      else
+        echo "Warning: dynamic-context.sh not found, using standard mode" >&2
+        build_context "$task_title" "$task_description" "$pin_file" "$progress_file"
+        return
+      fi
+    fi
+
+    build_dynamic_context "$task_title" "$task_description" "$pin_file" "$progress_file"
+  else
+    # Standard context building
+    build_context "$task_title" "$task_description" "$pin_file" "$progress_file"
+  fi
+}
+
+# Smart inject context that uses dynamic mode when enabled
+# Usage: smart_inject_context <base_prompt> <task_title> <task_description> [pin_file] [progress_file]
+smart_inject_context() {
+  local base_prompt="$1"
+  local task_title="$2"
+  local task_description="$3"
+  local pin_file="${4:-specs/INDEX.md}"
+  local progress_file="${5:-progress.txt}"
+
+  local context=$(smart_build_context "$task_title" "$task_description" "$pin_file" "$progress_file")
+
   # Build enhanced prompt
   echo "# CONTEXT FOR CURRENT TASK"
   echo ""
